@@ -37,11 +37,11 @@ import 'screens/ebook_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PushNotificationService().initialize();
-  runApp(const ElMetrAcademyApp());
+  runApp(const WaelApp());
 }
 
-class ElMetrAcademyApp extends StatelessWidget {
-  const ElMetrAcademyApp({super.key, this.providersOverride});
+class WaelApp extends StatelessWidget {
+  const WaelApp({super.key, this.providersOverride});
 
   /// Injected providers for widget tests (fake auth repository, memory
   /// token store). Production passes nothing and gets the real bindings.

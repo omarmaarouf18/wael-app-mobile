@@ -174,7 +174,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     // Email
                     ThemedTextField(
                       label: l10n.emailOrPhone,
-                      hintText: 'alexander.vane@elmetr.edu',
+                      hintText: 'name@example.com',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       prefixIcon: const Icon(

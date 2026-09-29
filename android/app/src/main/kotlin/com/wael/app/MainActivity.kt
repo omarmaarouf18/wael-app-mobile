@@ -1,4 +1,4 @@
-package com.elmetr.el_metr_academy
+package com.wael.app
 
 import io.flutter.embedding.android.FlutterActivity
 

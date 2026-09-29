@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' show MockClient;
-import 'package:el_metr_academy/core/api_client.dart';
+import 'package:wael_app/core/api_client.dart';
 
 ApiClient clientFor(
   MockClient mock, {

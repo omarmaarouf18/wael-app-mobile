@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:el_metr_academy/main.dart';
-import 'package:el_metr_academy/core/secure_store.dart';
-import 'package:el_metr_academy/providers/auth_provider.dart';
-import 'package:el_metr_academy/providers/locale_provider.dart';
-import 'package:el_metr_academy/providers/home_provider.dart';
-import 'package:el_metr_academy/providers/courses_provider.dart';
-import 'package:el_metr_academy/providers/payment_provider.dart';
-import 'package:el_metr_academy/providers/ebook_provider.dart';
-import 'package:el_metr_academy/providers/settings_provider.dart';
-import 'package:el_metr_academy/providers/notifications_provider.dart';
+import 'package:wael_app/main.dart';
+import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/auth_provider.dart';
+import 'package:wael_app/providers/locale_provider.dart';
+import 'package:wael_app/providers/home_provider.dart';
+import 'package:wael_app/providers/courses_provider.dart';
+import 'package:wael_app/providers/payment_provider.dart';
+import 'package:wael_app/providers/ebook_provider.dart';
+import 'package:wael_app/providers/settings_provider.dart';
+import 'package:wael_app/providers/notifications_provider.dart';
 
 import 'fakes.dart';
 
 Widget testApp() {
-  return ElMetrAcademyApp(
+  return WaelApp(
     providersOverride: [
       ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ChangeNotifierProvider(

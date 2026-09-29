@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.elmetr" "\0"
-            VALUE "FileDescription", "el_metr_academy" "\0"
+            VALUE "CompanyName", "com.wael" "\0"
+            VALUE "FileDescription", "wael_app" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "el_metr_academy" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.elmetr. All rights reserved." "\0"
-            VALUE "OriginalFilename", "el_metr_academy.exe" "\0"
-            VALUE "ProductName", "el_metr_academy" "\0"
+            VALUE "InternalName", "wael_app" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.wael. All rights reserved." "\0"
+            VALUE "OriginalFilename", "wael_app.exe" "\0"
+            VALUE "ProductName", "wael_app" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

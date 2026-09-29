@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:el_metr_academy/main.dart';
+import 'package:wael_app/main.dart';
 
 void main() {
   testWidgets('EL METR Academy smoke test launches login screen', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ElMetrAcademyApp());
+    await tester.pumpWidget(const WaelApp());
     await tester.pumpAndSettle();
 
     // Verify brand wordmark is present

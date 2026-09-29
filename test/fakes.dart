@@ -1,5 +1,5 @@
-import 'package:el_metr_academy/core/api_client.dart' show ApiException;
-import 'package:el_metr_academy/repositories/auth_repository.dart';
+import 'package:wael_app/core/api_client.dart' show ApiException;
+import 'package:wael_app/repositories/auth_repository.dart';
 
 /// Scripted fake backend for widget/unit tests.
 class FakeAuthRepository implements AuthRepository {

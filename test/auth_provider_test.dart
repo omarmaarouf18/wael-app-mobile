@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:el_metr_academy/core/secure_store.dart';
-import 'package:el_metr_academy/providers/auth_provider.dart';
+import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/auth_provider.dart';
 
 import 'fakes.dart';
 
