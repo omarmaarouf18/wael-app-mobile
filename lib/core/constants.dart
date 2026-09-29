@@ -22,7 +22,7 @@ class AppConstants {
 
   static const String imgLoginPortrait = 'assets/images/login_portrait.jpg';
   static const String imgHomeHero = 'assets/images/home_hero.png';
-  static const String imgProfileAlexander =
+  static const String imgProfileDefault =
       'assets/images/profile_alexander_vane.jpg';
   static const String imgFeaturedArchitectural =
       'assets/images/featured_architectural_discipline.jpg';
@@ -41,7 +41,7 @@ class AppConstants {
 
   // Payment rails (public academy channels; amounts flow through the
   // future core service)
-  static const String vodafoneCashNumber = '0100 007 2727';
-  static const String instapayHandle = 'elmetr.academy@instapay';
-  static const String bankAccountIban = 'EG38 0002 0001 0000 0007 2727 01';
+  static const String vodafoneCashNumber = '0100 000 0000';
+  static const String instapayHandle = 'academy@instapay';
+  static const String bankAccountIban = 'EG00 0000 0000 0000 0000 0000 00';
 }

@@ -25,7 +25,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgPoster007,
-      fileUrl: 'https://elmetr-academy.com/dossiers/criminal_jurisprudence.pdf',
+      fileUrl: 'https://example.com/dossiers/criminal_jurisprudence.pdf',
       isDownloaded: true,
       description:
           'Definitive accredited textbook for 3rd Year criminal law special section.',
@@ -48,8 +48,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgCardFront,
-      fileUrl:
-          'https://elmetr-academy.com/dossiers/criminal_defenses_revision.pdf',
+      fileUrl: 'https://example.com/dossiers/criminal_defenses_revision.pdf',
       isDownloaded: false,
       description: 'Model exam answers and constitutional criminal defenses.',
       descriptionAr:
@@ -71,7 +70,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgCourseStrategic,
-      fileUrl: 'https://elmetr-academy.com/dossiers/civil_procedures.pdf',
+      fileUrl: 'https://example.com/dossiers/civil_procedures.pdf',
       isDownloaded: false,
     ),
     const AcademicMaterial(
@@ -90,7 +89,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgCardBack,
-      fileUrl: 'https://elmetr-academy.com/dossiers/jurisdiction_nullity.pdf',
+      fileUrl: 'https://example.com/dossiers/jurisdiction_nullity.pdf',
       isDownloaded: true,
     ),
     const AcademicMaterial(
@@ -110,7 +109,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgCourseExecutive,
-      fileUrl: 'https://elmetr-academy.com/dossiers/nominate_contracts.pdf',
+      fileUrl: 'https://example.com/dossiers/nominate_contracts.pdf',
       isDownloaded: false,
     ),
     const AcademicMaterial(
@@ -129,7 +128,7 @@ class EBookProvider extends ChangeNotifier {
       author: 'Dean Wael El Metr',
       authorAr: 'المستشار د. وائل المتر',
       coverImage: AppConstants.imgFeaturedArchitectural,
-      fileUrl: 'https://elmetr-academy.com/dossiers/exam_bank_3rd_year.pdf',
+      fileUrl: 'https://example.com/dossiers/exam_bank_3rd_year.pdf',
       isDownloaded: false,
     ),
   ];

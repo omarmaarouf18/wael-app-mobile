@@ -161,7 +161,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     // Full Name
                     ThemedTextField(
                       label: l10n.fullName,
-                      hintText: 'Counselor Alexander Vane',
+                      hintText: 'Jane Doe',
                       controller: _nameController,
                       prefixIcon: const Icon(
                         Icons.person_outline,
@@ -190,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: l10n.isArabic
                           ? 'رقم الهاتف المحمول'
                           : 'Phone Number',
-                      hintText: '+20 122 27 007 27',
+                      hintText: '+20 100 000 0000',
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       prefixIcon: const Icon(

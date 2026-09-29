@@ -189,7 +189,7 @@ class SettingsScreen extends StatelessWidget {
                               ),
                               image: const DecorationImage(
                                 image: AssetImage(
-                                  AppConstants.imgProfileAlexander,
+                                  AppConstants.imgProfileDefault,
                                 ),
                                 fit: BoxFit.cover,
                               ),
