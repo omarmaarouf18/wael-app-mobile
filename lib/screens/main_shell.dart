@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../repositories/notification_repository.dart';
 import '../services/notification_stream.dart';
 import 'home_screen.dart';
 import 'courses_screen.dart';
@@ -36,6 +37,9 @@ class _MainShellState extends State<MainShell> {
     final token = await auth.authedTokenForStream();
     if (!mounted || token == null) return;
     final notifs = Provider.of<NotificationsProvider>(context, listen: false);
+    notifs.attachRemote(HttpNotificationRepository(auth.authedApi));
+    await notifs.loadRemote();
+    if (!mounted) return;
     _stream = NotificationStream(auth.authedApi);
     await _stream!.connect(token: token, onItem: notifs.addNotification);
   }
