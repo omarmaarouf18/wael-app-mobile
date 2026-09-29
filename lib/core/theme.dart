@@ -1,0 +1,370 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// Centralized Design System Tokens for EL METR ACADEMY
+/// Based strictly on DESIGN.md and Cinematic Noir Academy specification.
+
+class AppColors {
+  AppColors._();
+
+  // Surface Palette
+  static const Color voidCanvas = Color(0xFF080808);
+  static const Color surfaceLayer1 = Color(0xFF111111);
+  static const Color surfaceElevated = Color(0xFF181818);
+  static const Color surfaceHigh = Color(0xFF202020);
+  static const Color surfaceBright = Color(0xFF2A2A2A);
+  static const Color surfaceContainerLowest = Color(0xFF040404);
+  static const Color surfaceContainerLow = Color(0xFF0E0E0E);
+  static const Color surfaceContainer = Color(0xFF141414);
+  static const Color surfaceContainerHighest = Color(0xFF353534);
+
+  // Borders & Hairlines
+  static const Color subtleHairline = Color(0xFF262626);
+  static const Color prominentBorder = Color(0xFF303030);
+  static const Color activeBorder = Color(0xFFC1121F);
+
+  // Accents (Strict Noir Ruby Hierarchy)
+  static const Color crimson = Color(0xFFC1121F);
+  static const Color deepCrimson = Color(0xFF7F0D15);
+  static const Color crimsonHover = Color(0xFFA30F1A);
+  static const Color crimsonTinted = Color(0x1FC1121F);
+  static const Color crimsonGlow = Color(0x38C1121F);
+
+  // Typographic Contrast
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textSecondary = Color(0xFFB8B8B8);
+  static const Color textMuted = Color(0xFF9A9A9A);
+  static const Color textTertiary = Color(0xFF666666);
+  static const Color textPlaceholder = Color(0xFF4A4A4A);
+
+  // Status Colors
+  static const Color statusPending = Color(0xFFF59E0B);
+  static const Color statusPendingBg = Color(0x26F59E0B);
+  static const Color statusApproved = Color(0xFF10B981);
+  static const Color statusApprovedBg = Color(0x2610B981);
+  static const Color statusRejected = Color(0xFFC1121F);
+  static const Color statusRejectedBg = Color(0x26C1121F);
+  static const Color starRating = Color(0xFFF59E0B);
+}
+
+class AppSpacing {
+  AppSpacing._();
+
+  static const double space2xs = 2.0;
+  static const double spaceXs = 4.0;
+  static const double spaceSm = 8.0;
+  static const double spaceMd = 12.0;
+  static const double spaceLg = 16.0;
+  static const double spaceXl = 24.0;
+  static const double space2xl = 32.0;
+  static const double space3xl = 40.0;
+
+  static const double gutterMobile = 12.0;
+  static const double marginMobile = 16.0;
+  static const double navBarHeight = 68.0;
+  static const double headerHeight = 56.0;
+}
+
+class AppRadius {
+  AppRadius._();
+
+  static const double xs = 2.0;
+  static const double sm = 4.0;
+  static const double md = 6.0;
+  static const double lg = 8.0;
+  static const double xl = 12.0;
+  static const double card = 12.0;
+  static const double pill = 9999.0;
+
+  static const BorderRadius radiusXs = BorderRadius.all(Radius.circular(xs));
+  static const BorderRadius radiusSm = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius radiusMd = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius radiusLg = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius radiusXl = BorderRadius.all(Radius.circular(xl));
+  static const BorderRadius radiusPill = BorderRadius.all(
+    Radius.circular(pill),
+  );
+}
+
+class AppElevation {
+  AppElevation._();
+
+  static const List<BoxShadow> none = [];
+
+  static const List<BoxShadow> card = [
+    BoxShadow(color: Color(0x80000000), offset: Offset(0, 4), blurRadius: 12),
+  ];
+
+  static const List<BoxShadow> crimsonGlow = [
+    BoxShadow(color: Color(0x40C1121F), offset: Offset(0, 4), blurRadius: 20),
+  ];
+
+  static const List<BoxShadow> bottomNav = [
+    BoxShadow(color: Color(0xCC000000), offset: Offset(0, -4), blurRadius: 24),
+  ];
+}
+
+class AppMotion {
+  AppMotion._();
+
+  static const Duration durationFast = Duration(milliseconds: 150);
+  static const Duration durationNormal = Duration(milliseconds: 250);
+  static const Duration durationSlow = Duration(milliseconds: 400);
+
+  static const Curve curveStandard = Curves.easeInOut;
+  static const Curve curveEmphasized = Curves.fastOutSlowIn;
+}
+
+class AppIconSize {
+  AppIconSize._();
+
+  static const double xs = 14.0;
+  static const double sm = 16.0;
+  static const double md = 20.0;
+  static const double lg = 24.0;
+  static const double xl = 32.0;
+}
+
+class AppTypography {
+  AppTypography._();
+
+  // Font family fallbacks: Syne for display/headings, Plus Jakarta Sans for body, Cairo for Arabic
+  static TextStyle displayHero({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+            color: AppColors.textPrimary,
+          )
+        : GoogleFonts.syne(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
+            letterSpacing: -0.5,
+            color: AppColors.textPrimary,
+          );
+  }
+
+  static TextStyle headlineLg({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+            color: AppColors.textPrimary,
+          )
+        : GoogleFonts.syne(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+            letterSpacing: -0.2,
+            color: AppColors.textPrimary,
+          );
+  }
+
+  static TextStyle headlineMd({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            color: AppColors.textPrimary,
+          )
+        : GoogleFonts.syne(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            height: 1.25,
+            letterSpacing: -0.2,
+            color: AppColors.textPrimary,
+          );
+  }
+
+  static TextStyle headlineSm({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            height: 1.35,
+            color: AppColors.textPrimary,
+          )
+        : GoogleFonts.syne(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            height: 1.3,
+            color: AppColors.textPrimary,
+          );
+  }
+
+  static TextStyle academyEyebrow({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+            color: AppColors.textMuted,
+          )
+        : GoogleFonts.syne(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 3.2,
+            color: AppColors.textMuted,
+          );
+  }
+
+  static TextStyle bodyLg({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          )
+        : GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            height: 1.45,
+            color: AppColors.textSecondary,
+          );
+  }
+
+  static TextStyle bodyMd({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            height: 1.45,
+            color: AppColors.textSecondary,
+          )
+        : GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            height: 1.4,
+            color: AppColors.textSecondary,
+          );
+  }
+
+  static TextStyle bodySm({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            height: 1.4,
+            color: AppColors.textMuted,
+          )
+        : GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 1.35,
+            color: AppColors.textMuted,
+          );
+  }
+
+  static TextStyle labelMd({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: AppColors.textPrimary,
+          )
+        : GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+            color: AppColors.textPrimary,
+          );
+  }
+
+  static TextStyle labelSm({bool isArabic = false}) {
+    return isArabic
+        ? GoogleFonts.cairo(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.0,
+            color: AppColors.textSecondary,
+          )
+        : GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+            color: AppColors.textSecondary,
+          );
+  }
+}
+
+class AppTheme {
+  AppTheme._();
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.voidCanvas,
+      canvasColor: AppColors.voidCanvas,
+      primaryColor: AppColors.crimson,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.crimson,
+        onPrimary: AppColors.textPrimary,
+        surface: AppColors.voidCanvas,
+        onSurface: AppColors.textPrimary,
+        error: AppColors.crimson,
+        onError: AppColors.textPrimary,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xF2090909),
+        elevation: 0,
+        centerTitle: true,
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.subtleHairline,
+        thickness: 1,
+        space: 1,
+      ),
+      cardTheme: const CardThemeData(
+        color: AppColors.surfaceElevated,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+          side: BorderSide(color: AppColors.subtleHairline, width: 1),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceContainerLow,
+        hintStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.textTertiary,
+          fontSize: 14,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderSide: const BorderSide(
+            color: AppColors.subtleHairline,
+            width: 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderSide: const BorderSide(
+            color: AppColors.subtleHairline,
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderSide: const BorderSide(color: AppColors.crimson, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderSide: const BorderSide(color: AppColors.crimson, width: 1),
+        ),
+      ),
+    );
+  }
+}

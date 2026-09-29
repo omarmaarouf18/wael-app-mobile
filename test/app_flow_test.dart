@@ -1,0 +1,90 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:el_metr_academy/main.dart';
+import 'package:el_metr_academy/core/secure_store.dart';
+import 'package:el_metr_academy/providers/auth_provider.dart';
+import 'package:el_metr_academy/providers/locale_provider.dart';
+import 'package:el_metr_academy/providers/home_provider.dart';
+import 'package:el_metr_academy/providers/courses_provider.dart';
+import 'package:el_metr_academy/providers/payment_provider.dart';
+import 'package:el_metr_academy/providers/ebook_provider.dart';
+import 'package:el_metr_academy/providers/settings_provider.dart';
+import 'package:el_metr_academy/providers/notifications_provider.dart';
+
+import 'fakes.dart';
+
+Widget testApp() {
+  return ElMetrAcademyApp(
+    providersOverride: [
+      ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider(
+        create: (_) => AuthProvider(
+          repository: FakeAuthRepository(),
+          tokenStore: MemoryTokenStore(),
+        ),
+      ),
+      ChangeNotifierProvider(create: (_) => HomeProvider()),
+      ChangeNotifierProvider(create: (_) => CoursesProvider()),
+      ChangeNotifierProvider(create: (_) => PaymentProvider()),
+      ChangeNotifierProvider(create: (_) => EBookProvider()),
+      ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+    ],
+  );
+}
+
+void main() {
+  testWidgets('Real auth flow: splash to login to main shell', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(testApp());
+    await tester.pumpAndSettle();
+
+    // Splash restores no session -> login screen.
+    expect(find.text('EL METR'), findsOneWidget);
+    expect(find.text('ACADEMY'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.text("Don't have an account?"), findsOneWidget);
+
+    // Navigate to Signup and back.
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+    expect(find.text('CREATE ACCOUNT'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.pumpAndSettle();
+    expect(find.text('SIGN IN'), findsOneWidget);
+
+    // Enter real credentials and sign in (fake backend accepts).
+    await tester.enterText(find.byType(TextFormField).at(0), 'u@e.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.text('SIGN IN'));
+    await tester.pumpAndSettle();
+
+    // Home shell content.
+    expect(find.text('ACADEMY DIRECTOR & INSTRUCTOR'), findsOneWidget);
+    expect(find.text('CONTINUE LEARNING'), findsOneWidget);
+    expect(find.text('MY COURSES'), findsOneWidget);
+
+    // Courses tab.
+    await tester.tap(find.byIcon(Icons.school_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('EDUCATION TYPE'), findsOneWidget);
+
+    // Settings shows the authenticated account email.
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+    expect(find.text('u@e.com'), findsOneWidget);
+
+    // Sign out returns to login.
+    await tester.ensureVisible(find.text('SIGN OUT OF EL METR ACADEMY'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SIGN OUT OF EL METR ACADEMY'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
+    expect(find.text('SIGN IN'), findsOneWidget);
+  });
+}
