@@ -1,25 +1,31 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
 import '../models/notification_model.dart';
 import '../repositories/notification_repository.dart';
 
 class NotificationsProvider extends ChangeNotifier {
   NotificationsProvider({NotificationRepository? repository})
-    : _repository = repository ?? MockNotificationRepository(),
-      _notifications = List.of(
-        (repository ?? MockNotificationRepository()).initial(),
-      );
+    : _repository = repository ?? _defaultRepository(),
+      _notifications = List.of((repository ?? _defaultRepository()).initial());
+
+  static NotificationRepository _defaultRepository() {
+    return kDebugMode
+        ? MockNotificationRepository()
+        : const EmptyNotificationRepository();
+  }
 
   NotificationRepository _repository;
   final List<NotificationModel> _notifications;
   bool _remote = false;
+  bool _hasError = false;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  bool get hasError => _hasError;
 
   /// Binds the real HTTP repository after login. Keeps quiet backoff: a
-  /// failed first load leaves the bundled list in place.
+  /// failed first load leaves the bundled list in place (in debug only).
   void attachRemote(HttpNotificationRepository repository) {
     _repository = repository;
     _remote = true;
@@ -32,9 +38,15 @@ class NotificationsProvider extends ChangeNotifier {
       _notifications
         ..clear()
         ..addAll(items);
+      _hasError = false;
       notifyListeners();
     } catch (_) {
-      // Quiet backoff: keep current list until the service is reachable.
+      // In release, a failed load shows an error or empty state, never fake items.
+      if (!kDebugMode) {
+        _notifications.clear();
+      }
+      _hasError = true;
+      notifyListeners();
     }
   }
 
@@ -63,6 +75,7 @@ class NotificationsProvider extends ChangeNotifier {
   }
 
   void addNotification(NotificationModel notification) {
+    if (_notifications.any((n) => n.id == notification.id)) return;
     _notifications.insert(0, notification);
     notifyListeners();
   }

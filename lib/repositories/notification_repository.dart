@@ -96,3 +96,18 @@ class HttpNotificationRepository implements NotificationRepository {
     await _api.post('/api/v1/notifications/read', body: {'id': id});
   }
 }
+
+/// Empty fallback repository used in release builds or when no notifications exist.
+class EmptyNotificationRepository implements NotificationRepository {
+  const EmptyNotificationRepository();
+
+  @override
+  List<NotificationModel> initial() => const [];
+
+  @override
+  Future<List<NotificationModel>> list({int page = 1, int limit = 20}) async =>
+      const [];
+
+  @override
+  Future<void> markRead(String id) async {}
+}
