@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -39,11 +40,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.crimson,
-          content: Text(
-            l10n.isArabic
-                ? 'يجب الموافقة على ميثاق الشرف الأكاديمي للمتابعة.'
-                : 'You must agree to the Academy Honor Code to proceed.',
-          ),
+          content: Text(ErrorMessages.agreeToTermsRequired(l10n.isArabic)),
         ),
       );
       return;
@@ -57,11 +54,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.crimson,
-          content: Text(
-            l10n.isArabic
-                ? 'يرجى إكمال جميع الحقول المطلوبة.'
-                : 'Please complete all required fields.',
-          ),
+          content: Text(ErrorMessages.allFieldsRequired(l10n.isArabic)),
         ),
       );
       return;
@@ -70,11 +63,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.crimson,
-          content: Text(
-            l10n.isArabic
-                ? 'كلمة المرور يجب ألا تقل عن 8 أحرف.'
-                : 'Password must be at least 8 characters.',
-          ),
+          content: Text(ErrorMessages.passwordMinLength(l10n.isArabic, 8)),
         ),
       );
       return;
@@ -83,11 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.crimson,
-          content: Text(
-            l10n.isArabic
-                ? 'كلمتا المرور غير متطابقتين.'
-                : 'Passwords do not match.',
-          ),
+          content: Text(ErrorMessages.passwordMismatch(l10n.isArabic)),
         ),
       );
       return;
@@ -293,6 +278,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.spaceLg),
+
+                    // Server / validation error
+                    if (auth.errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppSpacing.spaceSm,
+                        ),
+                        child: Text(
+                          auth.errorMessage!,
+                          style: const TextStyle(color: AppColors.crimson),
+                        ),
+                      ),
 
                     // Submit CTA
                     PrimaryButton(

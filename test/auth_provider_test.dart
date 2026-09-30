@@ -58,4 +58,20 @@ void main() {
     await auth.tryRestore();
     expect(auth.isAuthenticated, isTrue);
   });
+
+  test('error messages never show raw exception text', () async {
+    final store = MemoryTokenStore();
+    final auth = providerWith(
+      FakeAuthRepository(mode: 'wrong-password'),
+      store,
+    );
+    await auth.login('u@e.com', 'wrong');
+    expect(auth.errorMessage, isNot(contains('Exception')));
+    expect(auth.errorMessage, isNot(contains('SocketException')));
+    expect(auth.errorMessage, isNot(contains('instance of')));
+    expect(
+      auth.errorMessage,
+      'Invalid credentials. Please verify your details and try again.',
+    );
+  });
 }

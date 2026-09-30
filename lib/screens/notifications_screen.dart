@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/notifications_provider.dart';
@@ -71,14 +72,19 @@ class NotificationsScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.notifications_off_outlined,
+                  Icon(
+                    notifProvider.hasError
+                        ? Icons.error_outline
+                        : Icons.notifications_off_outlined,
                     size: 48,
                     color: AppColors.textTertiary,
                   ),
                   const SizedBox(height: AppSpacing.spaceMd),
                   Text(
-                    l10n.noNotifications,
+                    notifProvider.hasError
+                        ? ErrorMessages.notificationLoadFailed(l10n.isArabic)
+                        : l10n.noNotifications,
+                    textAlign: TextAlign.center,
                     style: AppTypography.bodyMd().copyWith(
                       color: AppColors.textTertiary,
                     ),

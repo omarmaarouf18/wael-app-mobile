@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
 import '../core/api_client.dart';
 import '../core/app_config.dart';
+import '../core/error_messages.dart';
 import '../core/secure_store.dart';
 import '../models/user_profile.dart';
 import '../repositories/auth_repository.dart';
@@ -95,17 +96,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   static String _messageFor(Object e) {
-    if (e is ApiException) {
-      if (e.isRateLimited) {
-        return e.message.isNotEmpty
-            ? e.message
-            : 'Too many attempts. Please wait and try again.';
-      }
-      return e.message.isNotEmpty
-          ? e.message
-          : 'Request failed. Please try again.';
-    }
-    return 'Unable to reach the server. Check your connection and try again.';
+    return ErrorMessages.forException(e);
   }
 
   Future<void> _storeSession(AuthAccount account, AuthTokens tokens) async {
@@ -157,8 +148,8 @@ class AuthProvider extends ChangeNotifier {
     _begin();
     final email = identifier.trim();
     if (email.isEmpty || password.isEmpty) {
-      _fail(const FormatException('empty'));
-      _errorMessage = 'Please enter your email and password.';
+      _isLoading = false;
+      _errorMessage = ErrorMessages.allFieldsRequired(false);
       notifyListeners();
       return false;
     }
