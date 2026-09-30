@@ -64,8 +64,30 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
 
 ## Quality gates
 
+Offline gates (fast, deterministic, requires no Docker stack):
+
 ```bash
 dart format lib/ test/
 flutter analyze
 flutter test
+```
+
+*Note: In offline CI, 22 live integration tests across `live_matrix_test.dart`, `gateway_ratelimit_test.dart`, `sse_reconnect_test.dart`, and `failure_modes_test.dart` are skipped (`skip: !runLive`) because they require the live Docker Compose microservice stack.*
+
+### Running Live Integration Suites Against the Stack
+
+When the local microservice stack is running (`docker compose -p wael-app up -d`), execute the env-gated integration suites using `--dart-define=RUN_LIVE_TESTS=true`:
+
+```bash
+# 1. Full live behavior matrix (auth, lockout, token rotation, inbox, SSE delivery)
+flutter test --dart-define=RUN_LIVE_TESTS=true test/live_matrix_test.dart
+
+# 2. Gateway rate limiting (100 req/min burst + 429 Retry-After verification)
+flutter test --dart-define=RUN_LIVE_TESTS=true test/gateway_ratelimit_test.dart
+
+# 3. Live SSE reconnection & backoff (includes notification-service docker restart)
+flutter test --dart-define=RUN_LIVE_TESTS=true test/sse_reconnect_test.dart
+
+# 4. Service failure modes (sequentially stops & restarts gateway, auth, notif, redis, mongo)
+flutter test --dart-define=RUN_LIVE_TESTS=true test/failure_modes_test.dart
 ```
