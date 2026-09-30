@@ -24,6 +24,9 @@ Release builds always verify certificates.
 Examples:
 
 ```bash
+# Lowest-friction local target on Linux desktop (native Wayland/X11, localhost network loopback)
+flutter run -d linux --dart-define=API_BASE_URL=https://localhost:18080
+
 # Android emulator against local compose on default ports
 flutter run --dart-define=API_BASE_URL=https://10.0.2.2:8080
 
@@ -33,6 +36,22 @@ flutter run --dart-define=API_BASE_URL=https://10.0.2.2:18080
 # Physical device on the same network (replace with the host LAN IP)
 flutter run --dart-define=API_BASE_URL=https://192.168.1.50:8080
 ```
+
+### Lowest-friction target on development machine
+Linux desktop (`-d linux`) is the lowest-friction target on this machine:
+1. **Zero emulator overhead**: Starts in seconds without KVM/Android emulator or simulator processes.
+2. **Direct host loopback**: Connects directly to `https://localhost:18080` without NAT router aliases (`10.0.2.2`) or port forwarding.
+3. **Full TLS support**: Uses `dart:io` `badCertificateCallback` directly for self-signed certificates in debug mode.
+
+*(Note: On systems where `libsecret-1` headers are not in `/usr/lib64/pkgconfig`, point `PKG_CONFIG_PATH` to the libsecret sysroot).*
+
+### Diagnostics screen (Debug Mode Only)
+Navigate to `/debug` (or use the debug button in development builds) to access the diagnostics screen:
+- Gateway base URL
+- Session authentication state with masked user ID and email
+- Live SSE stream connection status (connected / disconnected)
+- Rolling buffer of the last 50 API calls (method, sanitized path without query parameters, HTTP status, latency)
+- Completely excluded in release mode builds.
 
 ## Auth behavior
 
