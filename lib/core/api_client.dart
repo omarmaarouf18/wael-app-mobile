@@ -4,6 +4,7 @@ import 'dart:io' show HttpClient;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' show IOClient;
+import '../debug/diagnostics_tracker.dart';
 
 /// Real HTTP client for the wael-app gateway.
 ///
@@ -51,35 +52,79 @@ class ApiClient {
 
   Future<String?> _token() => accessTokenReader?.call() ?? Future.value(null);
 
+  void _record(String method, String path, int statusCode, int ms) {
+    if (kDebugMode) {
+      DiagnosticsTracker.instance.recordCall(
+        method: method,
+        path: path,
+        status: statusCode,
+        latencyMs: ms,
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> get(String path) async {
-    final token = await _token();
-    final res = await _client.get(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(token),
-    );
-    return _handle(res, () => get(path));
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final token = await _token();
+      final res = await _client.get(
+        Uri.parse('$baseUrl$path'),
+        headers: _headers(token),
+      );
+      statusCode = res.statusCode;
+      return await _handle(res, () => get(path));
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('GET', path, statusCode, sw.elapsedMilliseconds);
+    }
   }
 
   /// Single authenticated GET with an explicit token (no refresh dance).
   Future<Map<String, dynamic>> getAuthed(String path, String token) async {
-    final res = await _client.get(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(token),
-    );
-    return _decode(res);
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final res = await _client.get(
+        Uri.parse('$baseUrl$path'),
+        headers: _headers(token),
+      );
+      statusCode = res.statusCode;
+      return _decode(res);
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('GET', path, statusCode, sw.elapsedMilliseconds);
+    }
   }
 
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final token = await _token();
-    final res = await _client.post(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
-    );
-    return _handle(res, () => post(path, body: body));
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final token = await _token();
+      final res = await _client.post(
+        Uri.parse('$baseUrl$path'),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      );
+      statusCode = res.statusCode;
+      return await _handle(res, () => post(path, body: body));
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('POST', path, statusCode, sw.elapsedMilliseconds);
+    }
   }
 
   Future<Map<String, dynamic>> _handle(
@@ -137,6 +182,9 @@ class ApiClient {
   /// object is yielded as a decoded map. The caller cancels the subscription
   /// on logout.
   Stream<Map<String, dynamic>> sse(String path, {String? token}) async* {
+    if (kDebugMode) {
+      DiagnosticsTracker.instance.updateSseState('connecting');
+    }
     final req = http.Request('GET', Uri.parse('$baseUrl$path'));
     req.headers.addAll(_headers(token));
     req.headers['Accept'] = 'text/event-stream';
@@ -144,30 +192,47 @@ class ApiClient {
     try {
       streamed = await _client.send(req);
     } catch (e) {
+      if (kDebugMode) {
+        DiagnosticsTracker.instance.updateSseState('error');
+      }
       throw ApiException(statusCode: -1, message: 'Stream unavailable: $e');
     }
     if (streamed.statusCode != 200) {
+      if (kDebugMode) {
+        DiagnosticsTracker.instance.updateSseState(
+          'error: ${streamed.statusCode}',
+        );
+      }
       throw ApiException(
         statusCode: streamed.statusCode,
         message: 'Stream unavailable',
       );
     }
-    var buffer = '';
-    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
-      buffer += chunk;
-      final lines = buffer.split('\n');
-      buffer = lines.removeLast();
-      for (final line in lines) {
-        final trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        final payload = trimmed.substring(5).trim();
-        if (payload.isEmpty || payload == '[DONE]') continue;
-        try {
-          final decoded = jsonDecode(payload);
-          if (decoded is Map<String, dynamic>) yield decoded;
-        } catch (_) {
-          // Skip malformed frames; the stream stays open.
+    if (kDebugMode) {
+      DiagnosticsTracker.instance.updateSseState('connected');
+    }
+    try {
+      var buffer = '';
+      await for (final chunk in streamed.stream.transform(utf8.decoder)) {
+        buffer += chunk;
+        final lines = buffer.split('\n');
+        buffer = lines.removeLast();
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          final payload = trimmed.substring(5).trim();
+          if (payload.isEmpty || payload == '[DONE]') continue;
+          try {
+            final decoded = jsonDecode(payload);
+            if (decoded is Map<String, dynamic>) yield decoded;
+          } catch (_) {
+            // Skip malformed frames; the stream stays open.
+          }
         }
+      }
+    } finally {
+      if (kDebugMode) {
+        DiagnosticsTracker.instance.updateSseState('disconnected');
       }
     }
   }

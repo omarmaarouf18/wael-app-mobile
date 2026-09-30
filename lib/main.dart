@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:nested/nested.dart' show SingleChildWidget;
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
+
 import 'core/constants.dart';
 import 'l10n/app_localizations.dart';
 import 'models/course.dart';
@@ -33,6 +35,7 @@ import 'screens/payment_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/ebook_screen.dart';
+import 'debug/diagnostics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +90,7 @@ class WaelApp extends StatelessWidget {
               '/notifications': (context) => const NotificationsScreen(),
               '/settings': (context) => const SettingsScreen(),
               '/ebooks': (context) => const EbookScreen(),
+              if (kDebugMode) '/debug': (context) => const DiagnosticsScreen(),
             },
             onGenerateRoute: (settings) {
               if (settings.name == '/course-details') {
