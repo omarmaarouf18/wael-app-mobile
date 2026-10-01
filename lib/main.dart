@@ -131,15 +131,14 @@ class WaelApp extends StatelessWidget {
                 );
               }
               if (settings.name == '/payment') {
-                final course =
-                    settings.arguments as Course? ??
-                    Provider.of<CoursesProvider>(
-                      context,
-                      listen: false,
-                    ).allCourses.first;
-                return MaterialPageRoute(
-                  builder: (context) => PaymentScreen(course: course),
-                );
+                // Only the subject screen opens this, always with a Course
+                // built from server data; there is no default course.
+                final course = settings.arguments;
+                if (course is Course) {
+                  return MaterialPageRoute(
+                    builder: (context) => PaymentScreen(course: course),
+                  );
+                }
               }
               return null;
             },

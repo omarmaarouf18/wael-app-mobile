@@ -41,6 +41,12 @@ class FakeAcademyRepository implements AcademyRepository {
   int detailCalls = 0;
   bool studyTypesInResponse = true;
 
+  /// Detail responses by subject id; others get an empty detail.
+  final Map<String, Map<String, dynamic>> detailJson = {};
+
+  /// When set, `subject()` waits for it before answering.
+  Future<void>? detailGate;
+
   @override
   Future<AcademyLevels> levels() async {
     levelsCalls++;
@@ -87,7 +93,10 @@ class FakeAcademyRepository implements AcademyRepository {
   @override
   Future<AcademySubjectDetail> subject(String id) async {
     detailCalls++;
+    if (detailGate != null) await detailGate;
     if (detailError != null) throw detailError!;
+    final scripted = detailJson[id];
+    if (scripted != null) return AcademySubjectDetail.fromJson(scripted);
     return AcademySubjectDetail.fromJson({
       'id': id,
       'level_key': 'bachelor-y1',
@@ -124,3 +133,56 @@ FakeAcademyRepository fake() => FakeAcademyRepository(
     'vocational': [],
   },
 );
+
+/// JSON for `GET /academy/subjects/{id}`, with sensible defaults.
+Map<String, dynamic> detailBody({
+  String id = 'd1',
+  bool owned = false,
+  Object? price,
+  String? expires,
+  String term = 'first',
+  String titleAr = 'القانون المدني',
+  String titleEn = 'Civil Law',
+  List<Map<String, dynamic>>? videos,
+  List<Map<String, dynamic>>? files,
+}) => {
+  'id': id,
+  'level_key': 'bachelor-y1',
+  'term': term,
+  'title': {'ar': titleAr, 'en': titleEn},
+  'description': {'ar': 'وصف المادة', 'en': 'About the subject'},
+  'owned': owned,
+  'counts': {'videos': (videos ?? []).length, 'books': 1, 'notes': 1},
+  'access_expires_at': expires ?? '0001-01-01T00:00:00Z',
+  'price': ?price,
+  if (price != null) 'currency': 'EGP',
+  'videos': videos ?? <Map<String, dynamic>>[],
+  'files': files ?? <Map<String, dynamic>>[],
+};
+
+Map<String, dynamic> videoBody(
+  String id,
+  int position, {
+  String? youtubeId,
+  String en = 'Lesson',
+  String ar = 'درس',
+}) => {
+  'id': id,
+  'position': position,
+  'title': {'ar': '$ar $position', 'en': '$en $position'},
+  'description': {'ar': '', 'en': ''},
+  'youtube_video_id': ?youtubeId,
+};
+
+Map<String, dynamic> fileBody(
+  String id,
+  String kind, {
+  int size = 1048576,
+  String en = 'File',
+  String ar = 'ملف',
+}) => {
+  'id': id,
+  'kind': kind,
+  'title': {'ar': '$ar $id', 'en': '$en $id'},
+  'size_bytes': size,
+};

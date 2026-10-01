@@ -27,6 +27,9 @@ const kStubRoutes = [
   '/payment',
 ];
 
+/// Arguments passed to the stub routes, newest last. Cleared by [pumpScreen].
+final List<Object?> stubRouteArguments = [];
+
 /// Pumps [screen] on a phone-sized view under [locale], with the app's
 /// providers backed by fakes and stub routes for navigation targets.
 ///
@@ -43,6 +46,7 @@ Future<void> pumpScreen(
   bool settle = true,
   Size size = const Size(390, 844),
 }) async {
+  stubRouteArguments.clear();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -65,6 +69,7 @@ Future<void> pumpScreen(
           for (final r in kStubRoutes)
             r: (ctx) {
               final args = ModalRoute.of(ctx)?.settings.arguments;
+              stubRouteArguments.add(args);
               return Scaffold(
                 body: Text(args == null ? 'route:$r' : 'route:$r:$args'),
               );

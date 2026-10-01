@@ -3,8 +3,9 @@
 Real auth against the wael-app gateway. Academy content is read through
 `AcademyRepository` (`lib/repositories/academy_repository.dart`: levels,
 subjects, subject detail over `/api/v1/academy/`, models in
-`lib/models/academy_catalog.dart`). Screens move off the bundled mock data onto
-it one at a time; `docs/frontend/STATUS.md` shows which have moved.
+`lib/models/academy_catalog.dart`). Home, courses and course detail are on it;
+ebooks and payment still use bundled mock data until their backend phases
+(SPEC Phase 3.3 and 5).
 
 ## Backend connection
 

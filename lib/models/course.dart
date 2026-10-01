@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+import 'academy_catalog.dart';
 import 'lesson.dart';
 
 class Course {
@@ -44,6 +46,33 @@ class Course {
     this.priceEgp = 1500,
     this.modules = const [],
   });
+
+  /// Bridge for the payment screen, which still takes a [Course]. Built only
+  /// from server data plus the single academy director; the price is 0 when
+  /// the server does not expose one.
+  factory Course.fromAcademy(
+    AcademySubjectDetail subject, {
+    required String instructor,
+    required String instructorAr,
+  }) {
+    return Course(
+      id: subject.id,
+      title: subject.title.resolve(false),
+      titleAr: subject.title.ar,
+      instructor: instructor,
+      instructorAr: instructorAr,
+      category: subject.levelKey,
+      lessonsCount: subject.counts.videos,
+      hoursCount: 0,
+      imagePath: AppConstants.imgCharacterArt,
+      description: subject.description.resolve(false),
+      descriptionAr: subject.description.ar,
+      level: subject.levelKey,
+      tag: subject.term,
+      priceEgp: subject.price ?? 0,
+      isEnrolled: subject.owned,
+    );
+  }
 
   String localizedTitle(bool isArabic) =>
       (isArabic && titleAr != null && titleAr!.isNotEmpty) ? titleAr! : title;

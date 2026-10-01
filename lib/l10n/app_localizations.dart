@@ -333,6 +333,28 @@ class AppLocalizations {
   String get termFirst => isArabic ? 'الفصل الدراسي الأول' : 'First Term';
   String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
 
+  String get noteCreated => isArabic
+      ? 'تم إنشاء مذكرة جديدة مرتبطة بهذه الدورة'
+      : 'New study note created for this course';
+  String get accessActive => isArabic ? 'الاشتراك فعّال' : 'Access active';
+  String get directorTagline => isArabic
+      ? 'مستشار ومحكم دولي • عضو اتحاد المحامين العرب'
+      : 'Counselor • International Arbitrator • Arab Lawyers Union';
+  String itemsCount(int n) => isArabic ? '$n محتوى' : '$n Items';
+  String videoNumber(int n) => isArabic ? 'الفيديو $n' : 'Video $n';
+  String get videoLocked => isArabic ? 'مقفل' : 'Locked';
+  String get playbackSoon => isArabic
+      ? 'تشغيل الفيديو سيتاح في تحديث قادم.'
+      : 'Video playback arrives in a later update.';
+  String get downloadsSoon => isArabic
+      ? 'تحميل الملفات سيتاح في تحديث قادم.'
+      : 'Downloads arrive in a later update.';
+  String fileKind(String kind) => switch (kind) {
+    'book' => isArabic ? 'كتاب' : 'Book',
+    'note' => isArabic ? 'مذكرة' : 'Note',
+    _ => kind,
+  };
+
   /// Label for a subject `term` key (`first`, `second`); other keys pass through.
   String termLabel(String term) => switch (term) {
     'first' => termFirst,

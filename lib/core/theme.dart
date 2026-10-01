@@ -446,6 +446,13 @@ class AppTheme {
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceElevated,
+        contentTextStyle: AppTypography.bodyMd().copyWith(
+          color: AppColors.textPrimary,
+        ),
+        actionTextColor: AppColors.crimson,
+      ),
       dividerTheme: const DividerThemeData(
         color: AppColors.subtleHairline,
         thickness: 1,
