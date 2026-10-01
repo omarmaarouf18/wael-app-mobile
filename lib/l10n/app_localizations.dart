@@ -332,6 +332,13 @@ class AppLocalizations {
   String subjectsCount(int n) => isArabic ? '$n مواد' : '$n Subjects';
   String get termFirst => isArabic ? 'الفصل الدراسي الأول' : 'First Term';
   String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
+
+  /// Label for a subject `term` key (`first`, `second`); other keys pass through.
+  String termLabel(String term) => switch (term) {
+    'first' => termFirst,
+    'second' => termSecond,
+    _ => term,
+  };
   String get viewSubject => isArabic ? 'استعراض المحتوى' : 'View Subject';
   String get continueSubject => isArabic ? 'متابعة المادة' : 'Continue';
 

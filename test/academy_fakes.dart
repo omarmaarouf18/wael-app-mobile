@@ -112,7 +112,13 @@ FakeAcademyRepository fake() => FakeAcademyRepository(
   subjectsByLevel: {
     'bachelor-y1': [
       subject('s1', 'bachelor-y1', en: 'Civil Law', ar: 'القانون المدني'),
-      subject('s2', 'bachelor-y1', en: 'Criminal Law', descEn: 'Offences'),
+      subject(
+        's2',
+        'bachelor-y1',
+        en: 'Criminal Law',
+        ar: 'القانون الجنائي',
+        descEn: 'Offences',
+      ),
     ],
     'bachelor-y2': [subject('s3', 'bachelor-y2', owned: true)],
     'vocational': [],

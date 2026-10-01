@@ -179,7 +179,7 @@ void main() {
       await p.reload();
       p.setSearchQuery('civil');
       expect(p.visibleSubjects.map((s) => s.id), ['s1']);
-      p.setSearchQuery('القانون');
+      p.setSearchQuery('المدني');
       expect(p.visibleSubjects.map((s) => s.id), ['s1']);
       p.setSearchQuery('offences');
       expect(p.visibleSubjects.map((s) => s.id), ['s2']);
