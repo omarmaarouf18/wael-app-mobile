@@ -28,8 +28,6 @@ import 'academy_fakes.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
 
-const _ytId = 'dQw4w9WgXcQ';
-
 /// The tab bar scrolls horizontally, so bring a tab into view before tapping.
 Future<void> tapTab(WidgetTester tester, String label) async {
   final tab = find.text(label);
@@ -234,7 +232,7 @@ void main() {
         expect(find.text(l10n.playbackSoon), findsNothing);
       });
 
-      testWidgets('owned but no video id: still locked', (tester) async {
+      testWidgets('owned but not playable: still locked', (tester) async {
         await pump(
           tester,
           detailBody(
@@ -246,39 +244,43 @@ void main() {
         expect(isLocked(tester, 1), isTrue);
       });
 
-      testWidgets(
-        'owned with a server-provided id: unlocked; others stay locked',
-        (tester) async {
-          await pump(
-            tester,
-            detailBody(
-              owned: true,
-              videos: [
-                videoBody('v1', 1, youtubeId: _ytId),
-                videoBody('v2', 2),
-              ],
-            ),
-          );
-          expect(isLocked(tester, 0), isFalse);
-          expect(isLocked(tester, 1), isTrue);
-          expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-          await tester.tap(videoTiles().first);
-          await tester.pump();
-          // No player exists yet: it says so and opens nothing.
-          expect(find.text(l10n.playbackSoon), findsOneWidget);
-          expect(stubRouteArguments, isEmpty);
-        },
-      );
-
-      testWidgets('a video id on a subject that is not owned never unlocks', (
+      testWidgets('playable video is unlocked; others stay locked', (
         tester,
       ) async {
         await pump(
           tester,
           detailBody(
-            owned: false,
-            videos: [videoBody('v1', 1, youtubeId: _ytId)],
+            owned: true,
+            videos: [videoBody('v1', 1, playable: true), videoBody('v2', 2)],
           ),
+        );
+        expect(isLocked(tester, 0), isFalse);
+        expect(isLocked(tester, 1), isTrue);
+        expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+        await tester.tap(videoTiles().first);
+        await tester.pump();
+        // No player exists yet: it says so and opens nothing.
+        expect(find.text(l10n.playbackSoon), findsOneWidget);
+        expect(stubRouteArguments, isEmpty);
+      });
+
+      testWidgets('playable unlocks even when owned is false', (tester) async {
+        await pump(
+          tester,
+          detailBody(
+            owned: false,
+            videos: [videoBody('v1', 1, playable: true)],
+          ),
+        );
+        expect(isLocked(tester, 0), isFalse);
+      });
+
+      testWidgets('owned alone does not unlock a video that is not playable', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          detailBody(owned: true, videos: [videoBody('v1', 1)]),
         );
         expect(isLocked(tester, 0), isTrue);
       });
@@ -301,20 +303,20 @@ void main() {
         expect(titles, [1, 2, 3]);
       });
 
-      test('videoUnlocked is owned AND has an id', () {
-        AcademySubjectDetail d(bool owned, {String? id}) =>
+      test('videoUnlocked is exactly the playable flag', () {
+        AcademySubjectDetail d({required bool owned, required bool playable}) =>
             AcademySubjectDetail.fromJson(
               detailBody(
                 owned: owned,
-                videos: [videoBody('v', 1, youtubeId: id)],
+                videos: [videoBody('v', 1, playable: playable)],
               ),
             );
         bool u(AcademySubjectDetail x) =>
             SubjectContentSection.videoUnlocked(x, x.videos.single);
-        expect(u(d(true, id: _ytId)), isTrue);
-        expect(u(d(true)), isFalse);
-        expect(u(d(false, id: _ytId)), isFalse);
-        expect(u(d(false)), isFalse);
+        expect(u(d(owned: true, playable: true)), isTrue);
+        expect(u(d(owned: false, playable: true)), isTrue);
+        expect(u(d(owned: true, playable: false)), isFalse);
+        expect(u(d(owned: false, playable: false)), isFalse);
       });
 
       test('no YouTube URL is built anywhere in lib/', () {

@@ -263,6 +263,12 @@ class AcademyCatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Asks the server whether the student may play [videoId] now and returns
+  /// the playback answer. Nothing is kept here: the answer goes straight to
+  /// the caller (the player screen), which must hold it in memory only.
+  Future<VideoPlayback> requestPlayback(String videoId) =>
+      _repository.playVideo(videoId);
+
   /// True when nothing has been loaded since construction or [reset].
   bool get isPristine => _status == LoadStatus.idle && _details.isEmpty;
 

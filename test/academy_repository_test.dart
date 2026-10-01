@@ -297,7 +297,7 @@ void main() {
   });
 
   group('subject detail', () {
-    Map<String, dynamic> detail({Object? videoId}) => {
+    Map<String, dynamic> detail({Object? playable}) => {
       ..._subject(),
       'videos': [
         {
@@ -305,7 +305,7 @@ void main() {
           'position': 1,
           'title': {'ar': 'الدرس الأول', 'en': 'Lesson 1'},
           'description': {'ar': '', 'en': ''},
-          'youtube_video_id': ?videoId,
+          'playable': ?playable,
         },
       ],
       'files': [
@@ -324,44 +324,47 @@ void main() {
       ],
     };
 
-    test('parses videos without a video id and files by kind', () async {
-      final fake = _Fake((_) => _json(detail()));
-      final d = await fake.repo.subject('s1');
+    test(
+      'parses videos (no YouTube id, not playable by default) and files by kind',
+      () async {
+        final fake = _Fake((_) => _json(detail()));
+        final d = await fake.repo.subject('s1');
 
-      expect(fake.requests.single.url.path, '/api/v1/academy/subjects/s1');
-      expect(d.id, 's1');
-      expect(d.videos.single.title.resolve(false), 'Lesson 1');
-      expect(d.videos.single.position, 1);
-      expect(d.videos.single.youtubeVideoId, isNull);
-      expect(d.videos.single.hasVideoId, isFalse);
-      expect(d.books.single.id, 'f1');
-      expect(d.books.single.sizeBytes, 1048576);
-      expect(d.notes.single.id, 'f2');
-      expect(d.files, hasLength(2));
-      expect(d.owned, isFalse);
-      expect(d.price, isNull);
-    });
+        expect(fake.requests.single.url.path, '/api/v1/academy/subjects/s1');
+        expect(d.id, 's1');
+        expect(d.videos.single.title.resolve(false), 'Lesson 1');
+        expect(d.videos.single.position, 1);
+        expect(d.videos.single.playable, isFalse);
+        expect(d.books.single.id, 'f1');
+        expect(d.books.single.sizeBytes, 1048576);
+        expect(d.notes.single.id, 'f2');
+        expect(d.files, hasLength(2));
+        expect(d.owned, isFalse);
+        expect(d.price, isNull);
+      },
+    );
 
-    test('keeps a well-formed server-provided video id', () async {
-      final fake = _Fake((_) => _json(detail(videoId: 'dQw4w9WgXcQ')));
-      final v = (await fake.repo.subject('s1')).videos.single;
-      expect(v.youtubeVideoId, 'dQw4w9WgXcQ');
-      expect(v.hasVideoId, isTrue);
-    });
-
-    test('drops a video id that does not look like a YouTube id', () async {
-      for (final bad in [
-        '',
-        'short',
-        'has spaces!!',
-        'a' * 12,
-        42,
-        '../etc/pw',
+    test('playable is true only when the server says true', () async {
+      for (final (value, expected) in [
+        (true, true),
+        (false, false),
+        ('true', false),
+        (1, false),
+        (null, false),
       ]) {
-        final fake = _Fake((_) => _json(detail(videoId: bad)));
+        final fake = _Fake((_) => _json(detail(playable: value)));
         final v = (await fake.repo.subject('s1')).videos.single;
-        expect(v.youtubeVideoId, isNull, reason: '$bad');
+        expect(v.playable, expected, reason: '$value');
       }
+    });
+
+    test('a youtube_video_id in the detail is ignored', () async {
+      final raw = detail(playable: true);
+      (raw['videos'] as List).first['youtube_video_id'] = 'dQw4w9WgXcQ';
+      final fake = _Fake((_) => _json(raw));
+      final v = (await fake.repo.subject('s1')).videos.single;
+      expect(v.playable, isTrue);
+      expect(v.toString(), isNot(contains('dQw4w9WgXcQ')));
     });
 
     test('the id is URL-encoded in the path', () async {
@@ -389,6 +392,102 @@ void main() {
       final raw = detail()..['videos'] = 'nope';
       final fake = _Fake((_) => _json(raw));
       expect(fake.repo.subject('s1'), throwsA(isA<AcademyParseException>()));
+    });
+  });
+
+  group('playVideo', () {
+    const ok = {'video_id': 'v1', 'youtube_video_id': 'dQw4w9WgXcQ'};
+
+    test('POSTs to the play endpoint and parses the answer', () async {
+      final fake = _Fake((_) => _json(ok));
+      final playback = await fake.repo.playVideo('v1');
+
+      final req = fake.requests.single;
+      expect(req.method, 'POST');
+      expect(req.url.path, '/api/v1/academy/videos/v1/play');
+      expect(req.body, isEmpty);
+      expect(req.headers['Authorization'], 'Bearer access-1');
+      expect(playback.videoId, 'v1');
+      expect(playback.youtubeVideoId, 'dQw4w9WgXcQ');
+    });
+
+    test('the video id is URL-encoded in the path', () async {
+      final fake = _Fake((_) => _json(ok));
+      await fake.repo.playVideo('a b/c');
+      expect(
+        fake.requests.single.url.path,
+        '/api/v1/academy/videos/a%20b%2Fc/play',
+      );
+    });
+
+    test(
+      'a generic 404 surfaces as ApiException 404, session untouched',
+      () async {
+        final fake = _Fake((_) => _json({'error': 'not found'}, 404));
+        await expectLater(
+          fake.repo.playVideo('v1'),
+          throwsA(
+            isA<ApiException>().having((e) => e.statusCode, 'status', 404),
+          ),
+        );
+        expect(fake.refreshCalls, 0);
+        expect(fake.logoutCalls, 0);
+      },
+    );
+
+    test('a malformed YouTube id is rejected', () async {
+      for (final bad in [
+        '',
+        'short',
+        'has spaces!!',
+        'a' * 12,
+        42,
+        null,
+        '../etc/pw',
+      ]) {
+        final fake = _Fake(
+          (_) => _json({'video_id': 'v1', 'youtube_video_id': bad}),
+        );
+        await expectLater(
+          fake.repo.playVideo('v1'),
+          throwsA(isA<AcademyParseException>()),
+          reason: '$bad',
+        );
+      }
+    });
+
+    test('a missing video_id is rejected', () async {
+      final fake = _Fake((_) => _json({'youtube_video_id': 'dQw4w9WgXcQ'}));
+      expect(fake.repo.playVideo('v1'), throwsA(isA<AcademyParseException>()));
+    });
+
+    test('toString and error messages never contain the YouTube id', () async {
+      final fake = _Fake((_) => _json(ok));
+      final playback = await fake.repo.playVideo('v1');
+      expect(playback.toString(), isNot(contains('dQw4w9WgXcQ')));
+      expect('$playback', contains('<redacted>'));
+      final bad = _Fake(
+        (_) => _json({'video_id': 'v1', 'youtube_video_id': 'dQw4w9WgXcQ-bad'}),
+      );
+      try {
+        await bad.repo.playVideo('v1');
+        fail('should throw');
+      } on AcademyParseException catch (e) {
+        expect(e.toString(), isNot(contains('dQw4w9WgXcQ')));
+      }
+    });
+
+    test('401 refreshes once and retries the POST', () async {
+      final fake = _Fake((req) {
+        if (req.headers['Authorization'] == 'Bearer access-1') {
+          return _json({'error': 'unauthorized'}, 401);
+        }
+        return _json(ok);
+      });
+      final playback = await fake.repo.playVideo('v1');
+      expect(playback.youtubeVideoId, 'dQw4w9WgXcQ');
+      expect(fake.refreshCalls, 1);
+      expect(fake.requests.map((r) => r.method), ['POST', 'POST']);
     });
   });
 

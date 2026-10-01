@@ -1,3 +1,4 @@
+import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/repositories/academy_repository.dart';
 
@@ -40,6 +41,10 @@ class FakeAcademyRepository implements AcademyRepository {
   final List<(String?, int, int)> subjectCalls = [];
   int detailCalls = 0;
   bool studyTypesInResponse = true;
+
+  /// `playVideo` answers by app video id: a [VideoPlayback] or an exception.
+  final Map<String, Object> playResults = {};
+  final List<String> playCalls = [];
 
   /// Detail responses by subject id; others get an empty detail.
   final Map<String, Map<String, dynamic>> detailJson = {};
@@ -88,6 +93,15 @@ class FakeAcademyRepository implements AcademyRepository {
       page: page,
       limit: limit,
     );
+  }
+
+  @override
+  Future<VideoPlayback> playVideo(String videoId) async {
+    playCalls.add(videoId);
+    final result = playResults[videoId];
+    if (result is VideoPlayback) return result;
+    if (result != null) throw result;
+    throw ApiException(statusCode: 404, message: 'not found');
   }
 
   @override
@@ -163,7 +177,7 @@ Map<String, dynamic> detailBody({
 Map<String, dynamic> videoBody(
   String id,
   int position, {
-  String? youtubeId,
+  bool playable = false,
   String en = 'Lesson',
   String ar = 'درس',
 }) => {
@@ -171,7 +185,7 @@ Map<String, dynamic> videoBody(
   'position': position,
   'title': {'ar': '$ar $position', 'en': '$en $position'},
   'description': {'ar': '', 'en': ''},
-  'youtube_video_id': ?youtubeId,
+  'playable': playable,
 };
 
 Map<String, dynamic> fileBody(

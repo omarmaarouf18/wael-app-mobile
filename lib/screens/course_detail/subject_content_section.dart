@@ -18,8 +18,8 @@ enum _Section { videos, books, notes }
 /// selected list. Every item is built from the subject detail the server sent;
 /// access is decided here and only here:
 ///
-/// - a video is locked unless the subject is owned AND the server provided a
-///   video id for it (so a locked tile can never lead to a playable URL);
+/// - a video is locked unless the server marked it `playable` (the YouTube id
+///   is never part of this data; it comes from a separate play request);
 /// - files are locked unless the subject is owned.
 class SubjectContentSection extends StatefulWidget {
   const SubjectContentSection({super.key, required this.detail});
@@ -28,7 +28,7 @@ class SubjectContentSection extends StatefulWidget {
 
   /// Whether [video] can be played by this student.
   static bool videoUnlocked(AcademySubjectDetail detail, AcademyVideo video) =>
-      detail.owned && video.hasVideoId;
+      video.playable;
 
   @override
   State<SubjectContentSection> createState() => _SubjectContentSectionState();

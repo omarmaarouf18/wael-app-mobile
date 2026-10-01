@@ -242,32 +242,29 @@ class SubjectPage {
   );
 }
 
-/// `VideoMetadataDTO`. The server does not send `youtube_video_id` until the
-/// student owns the subject (SPEC R2, Phase 3.2). When a value arrives it is
-/// kept only if it has the shape of a YouTube id, and nothing in the app builds
-/// a YouTube URL from anything else.
+/// `VideoMetadataDTO`. The subject detail never carries a YouTube id: each
+/// video only says whether this student may play it ([playable]). The id is
+/// obtained per play from `POST /academy/videos/{id}/play` ([VideoPlayback]).
 class AcademyVideo {
   const AcademyVideo({
     required this.id,
     required this.position,
     required this.title,
     required this.description,
-    this.youtubeVideoId,
+    this.playable = false,
   });
 
   final String id;
   final int position;
   final LocalizedText title;
   final LocalizedText description;
-  final String? youtubeVideoId;
 
-  bool get hasVideoId => youtubeVideoId != null;
-
-  static final _youtubeId = RegExp(r'^[A-Za-z0-9_-]{11}$');
+  /// True only when the server says the student may play this video. A missing
+  /// flag is false: nothing unlocks by default.
+  final bool playable;
 
   factory AcademyVideo.fromJson(Object? json) {
     final m = _map(json, 'video');
-    final rawId = m['youtube_video_id'];
     return AcademyVideo(
       id: _requiredString(m, 'id'),
       position: _int(m, 'position'),
@@ -275,11 +272,41 @@ class AcademyVideo {
       description: m['description'] == null
           ? const LocalizedText()
           : LocalizedText.fromJson(m['description']),
-      youtubeVideoId: rawId is String && _youtubeId.hasMatch(rawId)
-          ? rawId
-          : null,
+      playable: m['playable'] == true,
     );
   }
+}
+
+/// Answer of `POST /academy/videos/{id}/play`.
+///
+/// [youtubeVideoId] is sensitive: it is held only by the player screen that
+/// asked for it, for the time that screen is open. It is never stored,
+/// cached, logged, shown, or put in a route. [toString] redacts it so an
+/// accidental log line or error message cannot leak it, and it is accepted
+/// only if it has the shape of a YouTube id.
+class VideoPlayback {
+  const VideoPlayback({required this.videoId, required this.youtubeVideoId});
+
+  /// The academy's own video id (not the YouTube one).
+  final String videoId;
+  final String youtubeVideoId;
+
+  static final _youtubeId = RegExp(r'^[A-Za-z0-9_-]{11}$');
+
+  factory VideoPlayback.fromJson(Map<String, dynamic> json) {
+    final youtube = json['youtube_video_id'];
+    if (youtube is! String || !_youtubeId.hasMatch(youtube)) {
+      throw AcademyParseException('invalid playback response');
+    }
+    return VideoPlayback(
+      videoId: _requiredString(json, 'video_id'),
+      youtubeVideoId: youtube,
+    );
+  }
+
+  @override
+  String toString() =>
+      'VideoPlayback(videoId: $videoId, youtubeVideoId: <redacted>)';
 }
 
 /// `FileMetadataDTO`: a PDF attached to a subject. [kind] is `book` or `note`.

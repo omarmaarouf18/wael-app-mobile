@@ -19,6 +19,12 @@ abstract class AcademyRepository {
   /// `GET /academy/subjects/{id}`: throws [ApiException] with status 404 for
   /// unknown or unpublished subjects.
   Future<AcademySubjectDetail> subject(String id);
+
+  /// `POST /academy/videos/{id}/play`: the YouTube id for a video the student
+  /// may play. Throws [ApiException] with status 404 when it is not allowed
+  /// (the server answers every refusal the same way). The result must not be
+  /// stored, cached or logged by the caller.
+  Future<VideoPlayback> playVideo(String videoId);
 }
 
 /// [AcademyRepository] over the authed gateway client. A 401 runs the usual
@@ -65,5 +71,13 @@ class HttpAcademyRepository implements AcademyRepository {
   Future<AcademySubjectDetail> subject(String id) async {
     final res = await _api.get('$_base/subjects/${Uri.encodeComponent(id)}');
     return AcademySubjectDetail.fromJson(res);
+  }
+
+  @override
+  Future<VideoPlayback> playVideo(String videoId) async {
+    final res = await _api.post(
+      '$_base/videos/${Uri.encodeComponent(videoId)}/play',
+    );
+    return VideoPlayback.fromJson(res);
   }
 }
