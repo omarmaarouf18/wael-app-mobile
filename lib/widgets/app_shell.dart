@@ -15,6 +15,7 @@ class AppShell extends StatelessWidget {
     super.key,
     required this.body,
     this.title,
+    this.titleWidget,
     this.showHeader = true,
     this.showBack = false,
     this.onBack,
@@ -29,6 +30,10 @@ class AppShell extends StatelessWidget {
 
   /// Header title. Omit for a header with only back button and actions.
   final String? title;
+
+  /// Replaces [title] with arbitrary content (for example the two-line brand
+  /// lockup).
+  final Widget? titleWidget;
 
   /// When false there is no app bar and the body is padded by the top inset.
   final bool showHeader;
@@ -82,14 +87,18 @@ class AppShell extends StatelessWidget {
                       onPressed: onBack ?? () => Navigator.maybePop(context),
                     )
                   : null,
-              title: title == null
-                  ? null
-                  : Text(
-                      title!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.headlineSm(isArabic: l10n.isArabic),
-                    ),
+              title:
+                  titleWidget ??
+                  (title == null
+                      ? null
+                      : Text(
+                          title!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.headlineSm(
+                            isArabic: l10n.isArabic,
+                          ),
+                        )),
               actions: actions,
               flexibleSpace: const Align(
                 alignment: Alignment.bottomCenter,
@@ -101,9 +110,7 @@ class AppShell extends StatelessWidget {
               ),
             )
           : null,
-      body: safeArea
-          ? SafeArea(top: !showHeader, bottom: false, child: body)
-          : body,
+      body: safeArea ? SafeArea(top: !showHeader, child: body) : body,
     );
   }
 }

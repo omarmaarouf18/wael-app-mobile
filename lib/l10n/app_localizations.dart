@@ -103,6 +103,7 @@ class AppLocalizations {
   // Auth
   String get signIn => isArabic ? 'تسجيل الدخول' : 'Sign In';
   String get signUp => isArabic ? 'إنشاء حساب جديد' : 'Create Account';
+  String get phoneNumber => isArabic ? 'رقم الهاتف المحمول' : 'Phone Number';
   String get emailOrPhone =>
       isArabic ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email or Phone Number';
   String get fullName => isArabic ? 'الاسم بالكامل' : 'Full Name';

@@ -28,6 +28,28 @@ void main() {
         expect(tester.getTopLeft(find.byKey(const Key('body'))).dy, 40);
       });
 
+      testWidgets('AppShell safeArea: true also keeps the bottom inset', (
+        tester,
+      ) async {
+        tester.view.devicePixelRatio = 1.0;
+        tester.view.padding = const FakeViewPadding(bottom: 34);
+        tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+        addTearDown(tester.view.reset);
+        await pumpLocalized(
+          tester,
+          locale,
+          const AppShell(
+            showHeader: false,
+            body: SizedBox.expand(key: Key('body')),
+          ),
+        );
+        final screen = tester.getSize(find.byType(Scaffold)).height;
+        expect(
+          tester.getBottomLeft(find.byKey(const Key('body'))).dy,
+          screen - 34,
+        );
+      });
+
       testWidgets('AppShell safeArea: false lets the body bleed to the top', (
         tester,
       ) async {

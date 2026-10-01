@@ -271,6 +271,17 @@ class AppTypography {
     );
   }
 
+  /// Two-line brand lockup in a screen header (title over eyebrow).
+  static TextStyle headerWordmark({bool isArabic = false}) {
+    return headlineSm(
+      isArabic: isArabic,
+    ).copyWith(letterSpacing: 2.0, fontWeight: FontWeight.w800);
+  }
+
+  static TextStyle headerEyebrow({bool isArabic = false}) {
+    return academyEyebrow(isArabic: isArabic).copyWith(fontSize: 8);
+  }
+
   /// The only sanctioned uppercase transform. Screens must not call
   /// `.toUpperCase()`; use this for button and section labels. Arabic has no
   /// letter case, so Arabic text passes through unchanged.

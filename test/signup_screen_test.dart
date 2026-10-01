@@ -1,0 +1,210 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:wael_app/core/error_messages.dart';
+import 'package:wael_app/screens/signup_screen.dart';
+import 'package:wael_app/widgets/app_shell.dart';
+import 'package:wael_app/widgets/primary_button.dart';
+import 'package:wael_app/widgets/themed_error_banner.dart';
+
+import 'fakes.dart';
+import 'screen_harness.dart';
+import 'widget_layer_harness.dart';
+
+const _tall = Size(390, 1400);
+
+void main() {
+  for (final (name, locale, direction) in kLocales) {
+    final l10n = l10nFor(locale);
+    final isArabic = locale.languageCode == 'ar';
+    final submitLabel = l10n.signUp.toUpperCase();
+
+    Future<void> pump(WidgetTester tester, {FakeAuthRepository? repo}) =>
+        pumpScreen(
+          tester,
+          locale,
+          const SignupScreen(),
+          auth: makeAuth(repository: repo),
+          size: _tall,
+        );
+
+    Future<void> fill(
+      WidgetTester tester, {
+      String password = 'password123',
+      String confirm = 'password123',
+    }) async {
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'Jane Doe');
+      await tester.enterText(fields.at(1), 'jane@e.com');
+      await tester.enterText(fields.at(2), '+201000000000');
+      await tester.enterText(fields.at(3), password);
+      await tester.enterText(fields.at(4), confirm);
+    }
+
+    Future<void> submit(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(PrimaryButton, submitLabel));
+      await tester.pumpAndSettle();
+    }
+
+    group('SignupScreen [$name]', () {
+      testWidgets('shell with brand lockup and a localised form', (
+        tester,
+      ) async {
+        await pump(tester);
+        expect(find.byType(AppShell), findsOneWidget);
+        expect(find.text('EL METR'), findsOneWidget);
+        expect(find.text('ACADEMY'), findsOneWidget);
+        expect(find.byType(TextFormField), findsNWidgets(5));
+        expect(find.text(l10n.phoneNumber), findsOneWidget);
+        expect(find.text(l10n.agreeToTerms), findsOneWidget);
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+      });
+
+      testWidgets('directional layout ($direction)', (tester) async {
+        await pump(tester);
+        final width = 390.0;
+        // Back button at the start edge, brand lockup after it.
+        expect(
+          startsBefore(
+            tester,
+            find.byTooltip(l10n.back),
+            find.text('EL METR'),
+            direction,
+          ),
+          isTrue,
+        );
+        // Heading at the start edge.
+        final heading = find.text(l10n.signUp).first;
+        if (direction == TextDirection.ltr) {
+          expect(tester.getTopLeft(heading).dx, lessThan(40));
+        } else {
+          expect(tester.getTopRight(heading).dx, greaterThan(width - 40));
+        }
+        // Terms checkbox precedes its text.
+        expect(
+          startsBefore(
+            tester,
+            find.byType(Checkbox),
+            find.text(l10n.agreeToTerms),
+            direction,
+          ),
+          isTrue,
+        );
+        // Field prefix icon sits at the start edge of its field.
+        expect(
+          startsBefore(
+            tester,
+            find.byIcon(Icons.person_outline),
+            find.byType(TextFormField).first,
+            direction,
+          ),
+          isTrue,
+        );
+      });
+
+      testWidgets('back button pops the route', (tester) async {
+        await pumpScreen(
+          tester,
+          locale,
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SignupScreen()),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+          size: _tall,
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SignupScreen), findsOneWidget);
+        await tester.tap(find.byTooltip(l10n.back));
+        await tester.pumpAndSettle();
+        expect(find.byType(SignupScreen), findsNothing);
+      });
+
+      testWidgets('empty form: persistent validation banner, no API call', (
+        tester,
+      ) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await submit(tester);
+        expect(
+          find.text(ErrorMessages.allFieldsRequired(isArabic)),
+          findsOneWidget,
+        );
+        expect(repo.signupCalls, 0);
+        await tester.pump(const Duration(minutes: 1));
+        expect(find.byType(ThemedErrorBanner), findsOneWidget);
+        // Validation errors are fixed by editing, so no retry button.
+        expect(find.text(l10n.retry), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
+      });
+
+      testWidgets('short password and mismatch are reported', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await fill(tester, password: 'short', confirm: 'short');
+        await submit(tester);
+        expect(
+          find.text(ErrorMessages.passwordMinLength(isArabic, 8)),
+          findsOneWidget,
+        );
+
+        await fill(tester, confirm: 'different123');
+        await submit(tester);
+        expect(
+          find.text(ErrorMessages.passwordMismatch(isArabic)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(ErrorMessages.passwordMinLength(isArabic, 8)),
+          findsNothing,
+        );
+        expect(repo.signupCalls, 0);
+      });
+
+      testWidgets('declining the terms blocks the submit', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await fill(tester);
+        await tester.tap(find.byType(Checkbox));
+        await tester.pump();
+        await submit(tester);
+        expect(
+          find.text(ErrorMessages.agreeToTermsRequired(isArabic)),
+          findsOneWidget,
+        );
+        expect(repo.signupCalls, 0);
+      });
+
+      testWidgets('valid form: one signup call, then /otp', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await fill(tester);
+        await submit(tester);
+        expect(repo.signupCalls, 1);
+        expect(repo.lastSignupEmail, 'jane@e.com');
+        expect(find.text('route:/otp'), findsOneWidget);
+      });
+
+      testWidgets('server error: persistent banner, retry signs up again', (
+        tester,
+      ) async {
+        final repo = FakeAuthRepository(mode: 'signup-conflict');
+        await pump(tester, repo: repo);
+        await fill(tester);
+        await submit(tester);
+        expect(repo.signupCalls, 1);
+        expect(find.byType(ThemedErrorBanner), findsOneWidget);
+        expect(find.text('route:/otp'), findsNothing);
+        await tester.pump(const Duration(minutes: 1));
+        expect(find.byType(ThemedErrorBanner), findsOneWidget);
+
+        await tester.tap(find.text(l10n.retry));
+        await tester.pumpAndSettle();
+        expect(repo.signupCalls, 2);
+      });
+    });
+  }
+}
