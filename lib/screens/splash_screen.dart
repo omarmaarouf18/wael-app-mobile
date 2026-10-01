@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_shell.dart';
 
 /// Start gate: restores the stored session, then routes to home or login.
 /// Static (no animations) so widget tests can settle.
@@ -37,8 +38,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      backgroundColor: AppColors.voidCanvas,
+    return AppShell(
+      showHeader: false,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

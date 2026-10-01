@@ -10,7 +10,11 @@ const kLocales = <(String, Locale, TextDirection)>[
   ('ar', Locale('ar'), TextDirection.rtl),
 ];
 
-Widget localizedApp(Locale locale, Widget home) {
+Widget localizedApp(
+  Locale locale,
+  Widget home, {
+  Map<String, WidgetBuilder> routes = const {},
+}) {
   return MaterialApp(
     theme: AppTheme.darkTheme,
     locale: locale,
@@ -22,6 +26,7 @@ Widget localizedApp(Locale locale, Widget home) {
       GlobalCupertinoLocalizations.delegate,
     ],
     home: home,
+    routes: routes,
   );
 }
 
