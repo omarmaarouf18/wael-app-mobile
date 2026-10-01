@@ -7,8 +7,8 @@ class AuthAccount {
   final String role;
   final bool emailVerified;
 
-  /// From `full_name` and `phone`, when `/auth/me` sends them (it does not
-  /// yet: the backend must add both for the video watermark). Empty otherwise.
+  /// From `full_name` and `phone` returned by `/auth/me` (empty if legacy
+  /// account without them).
   final String fullName;
   final String phone;
 

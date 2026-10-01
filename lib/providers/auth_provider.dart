@@ -225,8 +225,7 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
       _lastDevOtp = kDebugMode ? result.devOtp : null;
-      // The name and phone typed here are the only copy until the backend's
-      // /auth/me returns them.
+      // Initial copy from signup; /auth/me returns both fields on subsequent fetches.
       _currentUser = _currentUser.copyWith(
         fullName: fullName.trim(),
         phone: phone.trim(),
