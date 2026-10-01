@@ -7,8 +7,13 @@ import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
-import '../widgets/themed_card.dart';
+import '../widgets/app_shell.dart';
+import '../widgets/icon_tile.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/profile_avatar.dart';
+import '../widgets/status_dot.dart';
+import '../widgets/themed_card.dart';
+import '../widgets/themed_section_header.dart';
 import '../widgets/themed_text_field.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -26,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
       ),
       builder: (ctx) {
         return Padding(
-          padding: const EdgeInsets.all(AppSpacing.marginMobile),
+          padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,13 +55,7 @@ class SettingsScreen extends StatelessWidget {
               const Divider(color: AppColors.subtleHairline),
               const SizedBox(height: AppSpacing.spaceSm),
               Text(
-                l10n.isArabic
-                    ? '١. كل دارس ملتحق بأكاديمية المتر ملزم بقواعد السيادة الأكاديمية والسرية المطلقة للمداولات.\n\n'
-                          '٢. يمنع منعاً باتاً إعادة توزيع أو تسجيل مرافعات ودوسيهات المستشار وائل السعيد دون إذن رسمي مكتوب.\n\n'
-                          '٣. الانضباط الحركي واللفظي، والحياد الانفعالي، والالتزام بأعلى معايير النزاهة القانونية شرط لاستمرار القيد.'
-                    : '1. Every scholar enrolled in EL METR ACADEMY is bound by strict academic sovereignty and confidentiality.\n\n'
-                          '2. Course materials, dossiers, and strategic debate recordings may not be redistributed without formal authorization from Counselor Wael El Saeed.\n\n'
-                          '3. Intellectual rigor, measured composure, and unyielding discipline are mandatory across all deliberations.',
+                l10n.honorCodeBody,
                 style: AppTypography.bodySm(
                   isArabic: l10n.isArabic,
                 ).copyWith(color: AppColors.textSecondary, height: 1.5),
@@ -89,10 +88,10 @@ class SettingsScreen extends StatelessWidget {
       ),
       builder: (ctx) {
         return Padding(
-          padding: EdgeInsets.only(
+          padding: EdgeInsetsDirectional.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: AppSpacing.marginMobile,
-            right: AppSpacing.marginMobile,
+            start: AppSpacing.marginMobile,
+            end: AppSpacing.marginMobile,
             top: AppSpacing.marginMobile,
           ),
           child: Column(
@@ -124,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.spaceMd),
               ThemedTextField(
-                label: l10n.isArabic ? 'رقم الهاتف' : 'Phone Number',
+                label: l10n.phoneNumber,
                 controller: phoneController,
               ),
               const SizedBox(height: AppSpacing.spaceLg),
@@ -157,11 +156,11 @@ class SettingsScreen extends StatelessWidget {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final user = auth.currentUser;
 
-    return Scaffold(
-      backgroundColor: AppColors.voidCanvas,
+    return AppShell(
+      showHeader: false,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(
+        padding: const EdgeInsetsDirectional.symmetric(
           horizontal: AppSpacing.marginMobile,
           vertical: AppSpacing.spaceMd,
         ),
@@ -170,44 +169,14 @@ class SettingsScreen extends StatelessWidget {
           children: [
             // 1. PROFILE HEADER CARD
             ThemedCard(
-              padding: const EdgeInsets.all(AppSpacing.spaceMd),
+              padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
               child: Column(
                 children: [
                   Row(
                     children: [
                       // Avatar
-                      Stack(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.glassHairline,
-                                width: 1,
-                              ),
-                              image: const DecorationImage(
-                                image: AssetImage(
-                                  AppConstants.imgProfileDefault,
-                                ),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.crimson,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ],
+                      const ProfileAvatar(
+                        image: AssetImage(AppConstants.imgProfileDefault),
                       ),
                       const SizedBox(width: AppSpacing.spaceMd),
 
@@ -225,36 +194,22 @@ class SettingsScreen extends StatelessWidget {
                                     isArabic: l10n.isArabic,
                                   ).copyWith(fontWeight: FontWeight.bold),
                                 ),
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.crimson,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
+                                const StatusDot(size: 6),
                               ],
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              l10n.isArabic
-                                  ? 'دارس بالأكاديمية • دفعة ٢٠٢٤'
-                                  : user.standing,
-                              style:
-                                  AppTypography.bodySm(
-                                    isArabic: l10n.isArabic,
-                                  ).copyWith(
-                                    color: AppColors.textMuted,
-                                    fontSize: 11,
-                                  ),
+                              l10n.standingLabel(user.standing),
+                              style: AppTypography.bodyXs(
+                                isArabic: l10n.isArabic,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               user.email,
-                              style: const TextStyle(
-                                color: AppColors.textTertiary,
-                                fontSize: 11,
-                              ),
+                              style: AppTypography.bodyXs(
+                                isArabic: l10n.isArabic,
+                              ).copyWith(color: AppColors.textTertiary),
                             ),
                           ],
                         ),
@@ -296,10 +251,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 2. SECTION: ACCOUNT & SECURITY
-            _buildSectionHeader(
-              AppTypography.uppercaseLabel(l10n.accountSecurity),
-            ),
-            const SizedBox(height: AppSpacing.spaceXs),
+            ThemedSectionHeader(title: l10n.accountSecurity),
             ThemedCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -319,11 +271,7 @@ class SettingsScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.surfaceElevated,
-                          content: Text(
-                            l10n.isArabic
-                                ? 'التحقق بخطوتين مفعّل عبر الرمز المعتمد.'
-                                : 'Two-Factor Authentication is active.',
-                          ),
+                          content: Text(l10n.twoFactorActive),
                         ),
                       );
                     },
@@ -336,11 +284,7 @@ class SettingsScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.surfaceElevated,
-                          content: Text(
-                            l10n.isArabic
-                                ? 'يتم إرسال البيانات المعتمدة لبريدك الإلكتروني.'
-                                : 'Dispatches sent to primary email line.',
-                          ),
+                          content: Text(l10n.dispatchesToEmail),
                         ),
                       );
                     },
@@ -351,10 +295,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 3. SECTION: LANGUAGE & PREFERENCES
-            _buildSectionHeader(
-              l10n.isArabic ? 'اللغة والتفضيلات' : 'LANGUAGE & PREFERENCES',
-            ),
-            const SizedBox(height: AppSpacing.spaceXs),
+            ThemedSectionHeader(title: l10n.languageAndPreferences),
             ThemedCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -373,9 +314,7 @@ class SettingsScreen extends StatelessWidget {
                           backgroundColor: AppColors.surfaceElevated,
                           duration: const Duration(seconds: 1),
                           content: Text(
-                            localeProvider.isArabic
-                                ? 'تم تحويل اللغة إلى العربية (RTL)'
-                                : 'Switched language to English (LTR)',
+                            l10n.languageSwitched(localeProvider.isArabic),
                           ),
                         ),
                       );
@@ -387,10 +326,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 4. SECTION: NOTIFICATIONS
-            _buildSectionHeader(
-              AppTypography.uppercaseLabel(l10n.notificationsSettings),
-            ),
-            const SizedBox(height: AppSpacing.spaceXs),
+            ThemedSectionHeader(title: l10n.notificationsSettings),
             ThemedCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -414,12 +350,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 5. SECTION: ACADEMY PROTOCOL & LEGAL
-            _buildSectionHeader(
-              l10n.isArabic
-                  ? 'البروتوكول الأكاديمي والقانوني'
-                  : 'Academy Protocol & Legal',
-            ),
-            const SizedBox(height: AppSpacing.spaceXs),
+            ThemedSectionHeader(title: l10n.academyProtocolLegal),
             ThemedCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -437,11 +368,7 @@ class SettingsScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.surfaceElevated,
-                          content: Text(
-                            l10n.isArabic
-                                ? 'سياسة الخصوصية الأكاديمية سارية وموثقة.'
-                                : 'Privacy Protocol verified offline.',
-                          ),
+                          content: Text(l10n.privacyVerified),
                         ),
                       );
                     },
@@ -487,39 +414,20 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Text(
                     'EL METR ACADEMY iOS • ${AppConstants.appVersion}',
-                    style: AppTypography.academyEyebrow().copyWith(
-                      color: AppColors.textTertiary,
-                      fontSize: 9,
-                      letterSpacing: 2.0,
-                    ),
+                    style: AppTypography.footerEyebrow(isArabic: l10n.isArabic),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'All rights reserved © 2026',
-                    style: TextStyle(
-                      color: AppColors.textPlaceholder,
-                      fontSize: 10,
-                    ),
+                  Text(
+                    l10n.allRightsReserved,
+                    style: AppTypography.caption(
+                      isArabic: l10n.isArabic,
+                    ).copyWith(color: AppColors.textPlaceholder),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.space3xl),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, right: 4),
-      child: Text(
-        title,
-        style: AppTypography.academyEyebrow().copyWith(
-          color: AppColors.textTertiary,
-          fontSize: 10,
-          letterSpacing: 2.0,
         ),
       ),
     );
@@ -543,18 +451,12 @@ class SettingsScreen extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceHigh,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 18,
-                    color: iconColor ?? AppColors.textSecondary,
-                  ),
+                IconTile(
+                  icon: icon,
+                  iconColor: iconColor ?? AppColors.textSecondary,
+                  size: 32,
+                  iconSize: 18,
+                  borderRadius: AppRadius.radiusSm,
                 ),
                 const SizedBox(width: AppSpacing.spaceMd),
                 Expanded(
@@ -604,18 +506,12 @@ class SettingsScreen extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceHigh,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
+                    IconTile(
+                      icon: icon,
+                      iconColor: AppColors.textSecondary,
+                      size: 32,
+                      iconSize: 18,
+                      borderRadius: AppRadius.radiusSm,
                     ),
                     const SizedBox(width: AppSpacing.spaceMd),
                     Expanded(
@@ -635,13 +531,7 @@ class SettingsScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (trailingText != null) ...[
-                    Text(
-                      trailingText,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
+                    Text(trailingText, style: AppTypography.bodyXs()),
                     const SizedBox(width: 4),
                   ],
                   const Icon(

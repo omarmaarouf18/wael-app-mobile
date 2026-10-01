@@ -301,6 +301,15 @@ class AppTypography {
     ).copyWith(fontSize: 11, letterSpacing: 1.0, color: AppColors.textMuted);
   }
 
+  /// Footer line under settings (9, tertiary, wide spacing).
+  static TextStyle footerEyebrow({bool isArabic = false}) {
+    return academyEyebrow(isArabic: isArabic).copyWith(
+      color: AppColors.textTertiary,
+      fontSize: 9,
+      letterSpacing: isArabic ? 0 : 2.0,
+    );
+  }
+
   /// The only sanctioned uppercase transform. Screens must not call
   /// `.toUpperCase()`; use this for button and section labels. Arabic has no
   /// letter case, so Arabic text passes through unchanged.

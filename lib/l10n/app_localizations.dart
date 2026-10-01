@@ -294,6 +294,35 @@ class AppLocalizations {
       ? 'وضع المعاينة المباشرة (دون اتصال) • جميع البيانات محلية'
       : 'Live Interactive Demo Mode • Fully Offline';
 
+  // Settings Screen
+  String get languageAndPreferences =>
+      isArabic ? 'اللغة والتفضيلات' : 'Language & Preferences';
+  String get academyProtocolLegal =>
+      isArabic ? 'البروتوكول الأكاديمي والقانوني' : 'Academy Protocol & Legal';
+  String get twoFactorActive => isArabic
+      ? 'التحقق بخطوتين مفعّل عبر الرمز المعتمد.'
+      : 'Two-Factor Authentication is active.';
+  String get dispatchesToEmail => isArabic
+      ? 'يتم إرسال البيانات المعتمدة لبريدك الإلكتروني.'
+      : 'Dispatches sent to primary email line.';
+  String get privacyVerified => isArabic
+      ? 'سياسة الخصوصية الأكاديمية سارية وموثقة.'
+      : 'Privacy Protocol verified offline.';
+  String languageSwitched(bool toArabic) => toArabic
+      ? 'تم تحويل اللغة إلى العربية (RTL)'
+      : 'Switched language to English (LTR)';
+  String standingLabel(String standing) =>
+      isArabic ? 'دارس بالأكاديمية • دفعة ٢٠٢٤' : standing;
+  String get allRightsReserved =>
+      isArabic ? 'جميع الحقوق محفوظة © 2026' : 'All rights reserved © 2026';
+  String get honorCodeBody => isArabic
+      ? '١. كل دارس ملتحق بأكاديمية المتر ملزم بقواعد السيادة الأكاديمية والسرية المطلقة للمداولات.\n\n'
+            '٢. يمنع منعاً باتاً إعادة توزيع أو تسجيل مرافعات ودوسيهات المستشار وائل السعيد دون إذن رسمي مكتوب.\n\n'
+            '٣. الانضباط الحركي واللفظي، والحياد الانفعالي، والالتزام بأعلى معايير النزاهة القانونية شرط لاستمرار القيد.'
+      : '1. Every scholar enrolled in EL METR ACADEMY is bound by strict academic sovereignty and confidentiality.\n\n'
+            '2. Course materials, dossiers, and strategic debate recordings may not be redistributed without formal authorization from Counselor Wael El Saeed.\n\n'
+            '3. Intellectual rigor, measured composure, and unyielding discipline are mandatory across all deliberations.';
+
   // Empty & Error States
   String get noCoursesFound => isArabic
       ? 'لم يتم العثور على دورات مطابقة للبحث.'
