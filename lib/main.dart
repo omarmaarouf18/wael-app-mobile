@@ -22,6 +22,8 @@ import 'providers/settings_provider.dart';
 import 'providers/notifications_provider.dart';
 
 // Services
+import 'player/player_engine.dart';
+import 'player/youtube_iframe_engine.dart';
 import 'repositories/academy_repository.dart';
 import 'services/push_notification_service.dart';
 
@@ -34,6 +36,7 @@ import 'screens/forgot_password_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/course_detail_screen.dart';
 import 'screens/payment_screen.dart';
+import 'screens/video_player_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/ebook_screen.dart';
@@ -99,6 +102,11 @@ class WaelApp extends StatelessWidget {
                 return catalog!;
               },
             ),
+            // The protected player's real engine and Android channel.
+            Provider<PlayerDependencies>(
+              create: (_) =>
+                  PlayerDependencies(engineFactory: YoutubeIframeEngine.new),
+            ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
             ChangeNotifierProvider(create: (_) => CoursesProvider()),
             ChangeNotifierProvider(create: (_) => PaymentProvider()),
@@ -129,6 +137,17 @@ class WaelApp extends StatelessWidget {
                 return MaterialPageRoute(
                   builder: (context) => CourseDetailScreen(courseId: courseId),
                 );
+              }
+              if (settings.name == '/video-player') {
+                // The arguments carry the academy's video id only, never the
+                // YouTube id.
+                final args = settings.arguments;
+                if (args is VideoPlayerArgs) {
+                  return MaterialPageRoute<PlayerExit>(
+                    settings: const RouteSettings(name: '/video-player'),
+                    builder: (context) => VideoPlayerScreen(args: args),
+                  );
+                }
               }
               if (settings.name == '/payment') {
                 // Only the subject screen opens this, always with a Course

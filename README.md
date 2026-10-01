@@ -49,6 +49,14 @@ Linux desktop (`-d linux`) is the lowest-friction target on this machine:
 
 *(Note: On systems where `libsecret-1` headers are not in `/usr/lib64/pkgconfig`, point `PKG_CONFIG_PATH` to the libsecret sysroot).*
 
+### Video player (Android)
+Lesson videos play in a protected embedded player (`youtube_player_iframe`): Android
+`FLAG_SECURE` (no screenshots or recording), a moving name-and-phone watermark, no
+YouTube links or controls, and a server check on open and on every resume. What it
+hides, what it cannot, the backend contract and the manual device checks are in
+`docs/frontend/VIDEO_PLAYER.md`. Release builds declare `INTERNET` in the main
+manifest.
+
 ### Component library (Debug Mode Only)
 `/components` shows every shared widget from `lib/widgets/` with an EN/AR toggle. Open the
 diagnostics screen (`/debug`) and tap the widgets icon in the app bar. The route is only

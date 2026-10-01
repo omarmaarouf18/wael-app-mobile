@@ -13,7 +13,6 @@ class Lesson {
   final List<String> maxims;
   final List<String>? maximsAr;
   final String videoPoster;
-  final String youtubeVideoId;
 
   const Lesson({
     required this.id,
@@ -30,7 +29,6 @@ class Lesson {
     this.maxims = const [],
     this.maximsAr,
     this.videoPoster = 'assets/images/placeholder_course.png',
-    this.youtubeVideoId = 'dQw4w9WgXcQ',
   });
 
   String localizedTitle(bool isArabic) =>
@@ -61,7 +59,6 @@ class Lesson {
     List<String>? maxims,
     List<String>? maximsAr,
     String? videoPoster,
-    String? youtubeVideoId,
   }) {
     return Lesson(
       id: id ?? this.id,
@@ -78,7 +75,6 @@ class Lesson {
       maxims: maxims ?? this.maxims,
       maximsAr: maximsAr ?? this.maximsAr,
       videoPoster: videoPoster ?? this.videoPoster,
-      youtubeVideoId: youtubeVideoId ?? this.youtubeVideoId,
     );
   }
 }

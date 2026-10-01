@@ -13,6 +13,7 @@ import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/course_detail/subject_content_section.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
+import 'package:wael_app/screens/video_player_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/catalog_file_tile.dart';
 import 'package:wael_app/widgets/catalog_video_tile.dart';
@@ -229,7 +230,7 @@ void main() {
         await tester.tap(videoTiles().first);
         await tester.pump();
         expect(find.text(ErrorMessages.courseLocked(isArabic)), findsOneWidget);
-        expect(find.text(l10n.playbackSoon), findsNothing);
+        expect(stubRouteArguments, isEmpty);
       });
 
       testWidgets('owned but not playable: still locked', (tester) async {
@@ -259,9 +260,13 @@ void main() {
         expect(find.byIcon(Icons.play_arrow), findsOneWidget);
         await tester.tap(videoTiles().first);
         await tester.pump();
-        // No player exists yet: it says so and opens nothing.
-        expect(find.text(l10n.playbackSoon), findsOneWidget);
-        expect(stubRouteArguments, isEmpty);
+        await tester.pumpAndSettle();
+        // The player route gets the academy's video id and text, never a
+        // YouTube id.
+        expect(find.textContaining('route:/video-player'), findsOneWidget);
+        final args = stubRouteArguments.last! as VideoPlayerArgs;
+        expect(args.videoId, 'v1');
+        expect(args.title, title('درس 1', 'Lesson 1'));
       });
 
       testWidgets('playable unlocks even when owned is false', (tester) async {

@@ -343,9 +343,6 @@ class AppLocalizations {
   String itemsCount(int n) => isArabic ? '$n محتوى' : '$n Items';
   String videoNumber(int n) => isArabic ? 'الفيديو $n' : 'Video $n';
   String get videoLocked => isArabic ? 'مقفل' : 'Locked';
-  String get playbackSoon => isArabic
-      ? 'تشغيل الفيديو سيتاح في تحديث قادم.'
-      : 'Video playback arrives in a later update.';
   String get downloadsSoon => isArabic
       ? 'تحميل الملفات سيتاح في تحديث قادم.'
       : 'Downloads arrive in a later update.';
@@ -354,6 +351,27 @@ class AppLocalizations {
     'note' => isArabic ? 'مذكرة' : 'Note',
     _ => kind,
   };
+
+  // Video player
+  String get playLabel => isArabic ? 'تشغيل' : 'Play';
+  String get pauseLabel => isArabic ? 'إيقاف مؤقت' : 'Pause';
+  String get rewind10 => isArabic ? 'رجوع ١٠ ثوانٍ' : 'Back 10 seconds';
+  String get forward10 => isArabic ? 'تقدم ١٠ ثوانٍ' : 'Forward 10 seconds';
+  String get enterFullscreen => isArabic ? 'ملء الشاشة' : 'Full screen';
+  String get exitFullscreen =>
+      isArabic ? 'إنهاء ملء الشاشة' : 'Exit full screen';
+  String get replayLabel => isArabic ? 'إعادة التشغيل' : 'Replay';
+  String get playerStarting =>
+      isArabic ? 'جارٍ تجهيز الفيديو...' : 'Preparing the video...';
+  String get playerNoIdentity => isArabic
+      ? 'بيانات حسابك غير مكتملة، لذلك لا يمكن تشغيل الفيديو. تواصل مع الدعم.'
+      : 'Your profile is incomplete, so the video cannot start. Contact support.';
+  String get playerNotSecure => isArabic
+      ? 'تعذر حماية الشاشة على هذا الجهاز، لذلك لا يمكن تشغيل الفيديو.'
+      : 'This device cannot protect the screen, so the video cannot play.';
+  String get playerUnavailable => isArabic
+      ? 'تعذر تشغيل الفيديو على هذا الجهاز.'
+      : 'The video cannot be played on this device.';
 
   /// Label for a subject `term` key (`first`, `second`); other keys pass through.
   String termLabel(String term) => switch (term) {

@@ -25,6 +25,7 @@ const kStubRoutes = [
   '/ebooks',
   '/course-details',
   '/payment',
+  '/video-player',
 ];
 
 /// Arguments passed to the stub routes, newest last. Cleared by [pumpScreen].
@@ -104,4 +105,20 @@ bool startsBefore(
   final ax = tester.getCenter(a).dx;
   final bx = tester.getCenter(b).dx;
   return direction == TextDirection.ltr ? ax < bx : ax > bx;
+}
+
+/// A signed-in [AuthProvider] whose server record has [name] and [phone].
+/// Pass empty strings for an account the backend sent no identity for (the
+/// watermark then falls back to the email).
+Future<AuthProvider> signedInAuth({
+  String name = 'Jane Doe',
+  String phone = '+201000000000',
+  MemoryTokenStore? tokens,
+}) async {
+  final repo = FakeAuthRepository()
+    ..meFullName = name
+    ..mePhone = phone;
+  final auth = makeAuth(repository: repo, tokens: tokens);
+  await auth.login('u@e.com', 'password123');
+  return auth;
 }

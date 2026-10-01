@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/error_messages.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,6 +12,8 @@ import '../../widgets/file_details_sheet.dart';
 import '../../widgets/selectable_chip.dart';
 import '../../widgets/themed_empty_state.dart';
 import '../../widgets/themed_panel.dart';
+import '../../providers/academy_catalog_provider.dart';
+import '../video_player_screen.dart';
 
 enum _Section { videos, books, notes }
 
@@ -37,10 +40,34 @@ class SubjectContentSection extends StatefulWidget {
 class _SubjectContentSectionState extends State<SubjectContentSection> {
   _Section _selected = _Section.videos;
 
+  /// Videos the player reported as not playable (a 404 on open or resume):
+  /// shown locked at once, before the refreshed detail arrives.
+  final Set<String> _lockedAfterPlayer = {};
+
   void _say(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _openPlayer(AcademyVideo video) async {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.isArabic;
+    final navigator = Navigator.of(context);
+    final catalog = context.read<AcademyCatalogProvider>();
+    final subjectId = widget.detail.id;
+    final exit = await navigator.pushNamed<Object?>(
+      '/video-player',
+      arguments: VideoPlayerArgs(
+        videoId: video.id,
+        title: video.title.resolve(isArabic),
+        description: video.description.resolve(isArabic),
+      ),
+    );
+    if (!mounted || exit != PlayerExit.locked) return;
+    setState(() => _lockedAfterPlayer.add(video.id));
+    catalog.loadDetail(subjectId, force: true);
+    _say(context, ErrorMessages.courseLocked(isArabic));
   }
 
   @override
@@ -121,6 +148,10 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
     );
   }
 
+  bool _unlocked(AcademySubjectDetail detail, AcademyVideo video) =>
+      SubjectContentSection.videoUnlocked(detail, video) &&
+      !_lockedAfterPlayer.contains(video.id);
+
   Widget _empty(IconData icon, String message) => ThemedPanel(
     tone: PanelTone.inset,
     borderRadius: AppRadius.radiusLg,
@@ -146,13 +177,10 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
             ),
             child: CatalogVideoTile(
               video: video,
-              locked: !SubjectContentSection.videoUnlocked(detail, video),
-              onTap: () => _say(
-                context,
-                SubjectContentSection.videoUnlocked(detail, video)
-                    ? l10n.playbackSoon
-                    : ErrorMessages.courseLocked(l10n.isArabic),
-              ),
+              locked: !_unlocked(detail, video),
+              onTap: () => _unlocked(detail, video)
+                  ? _openPlayer(video)
+                  : _say(context, ErrorMessages.courseLocked(l10n.isArabic)),
             ),
           ),
       ],
