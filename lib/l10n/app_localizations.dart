@@ -323,6 +323,18 @@ class AppLocalizations {
             '2. Course materials, dossiers, and strategic debate recordings may not be redistributed without formal authorization from Counselor Wael El Saeed.\n\n'
             '3. Intellectual rigor, measured composure, and unyielding discipline are mandatory across all deliberations.';
 
+  // Catalog (home, courses, subject detail)
+  String get noOwnedCourses => isArabic
+      ? 'لا توجد مواد مفعّلة لديك بعد.'
+      : 'You have no active subjects yet.';
+  String accessUntil(String date) =>
+      isArabic ? 'متاحة حتى $date' : 'Access until $date';
+  String subjectsCount(int n) => isArabic ? '$n مواد' : '$n Subjects';
+  String get termFirst => isArabic ? 'الفصل الدراسي الأول' : 'First Term';
+  String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
+  String get viewSubject => isArabic ? 'استعراض المحتوى' : 'View Subject';
+  String get continueSubject => isArabic ? 'متابعة المادة' : 'Continue';
+
   // Empty & Error States
   String get noCoursesFound => isArabic
       ? 'لم يتم العثور على دورات مطابقة للبحث.'

@@ -23,6 +23,8 @@ const kStubRoutes = [
   '/notifications',
   '/settings',
   '/ebooks',
+  '/course-details',
+  '/payment',
 ];
 
 /// Pumps [screen] on a phone-sized view under [locale], with the app's
@@ -61,7 +63,12 @@ Future<void> pumpScreen(
         screen,
         routes: {
           for (final r in kStubRoutes)
-            r: (_) => Scaffold(body: Text('route:$r')),
+            r: (ctx) {
+              final args = ModalRoute.of(ctx)?.settings.arguments;
+              return Scaffold(
+                body: Text(args == null ? 'route:$r' : 'route:$r:$args'),
+              );
+            },
         },
       ),
     ),

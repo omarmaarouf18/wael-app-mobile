@@ -13,6 +13,7 @@ class AppBadge extends StatelessWidget {
     required this.label,
     this.accent = false,
     this.pill = false,
+    this.subtle = false,
     this.fontSize = 10,
     this.padding = const EdgeInsetsDirectional.symmetric(
       horizontal: 7,
@@ -23,6 +24,9 @@ class AppBadge extends StatelessWidget {
   final String label;
   final bool accent;
   final bool pill;
+
+  /// Quieter chip: recessed background and muted text (credentials).
+  final bool subtle;
   final double fontSize;
   final EdgeInsetsGeometry padding;
 
@@ -36,7 +40,9 @@ class AppBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: accent
             ? AppColors.crimson.withValues(alpha: 0.15)
-            : AppColors.surfaceElevated,
+            : (subtle
+                  ? AppColors.surfaceContainerLow
+                  : AppColors.surfaceElevated),
         borderRadius: radius,
         border: Border.all(
           color: accent
@@ -47,7 +53,9 @@ class AppBadge extends StatelessWidget {
       child: Text(
         label,
         style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-          color: accent ? AppColors.crimson : AppColors.textSecondary,
+          color: accent
+              ? AppColors.crimson
+              : (subtle ? AppColors.textMuted : AppColors.textSecondary),
           fontSize: fontSize,
           fontWeight: accent ? FontWeight.w800 : FontWeight.w600,
           // Spacing breaks joined Arabic letterforms.

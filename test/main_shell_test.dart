@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/courses_provider.dart';
 import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
@@ -12,6 +13,7 @@ import 'package:wael_app/widgets/brand_lockup.dart';
 import 'package:wael_app/widgets/header_icon_button.dart';
 import 'package:wael_app/widgets/status_dot.dart';
 
+import 'academy_fakes.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
 
@@ -29,6 +31,7 @@ void main() {
       locale,
       MainShell(initialTab: initialTab),
       extraProviders: [
+        ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => CoursesProvider()),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),

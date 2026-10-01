@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/main.dart';
+import 'package:wael_app/widgets/app_bottom_nav.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
+import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/courses_provider.dart';
 import 'package:wael_app/providers/payment_provider.dart';
@@ -12,6 +14,7 @@ import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/settings_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
 
+import 'academy_fakes.dart';
 import 'fakes.dart';
 
 Widget testApp() {
@@ -24,6 +27,7 @@ Widget testApp() {
           tokenStore: MemoryTokenStore(),
         ),
       ),
+      ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
       ChangeNotifierProvider(create: (_) => HomeProvider()),
       ChangeNotifierProvider(create: (_) => CoursesProvider()),
       ChangeNotifierProvider(create: (_) => PaymentProvider()),
@@ -67,11 +71,17 @@ void main() {
 
     // Home shell content.
     expect(find.text('ACADEMY DIRECTOR & INSTRUCTOR'), findsOneWidget);
-    expect(find.text('CONTINUE LEARNING'), findsOneWidget);
     expect(find.text('MY COURSES'), findsOneWidget);
 
     // Courses tab.
-    await tester.tap(find.byIcon(Icons.school_outlined));
+    // The home tab now also shows this icon on an owned-subject tile, so
+    // target the bottom navigation.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBottomNav),
+        matching: find.byIcon(Icons.school_outlined),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('EDUCATION TYPE'), findsOneWidget);
 

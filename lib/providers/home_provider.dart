@@ -3,8 +3,6 @@ import '../models/instructor_profile.dart';
 import '../core/constants.dart';
 
 class HomeProvider extends ChangeNotifier {
-  bool _isRsvpConfirmed = false;
-  bool _isLoading = false;
   bool _isBioExpanded = false;
 
   final InstructorProfile _instructor = const InstructorProfile(
@@ -33,26 +31,11 @@ class HomeProvider extends ChangeNotifier {
     ],
   );
 
-  bool get isRsvpConfirmed => _isRsvpConfirmed;
-  bool get isLoading => _isLoading;
   bool get isBioExpanded => _isBioExpanded;
   InstructorProfile get instructor => _instructor;
 
-  void toggleRsvp() {
-    _isRsvpConfirmed = !_isRsvpConfirmed;
-    notifyListeners();
-  }
-
   void toggleBioExpansion() {
     _isBioExpanded = !_isBioExpanded;
-    notifyListeners();
-  }
-
-  Future<void> refreshDashboard() async {
-    _isLoading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 400));
-    _isLoading = false;
     notifyListeners();
   }
 }

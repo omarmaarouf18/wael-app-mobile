@@ -326,6 +326,16 @@ class AppTypography {
     ).copyWith(fontSize: 9, letterSpacing: isArabic ? 0 : 2.8);
   }
 
+  /// Headline of the home hero banner (22 on narrow screens, otherwise 26).
+  static TextStyle heroHeadline({bool isArabic = false, bool compact = false}) {
+    return headlineLg(isArabic: isArabic).copyWith(
+      fontSize: compact ? 22 : 26,
+      fontWeight: FontWeight.w800,
+      height: 1.15,
+      letterSpacing: isArabic ? 0 : -0.5,
+    );
+  }
+
   /// The only sanctioned uppercase transform. Screens must not call
   /// `.toUpperCase()`; use this for button and section labels. Arabic has no
   /// letter case, so Arabic text passes through unchanged.
