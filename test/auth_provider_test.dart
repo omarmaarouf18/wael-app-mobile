@@ -79,4 +79,90 @@ void main() {
       'Invalid credentials. Please verify your details and try again.',
     );
   });
+
+  group('_doRefresh behavior', () {
+    test('logs out and clears tokens on 401', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository(refreshMode: '401'), store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isFalse);
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+      expect(await store.readRefreshToken(), isNull);
+    });
+
+    test('logs out and clears tokens on 403', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository(refreshMode: '403'), store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isFalse);
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+      expect(await store.readRefreshToken(), isNull);
+    });
+
+    test('keeps tokens and preserves session on 500 / 503', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository(refreshMode: '503'), store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isFalse);
+      expect(auth.isAuthenticated, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+      expect(await store.readRefreshToken(), 'refresh-1');
+    });
+
+    test('keeps tokens and preserves session on network error', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository(refreshMode: 'network'),
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isFalse);
+      expect(auth.isAuthenticated, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+      expect(await store.readRefreshToken(), 'refresh-1');
+    });
+
+    test('rotates tokens and succeeds on 200', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository(refreshMode: 'ok'), store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isTrue);
+      expect(auth.isAuthenticated, isTrue);
+      expect(await store.readAccessToken(), 'access-2');
+      expect(await store.readRefreshToken(), 'refresh-2');
+    });
+
+    test('logs out when refresh token is missing or empty', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: '');
+      final auth = providerWith(FakeAuthRepository(refreshMode: 'ok'), store);
+
+      final ok = await auth.doRefresh();
+      expect(ok, isFalse);
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+    });
+  });
 }

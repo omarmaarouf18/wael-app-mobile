@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
+import 'package:flutter/foundation.dart'
+    show ChangeNotifier, kDebugMode, visibleForTesting;
 import '../core/api_client.dart';
 import '../core/app_config.dart';
 import '../core/error_messages.dart';
@@ -28,7 +29,6 @@ class AuthProvider extends ChangeNotifier {
       allowSelfSigned: AppConfig.allowSelfSigned,
       accessTokenReader: _tokens.readAccessToken,
       refreshTokens: _doRefresh,
-      forceLogout: _logoutLocal,
     );
   }
 
@@ -109,13 +109,24 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  Future<bool> doRefresh() => _doRefresh();
+
   Future<bool> _doRefresh() async {
     final refresh = await _tokens.readRefreshToken();
-    if (refresh == null || refresh.isEmpty) return false;
+    if (refresh == null || refresh.isEmpty) {
+      await _logoutLocal();
+      return false;
+    }
     try {
       final tokens = await _repo.refresh(refreshToken: refresh);
       await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
       return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await _logoutLocal();
+      }
+      return false;
     } catch (_) {
       return false;
     }

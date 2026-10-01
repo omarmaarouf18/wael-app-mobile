@@ -1,12 +1,14 @@
+import 'dart:io' show SocketException;
 import 'package:wael_app/core/api_client.dart' show ApiException;
 import 'package:wael_app/repositories/auth_repository.dart';
 
 /// Scripted fake backend for widget/unit tests.
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.mode = 'ok'});
+  FakeAuthRepository({this.mode = 'ok', this.refreshMode = 'ok'});
 
   /// ok | wrong-password
   String mode;
+  String refreshMode;
 
   @override
   Future<AuthTokens> login({
@@ -47,6 +49,21 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthTokens> refresh({required String refreshToken}) async {
+    if (refreshMode == '401') {
+      throw ApiException(statusCode: 401, message: 'invalid refresh token');
+    }
+    if (refreshMode == '403') {
+      throw ApiException(statusCode: 403, message: 'forbidden');
+    }
+    if (refreshMode == '500') {
+      throw ApiException(statusCode: 500, message: 'internal server error');
+    }
+    if (refreshMode == '503') {
+      throw ApiException(statusCode: 503, message: 'service unavailable');
+    }
+    if (refreshMode == 'network') {
+      throw const SocketException('network unreachable');
+    }
     return const AuthTokens(access: 'access-2', refresh: 'refresh-2');
   }
 
