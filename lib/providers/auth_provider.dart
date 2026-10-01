@@ -58,7 +58,7 @@ class AuthProvider extends ChangeNotifier {
   /// builds only; always null in release builds.
   String? _lastDevOtp;
 
-  UserProfile _currentUser = const UserProfile(
+  static const _blankUser = UserProfile(
     id: 'pending',
     dossierId: '',
     fullName: '',
@@ -67,6 +67,8 @@ class AuthProvider extends ChangeNotifier {
     specializationTrack: '',
     bio: '',
   );
+
+  UserProfile _currentUser = _blankUser;
 
   AuthStatus get status => _status;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
@@ -102,11 +104,37 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _storeSession(AuthAccount account, AuthTokens tokens) async {
     await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
     _account = account;
-    _currentUser = _currentUser.copyWith(id: account.id, email: account.email);
+    _currentUser = _withAccount(_currentUser, account);
     _status = AuthStatus.authenticated;
     _pendingVerificationEmail = null;
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Copies the account's identity into the profile; name and phone only
+  /// when the server sent them, so a value typed at signup is not erased.
+  static UserProfile _withAccount(UserProfile user, AuthAccount account) {
+    return user.copyWith(
+      id: account.id,
+      email: account.email,
+      fullName: account.fullName.trim().isNotEmpty
+          ? account.fullName.trim()
+          : null,
+      phone: account.phone.trim().isNotEmpty ? account.phone.trim() : null,
+    );
+  }
+
+  /// Identity text for the moving video watermark: full name and phone when
+  /// known, otherwise the email, otherwise null (the player then refuses to
+  /// start, because a watermark must always identify the student).
+  String? get watermarkText {
+    final parts = [
+      _currentUser.fullName.trim(),
+      _currentUser.phone.trim(),
+    ].where((s) => s.isNotEmpty).toList();
+    if (parts.isNotEmpty) return parts.join(' · ');
+    final email = (_account?.email ?? _currentUser.email).trim();
+    return email.isEmpty ? null : email;
   }
 
   @visibleForTesting
@@ -143,10 +171,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final account = await _repo.me(accessToken: access);
       _account = account;
-      _currentUser = _currentUser.copyWith(
-        id: account.id,
-        email: account.email,
-      );
+      _currentUser = _withAccount(_currentUser, account);
       _status = AuthStatus.authenticated;
     } catch (_) {
       await _tokens.clear();
@@ -200,6 +225,12 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
       _lastDevOtp = kDebugMode ? result.devOtp : null;
+      // The name and phone typed here are the only copy until the backend's
+      // /auth/me returns them.
+      _currentUser = _currentUser.copyWith(
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+      );
       _isLoading = false;
       _status = AuthStatus.needsVerification;
       _pendingVerificationEmail = email.trim();
@@ -287,6 +318,9 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _logoutLocal() async {
     await _tokens.clear();
     _account = null;
+    // The next student must never inherit this one's name or phone (the
+    // video watermark reads them).
+    _currentUser = _blankUser;
     _lastDevOtp = null;
     _pendingVerificationEmail = null;
     _status = AuthStatus.unauthenticated;

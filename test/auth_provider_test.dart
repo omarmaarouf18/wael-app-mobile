@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
+import 'package:wael_app/repositories/auth_repository.dart';
 
 import 'fakes.dart';
 
@@ -164,5 +165,95 @@ void main() {
       expect(auth.isAuthenticated, isFalse);
       expect(await store.readAccessToken(), isNull);
     });
+  });
+
+  group('identity for the video watermark', () {
+    test('AuthAccount reads full_name and phone when present, else empty', () {
+      final withIdentity = AuthAccount.fromJson({
+        'id': 'a',
+        'email': 'u@e.com',
+        'role': 'user',
+        'email_verified': true,
+        'full_name': 'Jane Doe',
+        'phone': '+201000000000',
+      });
+      expect(withIdentity.fullName, 'Jane Doe');
+      expect(withIdentity.phone, '+201000000000');
+      final without = AuthAccount.fromJson({'id': 'a', 'email': 'u@e.com'});
+      expect(without.fullName, '');
+      expect(without.phone, '');
+    });
+
+    test('name and phone from the server make the watermark text', () async {
+      final repo = FakeAuthRepository()
+        ..meFullName = ' Jane Doe '
+        ..mePhone = '+201000000000';
+      final auth = providerWith(repo, MemoryTokenStore());
+      await auth.login('u@e.com', 'password123');
+      expect(auth.watermarkText, 'Jane Doe · +201000000000');
+      expect(auth.currentUser.fullName, 'Jane Doe');
+    });
+
+    test(
+      'only a name, or only a phone, still identifies the student',
+      () async {
+        final repo = FakeAuthRepository()..meFullName = 'Jane Doe';
+        final auth = providerWith(repo, MemoryTokenStore());
+        await auth.login('u@e.com', 'password123');
+        expect(auth.watermarkText, 'Jane Doe');
+      },
+    );
+
+    test(
+      'the backend sending nothing (today) falls back to the email',
+      () async {
+        final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+        await auth.login('u@e.com', 'password123');
+        expect(auth.watermarkText, 'u@e.com');
+      },
+    );
+
+    test('before any session there is nothing to identify', () {
+      final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+      expect(auth.watermarkText, isNull);
+    });
+
+    test(
+      'a name and phone typed at signup are kept after verification',
+      () async {
+        final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+        await auth.signup(
+          fullName: 'Jane Doe',
+          phone: '+201000000000',
+          email: 'u@e.com',
+          password: 'password123',
+        );
+        await auth.verifyOtp(email: 'u@e.com', code: '123456');
+        expect(auth.watermarkText, 'Jane Doe · +201000000000');
+      },
+    );
+
+    test(
+      'logout clears the identity so the next student never inherits it',
+      () async {
+        final repo = FakeAuthRepository()
+          ..meFullName = 'Jane Doe'
+          ..mePhone = '+201000000000';
+        final auth = providerWith(repo, MemoryTokenStore());
+        await auth.login('u@e.com', 'password123');
+        expect(auth.watermarkText, contains('Jane Doe'));
+        await auth.logout();
+        expect(auth.watermarkText, isNull);
+        expect(auth.currentUser.fullName, '');
+        expect(auth.currentUser.phone, '');
+
+        // A different student whose server record has no name: email only.
+        repo
+          ..meFullName = ''
+          ..mePhone = '';
+        await auth.login('u@e.com', 'password123');
+        expect(auth.watermarkText, 'u@e.com');
+      },
+    );
   });
 }

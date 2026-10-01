@@ -9,6 +9,10 @@ class FakeAuthRepository implements AuthRepository {
   /// ok | wrong-password | unverified | wrong-otp | wrong-reset-code | signup-conflict
   String mode;
   String refreshMode;
+
+  /// Identity `me()` returns; empty means the backend sent none (today).
+  String meFullName = '';
+  String mePhone = '';
   int signupCalls = 0;
   String? lastSignupEmail;
   int loginCalls = 0;
@@ -119,11 +123,13 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthAccount> me({required String accessToken}) async {
-    return const AuthAccount(
+    return AuthAccount(
       id: 'id-1',
       email: 'u@e.com',
       role: 'user',
       emailVerified: true,
+      fullName: meFullName,
+      phone: mePhone,
     );
   }
 }

@@ -7,11 +7,18 @@ class AuthAccount {
   final String role;
   final bool emailVerified;
 
+  /// From `full_name` and `phone`, when `/auth/me` sends them (it does not
+  /// yet: the backend must add both for the video watermark). Empty otherwise.
+  final String fullName;
+  final String phone;
+
   const AuthAccount({
     required this.id,
     required this.email,
     required this.role,
     required this.emailVerified,
+    this.fullName = '',
+    this.phone = '',
   });
 
   factory AuthAccount.fromJson(Map<String, dynamic> json) => AuthAccount(
@@ -19,6 +26,8 @@ class AuthAccount {
     email: (json['email'] ?? '').toString(),
     role: (json['role'] ?? 'user').toString(),
     emailVerified: json['email_verified'] == true,
+    fullName: (json['full_name'] ?? '').toString(),
+    phone: (json['phone'] ?? '').toString(),
   );
 }
 
