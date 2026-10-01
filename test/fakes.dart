@@ -6,9 +6,11 @@ import 'package:wael_app/repositories/auth_repository.dart';
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.mode = 'ok', this.refreshMode = 'ok'});
 
-  /// ok | wrong-password | wrong-otp | wrong-reset-code
+  /// ok | wrong-password | unverified | wrong-otp | wrong-reset-code
   String mode;
   String refreshMode;
+  int loginCalls = 0;
+  String? lastLoginEmail;
   int verifyOtpCalls = 0;
   int requestResetCalls = 0;
   int verifyResetCalls = 0;
@@ -20,8 +22,13 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    loginCalls++;
+    lastLoginEmail = email;
     if (mode == 'wrong-password') {
       throw ApiException(statusCode: 401, message: 'invalid credentials');
+    }
+    if (mode == 'unverified') {
+      throw ApiException(statusCode: 403, message: 'email not verified');
     }
     return const AuthTokens(access: 'access-1', refresh: 'refresh-1');
   }

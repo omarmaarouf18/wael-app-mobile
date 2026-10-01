@@ -27,7 +27,8 @@ const kStubRoutes = [
 /// Pumps [screen] on a phone-sized view under [locale], with the app's
 /// providers backed by fakes and stub routes for navigation targets.
 ///
-/// Pass `settle: false` for screens with an indeterminate spinner.
+/// Pass `settle: false` for screens with an indeterminate spinner and `size`
+/// for a taller view when the content scrolls.
 Future<void> pumpScreen(
   WidgetTester tester,
   Locale locale,
@@ -36,8 +37,9 @@ Future<void> pumpScreen(
   NotificationsProvider? notifications,
   SettingsProvider? settings,
   bool settle = true,
+  Size size = const Size(390, 844),
 }) async {
-  tester.view.physicalSize = const Size(390, 844);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
