@@ -1,3 +1,4 @@
+import '../models/academy_catalog.dart';
 import 'api_client.dart';
 
 /// Standardized Error Messages supporting localized resolution
@@ -69,6 +70,30 @@ class ErrorMessages {
   static String courseLocked(bool isArabic) => isArabic
       ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل والاشتراك للوصول.'
       : 'This content is restricted. Complete enrolment to gain access.';
+
+  static String catalogLoadFailed(bool isArabic) => isArabic
+      ? 'تعذر تحميل المحتوى الدراسي. يرجى المحاولة مرة أخرى.'
+      : 'Unable to load the course catalog. Please try again.';
+
+  static String subjectNotFound(bool isArabic) =>
+      isArabic ? 'هذه المادة غير متاحة.' : 'This subject is not available.';
+
+  static String serviceUnavailable(bool isArabic) => isArabic
+      ? 'الخدمة غير متاحة مؤقتاً. يرجى المحاولة بعد قليل.'
+      : 'The service is temporarily unavailable. Please try again shortly.';
+
+  /// Message for a failed catalog request. Unlike [forApiError] it never
+  /// reads a 401 as bad credentials or a 403 as an unverified email.
+  static String forCatalog(Object e, {bool isArabic = false}) {
+    if (e is ApiException) {
+      if (e.isRateLimited) return rateLimited(isArabic);
+      if (e.statusCode == 404) return subjectNotFound(isArabic);
+      if (e.statusCode == 503) return serviceUnavailable(isArabic);
+      return catalogLoadFailed(isArabic);
+    }
+    if (e is AcademyParseException) return catalogLoadFailed(isArabic);
+    return networkError(isArabic);
+  }
 
   /// Resolves an [ApiException] into a sanitized, user-facing error message.
   /// Never displays raw exception text or internal stack traces.

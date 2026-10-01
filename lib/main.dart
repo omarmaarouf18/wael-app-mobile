@@ -13,6 +13,7 @@ import 'models/course.dart';
 // Providers
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/academy_catalog_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/courses_provider.dart';
 import 'providers/payment_provider.dart';
@@ -21,6 +22,7 @@ import 'providers/settings_provider.dart';
 import 'providers/notifications_provider.dart';
 
 // Services
+import 'repositories/academy_repository.dart';
 import 'services/push_notification_service.dart';
 
 // Screens
@@ -83,6 +85,20 @@ class WaelApp extends StatelessWidget {
           [
             ChangeNotifierProvider(create: (_) => LocaleProvider()),
             ChangeNotifierProvider(create: (_) => AuthProvider()),
+            ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
+              create: (ctx) => AcademyCatalogProvider(
+                HttpAcademyRepository(ctx.read<AuthProvider>().authedApi),
+              ),
+              // Catalog data (owned flags, details) is per student: drop it
+              // when the session ends.
+              update: (_, auth, catalog) {
+                // Runs during build, so it must not notify.
+                if (!auth.isAuthenticated && !catalog!.isPristine) {
+                  catalog.reset(notify: false);
+                }
+                return catalog!;
+              },
+            ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
             ChangeNotifierProvider(create: (_) => CoursesProvider()),
             ChangeNotifierProvider(create: (_) => PaymentProvider()),
