@@ -23,11 +23,13 @@ class ThemedPanel extends StatelessWidget {
     required this.child,
     this.tone = PanelTone.base,
     this.padding = const EdgeInsetsDirectional.all(AppSpacing.spaceLg),
+    this.borderRadius = AppRadius.radiusXl,
   });
 
   final Widget child;
   final PanelTone tone;
   final EdgeInsetsGeometry padding;
+  final BorderRadius borderRadius;
 
   Color get _background => switch (tone) {
     PanelTone.base => AppColors.surfaceLayer1,
@@ -42,7 +44,7 @@ class ThemedPanel extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: _background,
-        borderRadius: AppRadius.radiusXl,
+        borderRadius: borderRadius,
         border: Border.all(color: AppColors.subtleHairline),
       ),
       child: child,

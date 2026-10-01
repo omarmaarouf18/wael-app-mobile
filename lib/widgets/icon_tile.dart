@@ -12,6 +12,7 @@ class IconTile extends StatelessWidget {
     this.size = 36,
     this.iconSize = AppIconSize.md - 2,
     this.borderRadius = AppRadius.radiusMd,
+    this.borderColor,
   });
 
   final IconData icon;
@@ -21,12 +22,19 @@ class IconTile extends StatelessWidget {
   final double iconSize;
   final BorderRadius borderRadius;
 
+  /// Optional 1px border.
+  final Color? borderColor;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: background, borderRadius: borderRadius),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: borderRadius,
+        border: borderColor == null ? null : Border.all(color: borderColor!),
+      ),
       child: Icon(icon, size: iconSize, color: iconColor),
     );
   }
