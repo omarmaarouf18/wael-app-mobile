@@ -40,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final l10n = AppLocalizations.of(context);
     return AppShell(
       showHeader: false,
+      safeArea: false,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

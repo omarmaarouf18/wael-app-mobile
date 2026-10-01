@@ -18,6 +18,7 @@ class AppShell extends StatelessWidget {
     this.showHeader = true,
     this.showBack = false,
     this.onBack,
+    this.safeArea = true,
     this.actions = const [],
     this.floatingActionButton,
     this.bottomNavigationBar,
@@ -33,6 +34,10 @@ class AppShell extends StatelessWidget {
   final bool showHeader;
 
   final bool showBack;
+
+  /// Wrap the body in a [SafeArea]. Turn off for full-bleed screens (hero
+  /// art behind the status bar) that place their own insets.
+  final bool safeArea;
 
   /// Back button handler. Defaults to [Navigator.maybePop].
   final VoidCallback? onBack;
@@ -96,7 +101,9 @@ class AppShell extends StatelessWidget {
               ),
             )
           : null,
-      body: SafeArea(top: !showHeader, bottom: false, child: body),
+      body: safeArea
+          ? SafeArea(top: !showHeader, bottom: false, child: body)
+          : body,
     );
   }
 }

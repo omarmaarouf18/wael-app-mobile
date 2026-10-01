@@ -240,6 +240,37 @@ class AppTypography {
           );
   }
 
+  /// Brand wordmark on full-bleed hero screens (login). Latin only: the app
+  /// title is not translated, so the wide letter spacing never meets Arabic.
+  static TextStyle wordmarkTitle({bool isArabic = false}) {
+    return displayHero(isArabic: isArabic).copyWith(
+      fontSize: 32,
+      letterSpacing: 6.0,
+      shadows: const [
+        Shadow(
+          color: AppColors.scrimBlack,
+          blurRadius: 16,
+          offset: Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  static TextStyle wordmarkSubtitle({bool isArabic = false}) {
+    return academyEyebrow(isArabic: isArabic).copyWith(
+      fontSize: 11,
+      letterSpacing: 4.5,
+      color: AppColors.textPrimary.withValues(alpha: 0.8),
+      shadows: const [
+        Shadow(
+          color: AppColors.scrimBlack,
+          blurRadius: 10,
+          offset: Offset(0, 1),
+        ),
+      ],
+    );
+  }
+
   /// The only sanctioned uppercase transform. Screens must not call
   /// `.toUpperCase()`; use this for button and section labels. Arabic has no
   /// letter case, so Arabic text passes through unchanged.
