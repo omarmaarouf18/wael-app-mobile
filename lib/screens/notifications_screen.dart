@@ -4,7 +4,12 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/notifications_provider.dart';
+import '../widgets/app_shell.dart';
+import '../widgets/icon_tile.dart';
+import '../widgets/status_dot.dart';
 import '../widgets/themed_card.dart';
+import '../widgets/themed_empty_state.dart';
+import '../widgets/themed_error_banner.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -15,83 +20,58 @@ class NotificationsScreen extends StatelessWidget {
     final notifProvider = Provider.of<NotificationsProvider>(context);
     final items = notifProvider.notifications;
 
-    return Scaffold(
-      backgroundColor: AppColors.voidCanvas,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          color: AppColors.textSecondary,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppColors.crimson,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                AppTypography.uppercaseLabel(l10n.dispatchesTitle),
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.labelSm().copyWith(
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => notifProvider.markAllAsRead(),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+    return AppShell(
+      showBack: true,
+      titleWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const StatusDot(size: 6),
+          const SizedBox(width: AppSpacing.spaceSm),
+          Flexible(
             child: Text(
-              AppTypography.uppercaseLabel(l10n.markAllRead),
-              style: AppTypography.labelSm(isArabic: l10n.isArabic).copyWith(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                letterSpacing: 1.0,
+              AppTypography.uppercaseLabel(l10n.dispatchesTitle),
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.labelSm().copyWith(
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.spaceSm),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => notifProvider.markAllAsRead(),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            AppTypography.uppercaseLabel(l10n.markAllRead),
+            style: AppTypography.actionSm(isArabic: l10n.isArabic),
+          ),
+        ),
+      ],
       body: items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    notifProvider.hasError
-                        ? Icons.error_outline
-                        : Icons.notifications_off_outlined,
-                    size: 48,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(height: AppSpacing.spaceMd),
-                  Text(
-                    notifProvider.hasError
-                        ? ErrorMessages.notificationLoadFailed(l10n.isArabic)
-                        : l10n.noNotifications,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.bodyMd().copyWith(
-                      color: AppColors.textTertiary,
+          ? (notifProvider.hasError
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.all(
+                        AppSpacing.marginMobile,
+                      ),
+                      child: ThemedErrorBanner(
+                        message: ErrorMessages.notificationLoadFailed(
+                          l10n.isArabic,
+                        ),
+                        onRetry: notifProvider.loadRemote,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )
+                  )
+                : ThemedEmptyState(
+                    icon: Icons.notifications_off_outlined,
+                    message: l10n.noNotifications,
+                  ))
           : ListView.separated(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.marginMobile,
@@ -137,34 +117,23 @@ class NotificationsScreen extends StatelessWidget {
                   borderColor: item.isRead
                       ? AppColors.subtleHairline
                       : AppColors.crimson.withValues(alpha: 0.35),
-                  padding: const EdgeInsets.all(AppSpacing.spaceMd),
+                  padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Unread pip
-                      Container(
-                        margin: const EdgeInsets.only(top: 6),
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(top: 6),
+                        child: StatusDot(
                           color: item.isRead
                               ? AppColors.subtleHairline
                               : AppColors.crimson,
-                          shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.spaceMd),
 
                       // Icon
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceHigh,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: Icon(iconData, size: 18, color: iconColor),
-                      ),
+                      IconTile(icon: iconData, iconColor: iconColor),
                       const SizedBox(width: AppSpacing.spaceMd),
 
                       // Content
@@ -194,9 +163,8 @@ class NotificationsScreen extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Text(
                                   item.localizedTimestamp(l10n.isArabic),
-                                  style: const TextStyle(
-                                    color: AppColors.textTertiary,
-                                    fontSize: 10,
+                                  style: AppTypography.caption(
+                                    isArabic: l10n.isArabic,
                                   ),
                                 ),
                               ],
@@ -204,14 +172,9 @@ class NotificationsScreen extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               item.localizedBody(l10n.isArabic),
-                              style:
-                                  AppTypography.bodySm(
-                                    isArabic: l10n.isArabic,
-                                  ).copyWith(
-                                    color: AppColors.textMuted,
-                                    fontSize: 11,
-                                    height: 1.4,
-                                  ),
+                              style: AppTypography.bodyXs(
+                                isArabic: l10n.isArabic,
+                              ),
                             ),
                           ],
                         ),

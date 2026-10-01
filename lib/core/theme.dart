@@ -282,6 +282,25 @@ class AppTypography {
     return academyEyebrow(isArabic: isArabic).copyWith(fontSize: 8);
   }
 
+  /// Timestamps and other tertiary captions (10).
+  static TextStyle caption({bool isArabic = false}) {
+    return bodySm(
+      isArabic: isArabic,
+    ).copyWith(fontSize: 10, color: AppColors.textTertiary);
+  }
+
+  /// Dense secondary body text in lists (11, tight leading).
+  static TextStyle bodyXs({bool isArabic = false}) {
+    return bodySm(isArabic: isArabic).copyWith(fontSize: 11, height: 1.4);
+  }
+
+  /// Small header action such as "Mark read" (11, muted).
+  static TextStyle actionSm({bool isArabic = false}) {
+    return labelSm(
+      isArabic: isArabic,
+    ).copyWith(fontSize: 11, letterSpacing: 1.0, color: AppColors.textMuted);
+  }
+
   /// The only sanctioned uppercase transform. Screens must not call
   /// `.toUpperCase()`; use this for button and section labels. Arabic has no
   /// letter case, so Arabic text passes through unchanged.
