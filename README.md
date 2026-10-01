@@ -75,11 +75,12 @@ flutter test
 
 The composition gate (`scripts/frontend_composition_gate.sh`) scans `lib/screens/` for raw
 `Scaffold(`, `AppBar(`, `BoxDecoration(`, `TextStyle(`, `fontSize:`, `Color(0x...)`,
-`Colors.x` (except `Colors.transparent`), `.toUpperCase()` and `EdgeInsets.only` /
+`Color.fromARGB(`, `Color.fromRGBO(`, `Colors.x` (except `Colors.transparent`), `.toUpperCase()` and `EdgeInsets.only` /
 `fromLTRB`. Existing violations are recorded in `scripts/frontend_gate_baseline.txt` and
 the gate is a ratchet: more violations than the baseline fails, and fewer also fails until
 you lower the baseline in the same commit with `scripts/frontend_composition_gate.sh
---update`. It runs after `dart format` in `.githooks/pre-push` and in CI. Rules and token
+--update`. It fails closed (exit 2) if `lib/screens` is missing. It runs after `dart format` in
+`.githooks/pre-push` and in CI, followed by its self-test, `scripts/frontend_gate_test.sh`. Rules and token
 reference: `docs/frontend/DESIGN_SYSTEM.md`; per-file counts: `docs/frontend/STATUS.md`.
 
 *Note: In offline CI, 22 live integration tests across `live_matrix_test.dart`, `gateway_ratelimit_test.dart`, `sse_reconnect_test.dart`, and `failure_modes_test.dart` are skipped (`skip: !runLive`) because they require the live Docker Compose microservice stack.*
