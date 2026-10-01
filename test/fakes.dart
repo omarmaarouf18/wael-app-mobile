@@ -6,10 +6,13 @@ import 'package:wael_app/repositories/auth_repository.dart';
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.mode = 'ok', this.refreshMode = 'ok'});
 
-  /// ok | wrong-password | wrong-otp
+  /// ok | wrong-password | wrong-otp | wrong-reset-code
   String mode;
   String refreshMode;
   int verifyOtpCalls = 0;
+  int requestResetCalls = 0;
+  int verifyResetCalls = 0;
+  int confirmResetCalls = 0;
   String? lastOtpCode;
 
   @override
@@ -75,19 +78,30 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<String?> requestReset({required String email}) async => '654321';
+  Future<String?> requestReset({required String email}) async {
+    requestResetCalls++;
+    return '654321';
+  }
 
   @override
   Future<String> verifyResetCode({
     required String email,
     required String code,
-  }) async => 'reset-token-1';
+  }) async {
+    verifyResetCalls++;
+    if (mode == 'wrong-reset-code') {
+      throw ApiException(statusCode: 401, message: 'invalid code');
+    }
+    return 'reset-token-1';
+  }
 
   @override
   Future<void> confirmReset({
     required String resetToken,
     required String newPassword,
-  }) async {}
+  }) async {
+    confirmResetCalls++;
+  }
 
   @override
   Future<AuthAccount> me({required String accessToken}) async {

@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_shell.dart';
+import '../widgets/otp_pin_input.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
 
 /// Two-phase password reset: request code → verify code → set new password.
@@ -67,93 +70,92 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final devOtp = auth.lastDevOtp;
 
-    return Scaffold(
-      backgroundColor: AppColors.voidCanvas,
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.marginMobile),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return AppShell(
+      showBack: Navigator.of(context).canPop(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.resetPassword,
+                  style: AppTypography.headlineMd(isArabic: l10n.isArabic),
+                ),
+                const SizedBox(height: AppSpacing.spaceSm),
+                Text(
+                  l10n.resetSentNote,
+                  style: AppTypography.bodySm(
+                    isArabic: l10n.isArabic,
+                  ).copyWith(color: AppColors.textSecondary),
+                ),
+                if (kDebugMode &&
+                    devOtp != null &&
+                    devOtp.isNotEmpty &&
+                    _step == 1) ...[
+                  const SizedBox(height: AppSpacing.spaceMd),
                   Text(
-                    l10n.resetPassword,
-                    style: AppTypography.headlineMd(isArabic: l10n.isArabic),
-                  ),
-                  const SizedBox(height: AppSpacing.spaceSm),
-                  Text(
-                    l10n.resetSentNote,
+                    'DEBUG OTP: $devOtp',
                     style: AppTypography.bodySm(
                       isArabic: l10n.isArabic,
-                    ).copyWith(color: AppColors.textSecondary),
+                    ).copyWith(color: AppColors.crimson),
                   ),
-                  if (kDebugMode &&
-                      devOtp != null &&
-                      devOtp.isNotEmpty &&
-                      _step == 1) ...[
-                    const SizedBox(height: AppSpacing.spaceMd),
-                    Text(
-                      'DEBUG OTP: $devOtp',
-                      style: AppTypography.bodySm(
-                        isArabic: l10n.isArabic,
-                      ).copyWith(color: AppColors.crimson),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.spaceLg),
-                  if (_step == 0) ...[
-                    ThemedTextField(
-                      label: l10n.emailOrPhone,
-                      hintText: 'name@example.com',
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: AppSpacing.spaceMd),
-                    PrimaryButton(
-                      text: AppTypography.uppercaseLabel(l10n.sendCode),
-                      isLoading: auth.isLoading,
-                      onPressed: _request,
-                    ),
-                  ],
-                  if (_step == 1) ...[
-                    ThemedTextField(
-                      label: l10n.verificationCode,
-                      hintText: '123456',
-                      controller: _codeController,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: AppSpacing.spaceMd),
-                    PrimaryButton(
-                      text: AppTypography.uppercaseLabel(l10n.verify),
-                      isLoading: auth.isLoading,
-                      onPressed: _verify,
-                    ),
-                  ],
-                  if (_step == 2) ...[
-                    ThemedTextField(
-                      label: l10n.newPassword,
-                      hintText: '••••••••',
-                      controller: _passwordController,
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: AppSpacing.spaceMd),
-                    PrimaryButton(
-                      text: AppTypography.uppercaseLabel(l10n.resetPassword),
-                      isLoading: auth.isLoading,
-                      onPressed: _confirm,
-                    ),
-                  ],
-                  if (auth.errorMessage != null) ...[
-                    const SizedBox(height: AppSpacing.spaceSm),
-                    Text(
-                      auth.errorMessage!,
-                      style: const TextStyle(color: AppColors.crimson),
-                    ),
-                  ],
                 ],
-              ),
+                const SizedBox(height: AppSpacing.spaceLg),
+                if (_step == 0) ...[
+                  ThemedTextField(
+                    label: l10n.emailOrPhone,
+                    hintText: 'name@example.com',
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  PrimaryButton(
+                    text: AppTypography.uppercaseLabel(l10n.sendCode),
+                    isLoading: auth.isLoading,
+                    onPressed: _request,
+                  ),
+                ],
+                if (_step == 1) ...[
+                  OtpPinInput(
+                    controller: _codeController,
+                    hasError: auth.errorMessage != null,
+                  ),
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  PrimaryButton(
+                    text: AppTypography.uppercaseLabel(l10n.verify),
+                    isLoading: auth.isLoading,
+                    onPressed: _verify,
+                  ),
+                ],
+                if (_step == 2) ...[
+                  ThemedTextField(
+                    label: l10n.newPassword,
+                    hintText: '••••••••',
+                    controller: _passwordController,
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  PrimaryButton(
+                    text: AppTypography.uppercaseLabel(l10n.resetPassword),
+                    isLoading: auth.isLoading,
+                    onPressed: _confirm,
+                  ),
+                ],
+                if (auth.errorMessage != null) ...[
+                  const SizedBox(height: AppSpacing.spaceSm),
+                  ThemedErrorBanner(
+                    message: auth.errorMessage!,
+                    onRetry: switch (_step) {
+                      0 => _request,
+                      1 => _verify,
+                      _ => _confirm,
+                    },
+                  ),
+                ],
+              ],
             ),
           ),
         ),
