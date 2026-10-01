@@ -1,38 +1,69 @@
-/// Academy content contract for the future core service
-/// (courses, ebooks, lessons, enrolment).
-///
-/// The mock below returns a small fake catalog. The providers currently serve
-/// their bundled static data; rebinding them to [AcademyRepository] is a
-/// follow-up that touches one file per provider (the construction site).
-/// Swapping the mock for the real HTTP binding later is one file:
-/// this one.
+import '../core/api_client.dart';
+import '../models/academy_catalog.dart';
+
+/// Read access to the academy catalog (academy-service student routes,
+/// served by the gateway under `/api/v1/academy/`).
 abstract class AcademyRepository {
-  Future<List<AcademyCourse>> courses();
-  Future<List<AcademyEbook>> ebooks();
+  /// `GET /academy/levels`: levels with at least one published subject.
+  Future<AcademyLevels> levels();
+
+  /// `GET /academy/subjects`: one page of published subjects. [limit] is
+  /// capped at 100 by the server.
+  Future<SubjectPage> subjects({
+    String? levelKey,
+    String? term,
+    int page = 1,
+    int limit = 20,
+  });
+
+  /// `GET /academy/subjects/{id}`: throws [ApiException] with status 404 for
+  /// unknown or unpublished subjects.
+  Future<AcademySubjectDetail> subject(String id);
 }
 
-class AcademyCourse {
-  final String id;
-  final String title;
-  const AcademyCourse({required this.id, required this.title});
-}
+/// [AcademyRepository] over the authed gateway client. A 401 runs the usual
+/// refresh-once-then-logout flow inside [ApiClient]; 5xx and network errors
+/// surface as exceptions and never touch the session.
+class HttpAcademyRepository implements AcademyRepository {
+  HttpAcademyRepository(this._api);
 
-class AcademyEbook {
-  final String id;
-  final String title;
-  const AcademyEbook({required this.id, required this.title});
-}
+  final ApiClient _api;
 
-/// Fake catalog used until the core service ships.
-class MockAcademyRepository implements AcademyRepository {
+  static const _base = '/api/v1/academy';
+
   @override
-  Future<List<AcademyCourse>> courses() async => const [
-    AcademyCourse(id: 'mock-1', title: 'Mock Course One'),
-    AcademyCourse(id: 'mock-2', title: 'Mock Course Two'),
-  ];
+  Future<AcademyLevels> levels() async {
+    final res = await _api.get('$_base/levels');
+    return AcademyLevels.fromJson(res);
+  }
 
   @override
-  Future<List<AcademyEbook>> ebooks() async => const [
-    AcademyEbook(id: 'mock-e1', title: 'Mock Ebook One'),
-  ];
+  Future<SubjectPage> subjects({
+    String? levelKey,
+    String? term,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final query = <String, String>{
+      if (levelKey != null && levelKey.isNotEmpty) 'level': levelKey,
+      if (term != null && term.isNotEmpty) 'term': term,
+      'page': '$page',
+      'limit': '$limit',
+    };
+    final qs = query.entries
+        .map(
+          (e) =>
+              '${Uri.encodeQueryComponent(e.key)}='
+              '${Uri.encodeQueryComponent(e.value)}',
+        )
+        .join('&');
+    final res = await _api.get('$_base/subjects?$qs');
+    return SubjectPage.fromJson(res);
+  }
+
+  @override
+  Future<AcademySubjectDetail> subject(String id) async {
+    final res = await _api.get('$_base/subjects/${Uri.encodeComponent(id)}');
+    return AcademySubjectDetail.fromJson(res);
+  }
 }

@@ -1,7 +1,10 @@
 # wael-app frontend (Flutter)
 
-Real auth against the wael-app gateway; academy content stays mock-backed
-behind repository interfaces until the core service ships.
+Real auth against the wael-app gateway. Academy content is read through
+`AcademyRepository` (`lib/repositories/academy_repository.dart`: levels,
+subjects, subject detail over `/api/v1/academy/`, models in
+`lib/models/academy_catalog.dart`). Screens move off the bundled mock data onto
+it one at a time; `docs/frontend/STATUS.md` shows which have moved.
 
 ## Backend connection
 
