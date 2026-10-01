@@ -12,7 +12,6 @@ class PrimaryButton extends StatelessWidget {
   final Color backgroundColor;
   final Color textColor;
   final double borderRadius;
-  final bool isSecondary;
 
   const PrimaryButton({
     super.key,
@@ -26,33 +25,24 @@ class PrimaryButton extends StatelessWidget {
     this.backgroundColor = AppColors.crimson,
     this.textColor = AppColors.textPrimary,
     this.borderRadius = AppRadius.xl,
-    this.isSecondary = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBg = isSecondary
-        ? AppColors.surfaceElevated
-        : backgroundColor;
-    final effectiveBorder = isSecondary
-        ? const BorderSide(color: AppColors.prominentBorder, width: 1)
-        : BorderSide.none;
-
     return SizedBox(
       width: width ?? double.infinity,
       height: height,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: effectiveBg,
+          backgroundColor: backgroundColor,
           foregroundColor: textColor,
-          disabledBackgroundColor: effectiveBg.withValues(alpha: 0.5),
+          disabledBackgroundColor: backgroundColor.withValues(alpha: 0.5),
           disabledForegroundColor: textColor.withValues(alpha: 0.5),
-          elevation: isSecondary ? 0 : 4,
-          shadowColor: isSecondary ? Colors.transparent : AppColors.crimsonGlow,
+          elevation: 4,
+          shadowColor: AppColors.crimsonGlow,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
-            side: effectiveBorder,
           ),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.spaceLg),
         ),
