@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -36,6 +37,7 @@ Future<void> pumpScreen(
   AuthProvider? auth,
   NotificationsProvider? notifications,
   SettingsProvider? settings,
+  List<SingleChildWidget> extraProviders = const [],
   bool settle = true,
   Size size = const Size(390, 844),
 }) async {
@@ -52,6 +54,7 @@ Future<void> pumpScreen(
           value: notifications ?? NotificationsProvider(),
         ),
         ChangeNotifierProvider.value(value: settings ?? SettingsProvider()),
+        ...extraProviders,
       ],
       child: localizedApp(
         locale,

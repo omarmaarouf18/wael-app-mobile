@@ -66,6 +66,9 @@ class AppColors {
   static const Color navBarGlass = Color(0xF20B0B0B);
   static const Color glassHairline = Color(0x14FFFFFF);
 
+  // Thin rule beside the brand eyebrow (white at 30%).
+  static const Color brandRule = Color(0x4DFFFFFF);
+
   // Pure black for scrims, text shadows and vignette gradients.
   static const Color scrimBlack = Color(0xFF000000);
 }
@@ -308,6 +311,19 @@ class AppTypography {
       fontSize: 9,
       letterSpacing: isArabic ? 0 : 2.0,
     );
+  }
+
+  /// Main-shell header lockup: title (18) over a ruled eyebrow (9).
+  static TextStyle shellWordmark({bool isArabic = false}) {
+    return headlineSm(
+      isArabic: isArabic,
+    ).copyWith(letterSpacing: 1.5, fontWeight: FontWeight.w800, fontSize: 18);
+  }
+
+  static TextStyle shellEyebrow({bool isArabic = false}) {
+    return academyEyebrow(
+      isArabic: isArabic,
+    ).copyWith(fontSize: 9, letterSpacing: isArabic ? 0 : 2.8);
   }
 
   /// The only sanctioned uppercase transform. Screens must not call
