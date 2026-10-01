@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network access. Only the debug and profile manifests declared it, so a
+         release build could not reach the gateway or play any video. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="EL METR ACADEMY"
         android:name="${applicationName}"
