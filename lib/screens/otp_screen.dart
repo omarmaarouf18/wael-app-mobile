@@ -100,7 +100,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       ),
                     ),
                   PrimaryButton(
-                    text: l10n.verify.toUpperCase(),
+                    text: AppTypography.uppercaseLabel(l10n.verify),
                     isLoading: auth.isLoading,
                     onPressed: _verify,
                   ),

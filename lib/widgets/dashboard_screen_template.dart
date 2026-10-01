@@ -45,9 +45,12 @@ class DashboardScreenTemplate extends StatelessWidget {
               preferredSize: const Size.fromHeight(AppSpacing.headerHeight),
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Color(0xF2090909),
+                  color: AppColors.headerGlass,
                   border: Border(
-                    bottom: BorderSide(color: Color(0x14FFFFFF), width: 1),
+                    bottom: BorderSide(
+                      color: AppColors.glassHairline,
+                      width: 1,
+                    ),
                   ),
                 ),
                 child: SafeArea(
@@ -90,7 +93,9 @@ class DashboardScreenTemplate extends StatelessWidget {
                                   Container(
                                     width: 10,
                                     height: 1,
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: AppColors.textPrimary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -108,7 +113,9 @@ class DashboardScreenTemplate extends StatelessWidget {
                                   Container(
                                     width: 10,
                                     height: 1,
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: AppColors.textPrimary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
                                 ],
                               ),

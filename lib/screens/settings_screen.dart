@@ -35,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    l10n.honorCodeAndTerms.toUpperCase(),
+                    AppTypography.uppercaseLabel(l10n.honorCodeAndTerms),
                     style: AppTypography.labelSm(
                       isArabic: l10n.isArabic,
                     ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.2),
@@ -103,7 +103,7 @@ class SettingsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    l10n.editProfile.toUpperCase(),
+                    AppTypography.uppercaseLabel(l10n.editProfile),
                     style: AppTypography.headlineSm(
                       isArabic: l10n.isArabic,
                     ).copyWith(fontWeight: FontWeight.bold),
@@ -129,7 +129,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.spaceLg),
               PrimaryButton(
-                text: l10n.save.toUpperCase(),
+                text: AppTypography.uppercaseLabel(l10n.save),
                 onPressed: () {
                   auth.updateProfile(
                     auth.currentUser.copyWith(
@@ -184,7 +184,7 @@ class SettingsScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.white12,
+                                color: AppColors.glassHairline,
                                 width: 1,
                               ),
                               image: const DecorationImage(
@@ -281,10 +281,10 @@ class SettingsScreen extends StatelessWidget {
                         color: AppColors.textMuted,
                       ),
                       label: Text(
-                        l10n.editProfile.toUpperCase(),
+                        AppTypography.uppercaseLabel(l10n.editProfile),
                         style: AppTypography.labelSm(isArabic: l10n.isArabic)
                             .copyWith(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                       ),
@@ -296,7 +296,9 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 2. SECTION: ACCOUNT & SECURITY
-            _buildSectionHeader(l10n.accountSecurity.toUpperCase()),
+            _buildSectionHeader(
+              AppTypography.uppercaseLabel(l10n.accountSecurity),
+            ),
             const SizedBox(height: AppSpacing.spaceXs),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -385,7 +387,9 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             // 4. SECTION: NOTIFICATIONS
-            _buildSectionHeader(l10n.notificationsSettings.toUpperCase()),
+            _buildSectionHeader(
+              AppTypography.uppercaseLabel(l10n.notificationsSettings),
+            ),
             const SizedBox(height: AppSpacing.spaceXs),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -466,7 +470,7 @@ class SettingsScreen extends StatelessWidget {
                   color: AppColors.crimson,
                 ),
                 label: Text(
-                  l10n.signOut.toUpperCase(),
+                  AppTypography.uppercaseLabel(l10n.signOut),
                   style: AppTypography.labelSm(isArabic: l10n.isArabic)
                       .copyWith(
                         color: AppColors.crimson,
@@ -492,7 +496,10 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 2),
                   const Text(
                     'All rights reserved © 2026',
-                    style: TextStyle(color: Color(0xFF404040), fontSize: 10),
+                    style: TextStyle(
+                      color: AppColors.textPlaceholder,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),

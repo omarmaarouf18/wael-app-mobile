@@ -73,9 +73,9 @@ class _MainShellState extends State<MainShell> {
         preferredSize: const Size.fromHeight(AppSpacing.headerHeight),
         child: Container(
           decoration: const BoxDecoration(
-            color: Color(0xF2090909),
+            color: AppColors.headerGlass,
             border: Border(
-              bottom: BorderSide(color: Color(0x14FFFFFF), width: 1),
+              bottom: BorderSide(color: AppColors.glassHairline, width: 1),
             ),
           ),
           child: SafeArea(
@@ -107,7 +107,7 @@ class _MainShellState extends State<MainShell> {
                           Container(
                             width: 12,
                             height: 1,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: AppColors.textPrimary.withValues(alpha: 0.3),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -122,7 +122,7 @@ class _MainShellState extends State<MainShell> {
                           Container(
                             width: 12,
                             height: 1,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: AppColors.textPrimary.withValues(alpha: 0.3),
                           ),
                         ],
                       ),
@@ -211,15 +211,11 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: Container(
         height: AppSpacing.navBarHeight,
         decoration: const BoxDecoration(
-          color: Color(0xF20B0B0B),
-          border: Border(top: BorderSide(color: Color(0x14FFFFFF), width: 1)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x99000000),
-              offset: Offset(0, -4),
-              blurRadius: 24,
-            ),
-          ],
+          color: AppColors.navBarGlass,
+          border: Border(
+            top: BorderSide(color: AppColors.glassHairline, width: 1),
+          ),
+          boxShadow: AppElevation.bottomNavSoft,
         ),
         child: SafeArea(
           top: false,
@@ -273,7 +269,7 @@ class _MainShellState extends State<MainShell> {
               ),
               const SizedBox(height: 3),
               Text(
-                label.toUpperCase(),
+                AppTypography.uppercaseLabel(label),
                 style: AppTypography.labelSm().copyWith(
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

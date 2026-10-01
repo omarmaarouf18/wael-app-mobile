@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.cover,
                     alignment: const Alignment(0, -0.6),
                     errorBuilder: (ctx, err, st) =>
-                        Container(color: const Color(0xFF101010)),
+                        Container(color: AppColors.surfaceLayer1),
                   ),
                 ),
                 // Edge Vignette & Multi-stop Dissolution into #080808
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       end: Alignment.bottomCenter,
                       stops: const [0.0, 0.25, 0.55, 0.85, 1.0],
                       colors: [
-                        Colors.black.withValues(alpha: 0.35),
+                        AppColors.scrimBlack.withValues(alpha: 0.35),
                         Colors.transparent,
                         AppColors.voidCanvas.withValues(alpha: 0.55),
                         AppColors.voidCanvas.withValues(alpha: 0.95),
@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     letterSpacing: 6.0,
                                     shadows: const [
                                       Shadow(
-                                        color: Colors.black,
+                                        color: AppColors.scrimBlack,
                                         blurRadius: 16,
                                         offset: Offset(0, 2),
                                       ),
@@ -214,10 +214,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ).copyWith(
                                     fontSize: 11,
                                     letterSpacing: 4.5,
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    color: AppColors.textPrimary.withValues(
+                                      alpha: 0.8,
+                                    ),
                                     shadows: const [
                                       Shadow(
-                                        color: Colors.black,
+                                        color: AppColors.scrimBlack,
                                         blurRadius: 10,
                                         offset: Offset(0, 1),
                                       ),
@@ -317,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             child: Checkbox(
                                               value: auth.rememberMe,
                                               activeColor: AppColors.crimson,
-                                              checkColor: Colors.white,
+                                              checkColor: AppColors.textPrimary,
                                               side: const BorderSide(
                                                 color:
                                                     AppColors.prominentBorder,
@@ -392,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               // Sign In CTA
                               PrimaryButton(
-                                text: l10n.signIn.toUpperCase(),
+                                text: AppTypography.uppercaseLabel(l10n.signIn),
                                 isLoading: auth.isLoading,
                                 onPressed: _handleLogin,
                               ),

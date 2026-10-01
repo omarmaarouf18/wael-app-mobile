@@ -37,7 +37,7 @@ class NotificationsScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                l10n.dispatchesTitle.toUpperCase(),
+                AppTypography.uppercaseLabel(l10n.dispatchesTitle),
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.labelSm().copyWith(
                   letterSpacing: 1.5,
@@ -56,7 +56,7 @@ class NotificationsScreen extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              l10n.markAllRead.toUpperCase(),
+              AppTypography.uppercaseLabel(l10n.markAllRead),
               style: AppTypography.labelSm(isArabic: l10n.isArabic).copyWith(
                 color: AppColors.textMuted,
                 fontSize: 11,
@@ -187,7 +187,7 @@ class NotificationsScreen extends StatelessWidget {
                                               : FontWeight.w700,
                                           color: item.isRead
                                               ? AppColors.textSecondary
-                                              : Colors.white,
+                                              : AppColors.textPrimary,
                                         ),
                                   ),
                                 ),

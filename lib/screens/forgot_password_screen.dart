@@ -112,7 +112,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
                     PrimaryButton(
-                      text: l10n.sendCode.toUpperCase(),
+                      text: AppTypography.uppercaseLabel(l10n.sendCode),
                       isLoading: auth.isLoading,
                       onPressed: _request,
                     ),
@@ -126,7 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
                     PrimaryButton(
-                      text: l10n.verify.toUpperCase(),
+                      text: AppTypography.uppercaseLabel(l10n.verify),
                       isLoading: auth.isLoading,
                       onPressed: _verify,
                     ),
@@ -140,7 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
                     PrimaryButton(
-                      text: l10n.resetPassword.toUpperCase(),
+                      text: AppTypography.uppercaseLabel(l10n.resetPassword),
                       isLoading: auth.isLoading,
                       onPressed: _confirm,
                     ),

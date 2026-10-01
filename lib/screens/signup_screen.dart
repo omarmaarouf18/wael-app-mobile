@@ -248,7 +248,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Checkbox(
                             value: _agreeToTerms,
                             activeColor: AppColors.crimson,
-                            checkColor: Colors.white,
+                            checkColor: AppColors.textPrimary,
                             side: const BorderSide(
                               color: AppColors.prominentBorder,
                               width: 1.5,
@@ -301,7 +301,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Submit CTA
                     PrimaryButton(
-                      text: l10n.signUp.toUpperCase(),
+                      text: AppTypography.uppercaseLabel(l10n.signUp),
                       isLoading: auth.isLoading,
                       onPressed: _handleSignup,
                     ),

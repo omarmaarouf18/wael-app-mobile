@@ -45,6 +45,29 @@ class AppColors {
   static const Color statusRejected = Color(0xFFC1121F);
   static const Color statusRejectedBg = Color(0x26C1121F);
   static const Color starRating = Color(0xFFF59E0B);
+
+  // Semantic Colors (feedback: snackbars, inline messages, banners).
+  // success/warning reuse the status hues. danger is a lighter tint than
+  // crimson/statusRejected because crimson is only 3.0:1 on surfaceLayer1;
+  // use crimson for brand fills and danger for red text and icons.
+  // Each foreground is >= 4.5:1 on voidCanvas through surfaceHigh, and on its
+  // own *Bg variant composited over those surfaces (WCAG AA for body text).
+  static const Color success = statusApproved;
+  static const Color successBg = statusApprovedBg;
+  static const Color warning = statusPending;
+  static const Color warningBg = statusPendingBg;
+  static const Color danger = Color(0xFFF4707A);
+  static const Color dangerBg = Color(0x26F4707A);
+  static const Color info = Color(0xFF60A5FA);
+  static const Color infoBg = Color(0x2660A5FA);
+
+  // Glass chrome (translucent header and bottom bar over scrolling content)
+  static const Color headerGlass = Color(0xF2090909);
+  static const Color navBarGlass = Color(0xF20B0B0B);
+  static const Color glassHairline = Color(0x14FFFFFF);
+
+  // Pure black for scrims, text shadows and vignette gradients.
+  static const Color scrimBlack = Color(0xFF000000);
 }
 
 class AppSpacing {
@@ -101,6 +124,11 @@ class AppElevation {
 
   static const List<BoxShadow> bottomNav = [
     BoxShadow(color: Color(0xCC000000), offset: Offset(0, -4), blurRadius: 24),
+  ];
+
+  /// Same geometry as [bottomNav] with a lighter shadow; used by the main shell bar.
+  static const List<BoxShadow> bottomNavSoft = [
+    BoxShadow(color: Color(0x99000000), offset: Offset(0, -4), blurRadius: 24),
   ];
 }
 
@@ -212,6 +240,11 @@ class AppTypography {
           );
   }
 
+  /// The only sanctioned uppercase transform. Screens must not call
+  /// `.toUpperCase()`; use this for button and section labels. Arabic has no
+  /// letter case, so Arabic text passes through unchanged.
+  static String uppercaseLabel(String text) => text.toUpperCase();
+
   static TextStyle bodyLg({bool isArabic = false}) {
     return isArabic
         ? GoogleFonts.cairo(
@@ -311,7 +344,7 @@ class AppTheme {
         onError: AppColors.textPrimary,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xF2090909),
+        backgroundColor: AppColors.headerGlass,
         elevation: 0,
         centerTitle: true,
         scrolledUnderElevation: 0,
