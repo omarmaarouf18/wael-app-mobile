@@ -174,10 +174,17 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signup({required String email, required String password}) async {
+  Future<bool> signup({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
     _begin();
     try {
       final result = await _repo.signup(
+        fullName: fullName.trim(),
+        phone: phone.trim(),
         email: email.trim(),
         password: password,
       );

@@ -29,6 +29,8 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<SignupResult> signup({
+    required String fullName,
+    required String phone,
     required String email,
     required String password,
   }) async {

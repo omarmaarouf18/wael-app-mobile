@@ -46,11 +46,14 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    final fullName = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (email.isEmpty ||
         password.isEmpty ||
-        _nameController.text.trim().isEmpty) {
+        fullName.isEmpty ||
+        phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.crimson,
@@ -79,7 +82,12 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.signup(email: email, password: password);
+    final success = await auth.signup(
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      password: password,
+    );
 
     if (success && mounted) {
       Navigator.of(context).pushReplacementNamed('/otp');

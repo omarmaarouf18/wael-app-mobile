@@ -35,7 +35,12 @@ void main() {
   test('signup moves to verification with pending email', () async {
     final store = MemoryTokenStore();
     final auth = providerWith(FakeAuthRepository(), store);
-    final ok = await auth.signup(email: 'new@e.com', password: 'password123');
+    final ok = await auth.signup(
+      fullName: 'New User',
+      phone: '+201000000001',
+      email: 'new@e.com',
+      password: 'password123',
+    );
     expect(ok, isTrue);
     expect(auth.status, AuthStatus.needsVerification);
     expect(auth.pendingVerificationEmail, 'new@e.com');

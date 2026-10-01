@@ -44,6 +44,8 @@ class SignupResult {
 /// Auth backend contract. HTTP binding below; tests use fakes.
 abstract class AuthRepository {
   Future<SignupResult> signup({
+    required String fullName,
+    required String phone,
     required String email,
     required String password,
   });
@@ -69,12 +71,19 @@ class HttpAuthRepository implements AuthRepository {
 
   @override
   Future<SignupResult> signup({
+    required String fullName,
+    required String phone,
     required String email,
     required String password,
   }) async {
     final res = await _client.post(
       '$_prefix/signup',
-      body: {'email': email, 'password': password},
+      body: {
+        'full_name': fullName,
+        'phone': phone,
+        'email': email,
+        'password': password,
+      },
     );
     return SignupResult(
       account: AuthAccount(

@@ -60,6 +60,8 @@ void main() {
         final email =
             'failmode_${DateTime.now().millisecondsSinceEpoch}@example.com';
         final res = await authRepo.signup(
+          fullName: 'Failmode User',
+          phone: '+201000000002',
           email: email,
           password: 'Password123!',
         );
@@ -80,6 +82,8 @@ void main() {
         try {
           try {
             await authRepo.signup(
+              fullName: 'GW Stop',
+              phone: '+201000000003',
               email: 'gw_stop@example.com',
               password: 'Password123!',
             );
@@ -104,6 +108,8 @@ void main() {
         try {
           try {
             await authRepo.signup(
+              fullName: 'Auth Stop',
+              phone: '+201000000004',
               email: 'auth_stop@example.com',
               password: 'Password123!',
             );
@@ -166,6 +172,8 @@ void main() {
           try {
             print('Attempting signup while Redis is down:');
             await authRepo.signup(
+              fullName: 'Redis Stop',
+              phone: '+201000000005',
               email: 'redis_stop@example.com',
               password: 'Password123!',
             );
@@ -207,6 +215,8 @@ void main() {
           try {
             print('Attempting signup while MongoDB is down:');
             await authRepo.signup(
+              fullName: 'Mongo Stop',
+              phone: '+201000000006',
               email: 'mongo_stop@example.com',
               password: 'Password123!',
             );

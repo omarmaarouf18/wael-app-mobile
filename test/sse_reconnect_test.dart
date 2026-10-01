@@ -27,6 +27,8 @@ void main() {
           'sse_restart_${DateTime.now().millisecondsSinceEpoch}@example.com';
       print('Signing up user for SSE test: $email');
       final signup = await authRepo.signup(
+        fullName: 'SSE Reconnect User',
+        phone: '+201000000015',
         email: email,
         password: 'SecurePassword123!',
       );

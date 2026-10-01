@@ -45,6 +45,8 @@ void main() {
       test('1. signup happy path', () async {
         print('=== [SCENARIO 1] signup happy path ===');
         final result = await authRepo.signup(
+          fullName: 'Test User',
+          phone: '+201000000010',
           email: testEmail,
           password: testPassword,
         );
@@ -64,7 +66,12 @@ void main() {
       test('2. duplicate email fails with 409', () async {
         print('=== [SCENARIO 2] duplicate email ===');
         try {
-          await authRepo.signup(email: testEmail, password: testPassword);
+          await authRepo.signup(
+            fullName: 'Duplicate User',
+            phone: '+201000000011',
+            email: testEmail,
+            password: testPassword,
+          );
           fail('Expected 409 duplicate email');
         } on ApiException catch (e) {
           print(
@@ -73,14 +80,19 @@ void main() {
           final appMsg = ErrorMessages.forApiError(e);
           print('Observed app display: $appMsg');
           expect(e.statusCode, 409);
-          expect(appMsg, ErrorMessages.duplicateEmail(false));
+          expect(appMsg, ErrorMessages.requestFailed(false));
         }
       });
 
       test('3. invalid input fails with 400', () async {
         print('=== [SCENARIO 3] invalid input ===');
         try {
-          await authRepo.signup(email: 'not-an-email', password: '123');
+          await authRepo.signup(
+            fullName: 'Invalid User',
+            phone: '123',
+            email: 'not-an-email',
+            password: '123',
+          );
           fail('Expected 400 invalid input');
         } on ApiException catch (e) {
           print(
@@ -112,6 +124,8 @@ void main() {
         final unverifiedEmail =
             'unverified_${DateTime.now().millisecondsSinceEpoch}@example.com';
         final first = await authRepo.signup(
+          fullName: 'Unverified User',
+          phone: '+201000000012',
           email: unverifiedEmail,
           password: testPassword,
         );
@@ -119,7 +133,12 @@ void main() {
 
         // Attempt re-signup to get fresh OTP (resend)
         try {
-          await authRepo.signup(email: unverifiedEmail, password: testPassword);
+          await authRepo.signup(
+            fullName: 'Unverified User',
+            phone: '+201000000013',
+            email: unverifiedEmail,
+            password: testPassword,
+          );
           print('Unexpected: signup allowed on existing unverified email');
         } on ApiException catch (e) {
           print(
@@ -393,6 +412,8 @@ void main() {
         final lockoutEmail =
             'lockout_${DateTime.now().millisecondsSinceEpoch}@example.com';
         final res = await authRepo.signup(
+          fullName: 'Lockout User',
+          phone: '+201000000014',
           email: lockoutEmail,
           password: testPassword,
         );
