@@ -96,6 +96,9 @@ class AppLocalizations {
   String get submit => isArabic ? 'إرسال' : 'Submit';
   String get retry => isArabic ? 'إعادة المحاولة' : 'Retry';
   String get close => isArabic ? 'إغلاق' : 'Close';
+  String get back => isArabic ? 'رجوع' : 'Back';
+  String get confirm => isArabic ? 'تأكيد' : 'Confirm';
+  String get loading => isArabic ? 'جارٍ التحميل...' : 'Loading...';
 
   // Auth
   String get signIn => isArabic ? 'تسجيل الدخول' : 'Sign In';

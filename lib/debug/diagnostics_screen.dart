@@ -67,6 +67,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         backgroundColor: AppColors.surfaceLayer1,
         actions: [
           IconButton(
+            tooltip: 'Component library',
+            icon: const Icon(Icons.widgets_outlined, size: 20),
+            onPressed: () => Navigator.of(context).pushNamed('/components'),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             onPressed: () {
               _loadMaskedToken();

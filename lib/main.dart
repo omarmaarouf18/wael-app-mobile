@@ -35,12 +35,37 @@ import 'screens/payment_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/ebook_screen.dart';
+import 'debug/component_library_screen.dart';
 import 'debug/diagnostics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PushNotificationService().initialize();
   runApp(const WaelApp());
+}
+
+/// Named routes. Debug-only routes (`/debug`, `/components`) are registered
+/// only when [includeDebugRoutes] is true, which defaults to `kDebugMode`, a
+/// compile-time constant: in release builds they are absent from the table and
+/// their screens are tree-shaken.
+Map<String, WidgetBuilder> buildAppRoutes({
+  bool includeDebugRoutes = kDebugMode,
+}) {
+  return {
+    '/splash': (context) => const SplashScreen(),
+    '/login': (context) => const LoginScreen(),
+    '/signup': (context) => const SignupScreen(),
+    '/otp': (context) => const OtpScreen(),
+    '/forgot': (context) => const ForgotPasswordScreen(),
+    '/main': (context) => const MainShell(),
+    '/notifications': (context) => const NotificationsScreen(),
+    '/settings': (context) => const SettingsScreen(),
+    '/ebooks': (context) => const EbookScreen(),
+    if (includeDebugRoutes) ...{
+      '/debug': (context) => const DiagnosticsScreen(),
+      '/components': (context) => const ComponentLibraryScreen(),
+    },
+  };
 }
 
 class WaelApp extends StatelessWidget {
@@ -80,18 +105,7 @@ class WaelApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             initialRoute: '/splash',
-            routes: {
-              '/splash': (context) => const SplashScreen(),
-              '/login': (context) => const LoginScreen(),
-              '/signup': (context) => const SignupScreen(),
-              '/otp': (context) => const OtpScreen(),
-              '/forgot': (context) => const ForgotPasswordScreen(),
-              '/main': (context) => const MainShell(),
-              '/notifications': (context) => const NotificationsScreen(),
-              '/settings': (context) => const SettingsScreen(),
-              '/ebooks': (context) => const EbookScreen(),
-              if (kDebugMode) '/debug': (context) => const DiagnosticsScreen(),
-            },
+            routes: buildAppRoutes(),
             onGenerateRoute: (settings) {
               if (settings.name == '/course-details') {
                 final courseId =

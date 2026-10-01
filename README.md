@@ -45,6 +45,14 @@ Linux desktop (`-d linux`) is the lowest-friction target on this machine:
 
 *(Note: On systems where `libsecret-1` headers are not in `/usr/lib64/pkgconfig`, point `PKG_CONFIG_PATH` to the libsecret sysroot).*
 
+### Component library (Debug Mode Only)
+`/components` shows every shared widget from `lib/widgets/` with an EN/AR toggle. Open the
+diagnostics screen (`/debug`) and tap the widgets icon in the app bar. The route is only
+registered when `kDebugMode` is true, so it is not in release builds. Verify with
+`flutter test --dart-define=dart.vm.product=true test/debug_routes_test.dart` (runs the
+route-table test as a release build) or by searching a release binary for
+`ComponentLibraryScreen`.
+
 ### Diagnostics screen (Debug Mode Only)
 Navigate to `/debug` (or use the debug button in development builds) to access the diagnostics screen:
 - Gateway base URL
