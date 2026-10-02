@@ -39,8 +39,10 @@ class DirectorStrip extends StatelessWidget {
               image: imageAsset.isEmpty
                   ? null
                   : DecorationImage(
-                      image: AssetImage(imageAsset),
+                      // The art is 1024 x 1536; decode it small.
+                      image: ResizeImage(AssetImage(imageAsset), width: 144),
                       fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
                     ),
             ),
             child: imageAsset.isEmpty

@@ -40,13 +40,12 @@ void main() {
 
   test('no sample person, credential or student statistic is in lib/', () {
     const forbidden = [
-      'Wael El Metr', // the old director card text
+      'Wael El Metr', // the old, unverified director card text
       'وائل المتر',
       'Alexander Vane',
       'alexander_vane',
       'Top 3%',
       'Senior Scholar',
-      'Arab Lawyers Union',
       'International Arbitrator',
       'Counselor Wael El Saeed',
     ];
@@ -58,6 +57,33 @@ void main() {
       }
     }
     expect(hits, isEmpty);
+  });
+
+  test('the director\'s name and titles appear only in the content file', () {
+    // Owner-verified (2026-10-02), and allowed in exactly one place.
+    const onlyInContent = [
+      'Wael El Saeed',
+      'وائل السعيد',
+      'Arab Lawyers Union',
+      'اتحاد المحامين العرب',
+      'Law lecturer',
+      'مدرس قانون',
+    ];
+    final hits = <String>[];
+    for (final f in lib) {
+      if (f.path.endsWith('lib/content/director_profile.dart')) continue;
+      final text = f.readAsStringSync();
+      for (final needle in onlyInContent) {
+        if (text.contains(needle)) hits.add('${f.path}: $needle');
+      }
+    }
+    expect(hits, isEmpty);
+    final content = File(
+      'lib/content/director_profile.dart',
+    ).readAsStringSync();
+    for (final needle in onlyInContent) {
+      expect(content.contains(needle), isTrue, reason: needle);
+    }
   });
 
   test('every committed asset is referenced by lib/ (or listed below)', () {

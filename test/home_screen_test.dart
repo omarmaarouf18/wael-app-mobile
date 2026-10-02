@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/content/director_profile.dart';
+import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/home_screen.dart';
+import 'package:wael_app/widgets/app_badge.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/home_hero_banner.dart';
 import 'package:wael_app/widgets/instructor_dossier_card.dart';
@@ -94,10 +97,97 @@ void main() {
         expect(find.text(l10n.upcoming), findsNothing);
       });
 
+      testWidgets('the shipped director card: portrait, name and four titles', (
+        tester,
+      ) async {
+        // The default HomeProvider carries the shipped, owner-verified profile.
+        await pump(tester, fake(), home: HomeProvider());
+        final card = find.byType(InstructorDossierCard);
+        expect(card, findsOneWidget);
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.text(isArabic ? 'وائل السعيد' : 'Wael El Saeed'),
+          ),
+          findsOneWidget,
+        );
+        final titles = isArabic
+            ? kDirectorProfile.titlesAr
+            : kDirectorProfile.titles;
+        expect(titles, hasLength(4));
+        for (final t in titles) {
+          expect(
+            find.descendant(of: card, matching: find.text(t)),
+            findsOneWidget,
+            reason: t,
+          );
+        }
+        // One chip per title and no biography or "read more".
+        expect(
+          find.descendant(of: card, matching: find.byType(AppBadge)),
+          findsNWidgets(4),
+        );
+        expect(find.text(l10n.readMore), findsNothing);
+        // The portrait is the character art.
+        final portrait = find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate((w) {
+            if (w is! Container || w.decoration is! BoxDecoration) return false;
+            final image = (w.decoration! as BoxDecoration).image?.image;
+            return image is ResizeImage &&
+                image.imageProvider is AssetImage &&
+                (image.imageProvider as AssetImage).assetName ==
+                    AppConstants.imgCharacterArt;
+          }),
+        );
+        expect(portrait, findsOneWidget);
+        // Portrait, then the name.
+        expect(
+          startsBefore(
+            tester,
+            portrait,
+            find.descendant(
+              of: card,
+              matching: find.text(isArabic ? 'وائل السعيد' : 'Wael El Saeed'),
+            ),
+            direction,
+          ),
+          isTrue,
+        );
+      });
+
+      testWidgets('Home still shows the character art in the hero', (
+        tester,
+      ) async {
+        await pump(tester, fake());
+        final hero = tester.widget<Image>(
+          find.descendant(
+            of: find.byType(HomeHeroBanner),
+            matching: find.byType(Image),
+          ),
+        );
+        // home_hero.png is the character art, scaled down.
+        expect((hero.image as AssetImage).assetName, AppConstants.imgHomeHero);
+        // And the login poster is not used here.
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Image &&
+                w.image is AssetImage &&
+                (w.image as AssetImage).assetName == AppConstants.imgPoster,
+          ),
+          findsNothing,
+        );
+      });
+
       testWidgets('the director card is hidden while the profile is empty', (
         tester,
       ) async {
-        await pump(tester, fake(), home: HomeProvider());
+        await pump(
+          tester,
+          fake(),
+          home: HomeProvider(director: const DirectorProfile()),
+        );
         expect(find.byType(InstructorDossierCard), findsNothing);
         expect(find.text(l10n.instructorSectionTitle), findsNothing);
         expect(find.text(l10n.readMore), findsNothing);
@@ -119,14 +209,17 @@ void main() {
           expect(tester.getTopRight(headline).dx, greaterThan(width - 40));
           expect(tester.getCenter(art).dx, lessThan(width / 2));
         }
-        // Director card: portrait before the name, founder tag after it.
+        // Director card: the name, then the title chips under it.
         final name = find.text(
           isArabic ? testDirector.nameAr : testDirector.name,
         );
-        final tag = find.text(
-          isArabic ? testDirector.badgeAr : testDirector.badge,
+        final firstTitle = find.text(
+          isArabic ? testDirector.titlesAr.first : testDirector.titles.first,
         );
-        expect(startsBefore(tester, name, tag, direction), isTrue);
+        expect(
+          tester.getTopLeft(name).dy,
+          lessThan(tester.getTopLeft(firstTitle).dy),
+        );
         // "View all" is at the end edge of the my-courses header.
         expect(
           startsBefore(

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/content/director_profile.dart';
 import 'package:wael_app/core/api_client.dart';
+import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
@@ -105,7 +106,12 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(title(testDirector.titleAr, testDirector.title)),
+          find.text(
+            title(
+              testDirector.localizedTagline(true),
+              testDirector.localizedTagline(false),
+            ),
+          ),
           findsOneWidget,
         );
         // Gone with the mock: rating, hours, bookmark, share, syllabus download.
@@ -116,10 +122,45 @@ void main() {
         expect(find.text(l10n.tabClasses), findsNothing);
       });
 
-      testWidgets('no director strip while the director profile is empty', (
+      testWidgets('the shipped director strip: portrait, name and titles', (
         tester,
       ) async {
         await pump(tester, lockedBody, director: kDirectorProfile);
+        final strip = find.byType(DirectorStrip);
+        expect(strip, findsOneWidget);
+        expect(
+          find.descendant(
+            of: strip,
+            matching: find.text(isArabic ? 'وائل السعيد' : 'Wael El Saeed'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: strip,
+            matching: find.text(kDirectorProfile.localizedTagline(isArabic)),
+          ),
+          findsOneWidget,
+        );
+        final image = tester
+            .widgetList<Container>(
+              find.descendant(of: strip, matching: find.byType(Container)),
+            )
+            .map((c) => c.decoration)
+            .whereType<BoxDecoration>()
+            .map((d) => d.image?.image)
+            .whereType<ResizeImage>()
+            .single;
+        expect(
+          (image.imageProvider as AssetImage).assetName,
+          AppConstants.imgCharacterArt,
+        );
+      });
+
+      testWidgets('no director strip while the director profile is empty', (
+        tester,
+      ) async {
+        await pump(tester, lockedBody, director: const DirectorProfile());
         expect(find.byType(DirectorStrip), findsNothing);
         // The subject itself is unaffected.
         expect(find.text(title('القانون المدني', 'Civil Law')), findsOneWidget);

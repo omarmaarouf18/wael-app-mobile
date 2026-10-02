@@ -95,7 +95,7 @@ void main() {
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
             create: (_) => HomeProvider(
-              director: withDirector ? testDirector : kDirectorProfile,
+              director: withDirector ? testDirector : const DirectorProfile(),
             ),
           ),
         ],

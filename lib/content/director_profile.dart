@@ -1,43 +1,34 @@
 /// The academy director's profile, shown on Home and as a strip on each
-/// subject. This file is the only place to fill it in.
+/// subject. This file is the only place to change it.
 ///
-/// Every field is empty on purpose, and the director card is hidden until
-/// [DirectorProfile.hasContent] is true, so the app never shows text the owner
-/// has not supplied. Fill the Arabic (`*Ar`) and English fields below with the
-/// owner-approved text; an empty `*Ar` field falls back to the English one.
+/// The content is the owner's own, taken from the owner's business card and
+/// verified by the owner on 2026-10-02: the name and four titles, in Arabic
+/// and English. There is deliberately no biography. The card is hidden when
+/// the profile has no name, and every part with no text is simply not drawn.
 library;
+
+import '../core/constants.dart';
 
 class DirectorProfile {
   const DirectorProfile({
     this.name = '',
     this.nameAr = '',
-    this.title = '',
-    this.titleAr = '',
-    this.badge = '',
-    this.badgeAr = '',
+    this.titles = const [],
+    this.titlesAr = const [],
     this.bio = '',
     this.bioAr = '',
-    this.credentials = const [],
-    this.credentialsAr = const [],
     this.portraitAsset = '',
   });
 
   final String name;
   final String nameAr;
 
-  /// One-line title under the name (also the tagline on a subject).
-  final String title;
-  final String titleAr;
-
-  /// Short tag next to the name (for example a role label). Empty hides it.
-  final String badge;
-  final String badgeAr;
+  /// Short titles shown under the name, one chip each.
+  final List<String> titles;
+  final List<String> titlesAr;
 
   final String bio;
   final String bioAr;
-
-  final List<String> credentials;
-  final List<String> credentialsAr;
 
   /// Asset path of the portrait. Empty shows a neutral person icon.
   final String portraitAsset;
@@ -51,13 +42,31 @@ class DirectorProfile {
       isArabic && ar.trim().isNotEmpty ? ar : en;
 
   String localizedName(bool isArabic) => _pick(nameAr, name, isArabic);
-  String localizedTitle(bool isArabic) => _pick(titleAr, title, isArabic);
-  String localizedBadge(bool isArabic) => _pick(badgeAr, badge, isArabic);
   String localizedBio(bool isArabic) => _pick(bioAr, bio, isArabic);
 
-  List<String> localizedCredentials(bool isArabic) =>
-      isArabic && credentialsAr.isNotEmpty ? credentialsAr : credentials;
+  List<String> localizedTitles(bool isArabic) =>
+      isArabic && titlesAr.isNotEmpty ? titlesAr : titles;
+
+  /// All titles on one line, for the compact strip on a subject.
+  String localizedTagline(bool isArabic) =>
+      localizedTitles(isArabic).join(' • ');
 }
 
-/// The one director profile of the app. Empty until the owner sends the text.
-const DirectorProfile kDirectorProfile = DirectorProfile();
+/// The one director profile of the app.
+const DirectorProfile kDirectorProfile = DirectorProfile(
+  name: 'Wael El Saeed',
+  nameAr: 'وائل السعيد',
+  titles: [
+    'Lawyer',
+    'Law lecturer',
+    'International and regional arbitrator',
+    'Member of the Arab Lawyers Union',
+  ],
+  titlesAr: [
+    'محامٍ',
+    'مدرس قانون',
+    'محكم دولي وإقليمي',
+    'عضو اتحاد المحامين العرب',
+  ],
+  portraitAsset: AppConstants.imgCharacterArt,
+);

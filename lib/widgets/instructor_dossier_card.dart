@@ -6,10 +6,10 @@ import '../content/director_profile.dart';
 import 'app_badge.dart';
 import 'themed_card.dart';
 
-/// Card presenting the academy director: portrait, name with an optional tag,
-/// title, credential chips and an expandable biography. Every part comes from
-/// the [DirectorProfile]; a part with no text is not drawn. The caller shows
-/// the card only when [DirectorProfile.hasContent] is true.
+/// Card presenting the academy director: portrait, name, one chip per title
+/// and, when the profile has one, an expandable biography. Every part comes
+/// from the [DirectorProfile]; a part with no text is not drawn. The caller
+/// shows the card only when [DirectorProfile.hasContent] is true.
 class InstructorDossierCard extends StatelessWidget {
   const InstructorDossierCard({
     super.key,
@@ -30,9 +30,7 @@ class InstructorDossierCard extends StatelessWidget {
       isArabic: isArabic,
     ).copyWith(color: AppColors.textSecondary, height: 1.45, fontSize: 12);
     final bio = profile.localizedBio(isArabic);
-    final title = profile.localizedTitle(isArabic);
-    final badge = profile.localizedBadge(isArabic);
-    final credentials = profile.localizedCredentials(isArabic);
+    final titles = profile.localizedTitles(isArabic);
 
     return ThemedCard(
       padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
@@ -53,7 +51,11 @@ class InstructorDossierCard extends StatelessWidget {
                   ),
                   image: profile.hasPortrait
                       ? DecorationImage(
-                          image: AssetImage(profile.portraitAsset),
+                          // The art is 1024 x 1536; decode it small.
+                          image: ResizeImage(
+                            AssetImage(profile.portraitAsset),
+                            width: 204,
+                          ),
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
                         )
@@ -72,58 +74,26 @@ class InstructorDossierCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            profile.localizedName(isArabic),
-                            style: AppTypography.headlineSm(isArabic: isArabic)
-                                .copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                          ),
-                        ),
-                        if (badge.isNotEmpty)
-                          AppBadge(
-                            label: badge,
-                            accent: true,
-                            fontSize: 9,
-                            padding: const EdgeInsetsDirectional.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                          ),
-                      ],
+                    Text(
+                      profile.localizedName(isArabic),
+                      style: AppTypography.headlineSm(
+                        isArabic: isArabic,
+                      ).copyWith(fontWeight: FontWeight.w800, fontSize: 16),
                     ),
-                    if (title.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySm(isArabic: isArabic)
-                            .copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
-                              height: 1.3,
-                            ),
-                      ),
-                    ],
                   ],
                 ),
               ),
             ],
           ),
-          if (credentials.isNotEmpty) ...[
+          if (titles.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.spaceSm),
             Wrap(
               spacing: 6,
               runSpacing: 4,
               children: [
-                for (final cred in credentials)
+                for (final title in titles)
                   AppBadge(
-                    label: cred,
+                    label: title,
                     subtle: true,
                     padding: const EdgeInsetsDirectional.symmetric(
                       horizontal: 8,

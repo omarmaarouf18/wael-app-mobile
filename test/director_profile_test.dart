@@ -1,59 +1,83 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/content/director_profile.dart';
+import 'package:wael_app/core/constants.dart';
 
 import 'director_fixture.dart';
 
 void main() {
   group('kDirectorProfile (shipped content)', () {
-    test('is empty: no placeholder or sample text is committed', () {
+    test('is the owner-verified content, exactly', () {
       const p = kDirectorProfile;
-      expect(p.name, isEmpty);
-      expect(p.nameAr, isEmpty);
-      expect(p.title, isEmpty);
-      expect(p.titleAr, isEmpty);
-      expect(p.badge, isEmpty);
-      expect(p.badgeAr, isEmpty);
+      expect(p.nameAr, 'وائل السعيد');
+      expect(p.name, 'Wael El Saeed');
+      expect(p.titlesAr, [
+        'محامٍ',
+        'مدرس قانون',
+        'محكم دولي وإقليمي',
+        'عضو اتحاد المحامين العرب',
+      ]);
+      expect(p.titles, [
+        'Lawyer',
+        'Law lecturer',
+        'International and regional arbitrator',
+        'Member of the Arab Lawyers Union',
+      ]);
+      expect(p.hasContent, isTrue);
+    });
+
+    test('has no biography; the portrait is the character art', () {
+      const p = kDirectorProfile;
       expect(p.bio, isEmpty);
       expect(p.bioAr, isEmpty);
-      expect(p.credentials, isEmpty);
-      expect(p.credentialsAr, isEmpty);
-      expect(p.portraitAsset, isEmpty);
-      expect(p.hasContent, isFalse);
-      expect(p.hasPortrait, isFalse);
+      expect(p.localizedBio(true), isEmpty);
+      expect(p.localizedBio(false), isEmpty);
+      expect(p.portraitAsset, AppConstants.imgCharacterArt);
+      expect(p.hasPortrait, isTrue);
+    });
+
+    test('follows the language', () {
+      const p = kDirectorProfile;
+      expect(p.localizedName(true), 'وائل السعيد');
+      expect(p.localizedName(false), 'Wael El Saeed');
+      expect(p.localizedTitles(true), hasLength(4));
+      expect(p.localizedTitles(false), hasLength(4));
+      expect(p.localizedTagline(false), startsWith('Lawyer • Law lecturer'));
+      expect(p.localizedTagline(true), startsWith('محامٍ • مدرس قانون'));
     });
   });
 
   group('DirectorProfile', () {
+    test('an empty profile has no content and shows nothing', () {
+      const p = DirectorProfile();
+      expect(p.hasContent, isFalse);
+      expect(p.hasPortrait, isFalse);
+      expect(p.localizedTitles(true), isEmpty);
+      expect(p.localizedTagline(false), isEmpty);
+    });
+
     test('has content as soon as there is a name in either language', () {
       expect(const DirectorProfile(name: 'A').hasContent, isTrue);
       expect(const DirectorProfile(nameAr: 'أ').hasContent, isTrue);
       expect(const DirectorProfile(name: '   ').hasContent, isFalse);
-      // A bio without a name is not enough to show the card.
-      expect(const DirectorProfile(bio: 'text').hasContent, isFalse);
+      // Titles or a bio without a name are not enough to show the card.
+      expect(
+        const DirectorProfile(titles: ['x'], bio: 't').hasContent,
+        isFalse,
+      );
     });
 
-    test('picks the active language and falls back to the other', () {
+    test('falls back to English when the Arabic text is missing', () {
+      const onlyEn = DirectorProfile(name: 'A', titles: ['T'], bio: 'B');
+      expect(onlyEn.localizedName(true), 'A');
+      expect(onlyEn.localizedTitles(true), ['T']);
+      expect(onlyEn.localizedBio(true), 'B');
+    });
+
+    test('a filled test profile follows the language', () {
       expect(testDirector.localizedName(true), testDirector.nameAr);
       expect(testDirector.localizedName(false), testDirector.name);
-      const onlyEn = DirectorProfile(name: 'A', title: 'T', bio: 'B');
-      expect(onlyEn.localizedName(true), 'A');
-      expect(onlyEn.localizedTitle(true), 'T');
-      expect(onlyEn.localizedBio(true), 'B');
-      expect(onlyEn.localizedBadge(true), isEmpty);
-      expect(onlyEn.localizedCredentials(true), isEmpty);
-    });
-
-    test('credentials follow the language, with fallback', () {
-      expect(
-        testDirector.localizedCredentials(true),
-        testDirector.credentialsAr,
-      );
-      expect(
-        testDirector.localizedCredentials(false),
-        testDirector.credentials,
-      );
-      const onlyEn = DirectorProfile(name: 'A', credentials: ['x']);
-      expect(onlyEn.localizedCredentials(true), ['x']);
+      expect(testDirector.localizedTitles(true), testDirector.titlesAr);
+      expect(testDirector.localizedTitles(false), testDirector.titles);
     });
   });
 }

@@ -70,7 +70,7 @@ class CourseDetailBody extends StatelessWidget {
                   const SizedBox(height: AppSpacing.spaceMd),
                   DirectorStrip(
                     name: director.localizedName(isArabic),
-                    tagline: director.localizedTitle(isArabic),
+                    tagline: director.localizedTagline(isArabic),
                     imageAsset: director.portraitAsset,
                   ),
                 ],

@@ -62,8 +62,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Home shell content.
-    // The app ships an empty director profile, so no director section.
-    expect(find.text('ACADEMY DIRECTOR & INSTRUCTOR'), findsNothing);
+    // The shipped director profile is filled, so the director section shows.
+    expect(find.text('ACADEMY DIRECTOR & INSTRUCTOR'), findsOneWidget);
+    expect(find.text('Wael El Saeed'), findsOneWidget);
     expect(find.text('MY COURSES'), findsOneWidget);
 
     // Courses tab.
