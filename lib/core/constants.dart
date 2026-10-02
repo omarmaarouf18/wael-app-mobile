@@ -7,10 +7,6 @@ class AppConstants {
   static const String academyWordmark = 'EL METR';
   static const String academySubWordmark = 'ACADEMY';
   static const String academyMotto = 'DISCIPLINE • INTELLECT • SOVEREIGNTY';
-  static const String appVersion = 'Build 1.0.0';
-  static const String defaultCounselor = 'Dean El Metr';
-  static const String defaultCounselorFull =
-      'Counselor • International Arbitrator';
 
   // Asset paths
   static const String imgCharacterArt =
@@ -22,8 +18,6 @@ class AppConstants {
 
   static const String imgLoginPortrait = 'assets/images/login_portrait.jpg';
   static const String imgHomeHero = 'assets/images/home_hero.png';
-  static const String imgProfileDefault =
-      'assets/images/profile_alexander_vane.jpg';
   static const String imgFeaturedArchitectural =
       'assets/images/featured_architectural_discipline.jpg';
   static const String imgCatalogComposure =

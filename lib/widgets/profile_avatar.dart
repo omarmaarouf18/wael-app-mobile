@@ -4,16 +4,17 @@ import '../core/theme.dart';
 import 'status_dot.dart';
 
 /// Circular avatar with a hairline ring and an optional badge dot at the top
-/// end corner (mirrors in RTL).
+/// end corner (mirrors in RTL). Without an [image] it shows a neutral person
+/// icon, so no stand-in photo is ever drawn.
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
     super.key,
-    required this.image,
+    this.image,
     this.size = 56,
     this.showBadge = true,
   });
 
-  final ImageProvider image;
+  final ImageProvider? image;
   final double size;
   final bool showBadge;
 
@@ -27,8 +28,17 @@ class ProfileAvatar extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.glassHairline),
-            image: DecorationImage(image: image, fit: BoxFit.cover),
+            image: image == null
+                ? null
+                : DecorationImage(image: image!, fit: BoxFit.cover),
           ),
+          child: image == null
+              ? Icon(
+                  Icons.person_outline,
+                  size: size * 0.5,
+                  color: AppColors.textMuted,
+                )
+              : null,
         ),
         if (showBadge)
           const PositionedDirectional(

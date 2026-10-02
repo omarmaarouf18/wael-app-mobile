@@ -8,7 +8,6 @@ import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
-import 'package:wael_app/providers/settings_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
 
 import 'academy_fakes.dart';
@@ -26,7 +25,6 @@ Widget testApp() {
       ),
       ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
       ChangeNotifierProvider(create: (_) => HomeProvider()),
-      ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ChangeNotifierProvider(create: (_) => NotificationsProvider()),
     ],
   );

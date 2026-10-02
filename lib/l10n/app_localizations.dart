@@ -220,40 +220,11 @@ class AppLocalizations {
       isArabic ? 'يتطلب التسجيل' : 'Requires Enrolment';
 
   // Settings Screen
-  String get scholarDossier => isArabic ? 'ملف الدارس' : 'Scholar Dossier';
-  String get editProfile => isArabic ? 'تعديل الملف الشخصي' : 'Edit Profile';
-  String get accountSecurity =>
-      isArabic ? 'الحساب والأمان' : 'Account & Security';
-  String get biometricSignIn => isArabic
-      ? 'تسجيل الدخول بالبصمة / Face ID'
-      : 'Biometric Sign-In (Face ID)';
-  String get passwordAnd2fa =>
-      isArabic ? 'كلمة المرور والتحقق بخطوتين' : 'Password & Two-Factor Auth';
-  String get emailCommunications =>
-      isArabic ? 'البريد الإلكتروني والمراسلات' : 'Email & Communications';
-  String get learningPreferences =>
-      isArabic ? 'تفضيلات المشاهدة والتعلم' : 'Learning Preferences';
-  String get videoQuality =>
-      isArabic ? 'جودة عرض الفيديو' : 'Video Playback Quality';
-  String get offlineDownloads =>
-      isArabic ? 'التنزيلات غير المتصلة' : 'Offline Downloads';
   String get languageAndSubtitles =>
       isArabic ? 'اللغة والترجمة' : 'Language & Subtitles';
-  String get notificationsSettings =>
-      isArabic ? 'إشعارات الأكاديمية' : 'Notifications';
-  String get liveEventReminders =>
-      isArabic ? 'تنبيهات البث المباشر والندوات' : 'Live Event Reminders';
-  String get curriculumUpdates =>
-      isArabic ? 'تحديثات المناهج الدراسية' : 'Curriculum Updates';
-  String get honorCodeAndTerms =>
-      isArabic ? 'ميثاق الشرف الأكاديمي والشروط' : 'Academy Honor Code & Terms';
-  String get privacyPolicy =>
-      isArabic ? 'بروتوكول الخصوصية' : 'Privacy Protocol';
   String get signOut => isArabic
       ? 'تسجيل الخروج من أكاديمية المتر'
       : 'Sign Out of EL METR ACADEMY';
-  String get technicalSupport =>
-      isArabic ? 'الدعم الفني والأكاديمي' : 'Technical & Academic Support';
 
   // Notifications Screen
   String get dispatchesTitle =>
@@ -269,31 +240,11 @@ class AppLocalizations {
   // Settings Screen
   String get languageAndPreferences =>
       isArabic ? 'اللغة والتفضيلات' : 'Language & Preferences';
-  String get academyProtocolLegal =>
-      isArabic ? 'البروتوكول الأكاديمي والقانوني' : 'Academy Protocol & Legal';
-  String get twoFactorActive => isArabic
-      ? 'التحقق بخطوتين مفعّل عبر الرمز المعتمد.'
-      : 'Two-Factor Authentication is active.';
-  String get dispatchesToEmail => isArabic
-      ? 'يتم إرسال البيانات المعتمدة لبريدك الإلكتروني.'
-      : 'Dispatches sent to primary email line.';
-  String get privacyVerified => isArabic
-      ? 'سياسة الخصوصية الأكاديمية سارية وموثقة.'
-      : 'Privacy Protocol verified offline.';
   String languageSwitched(bool toArabic) => toArabic
       ? 'تم تحويل اللغة إلى العربية (RTL)'
       : 'Switched language to English (LTR)';
-  String standingLabel(String standing) =>
-      isArabic ? 'دارس بالأكاديمية • دفعة ٢٠٢٤' : standing;
   String get allRightsReserved =>
       isArabic ? 'جميع الحقوق محفوظة © 2026' : 'All rights reserved © 2026';
-  String get honorCodeBody => isArabic
-      ? '١. كل دارس ملتحق بأكاديمية المتر ملزم بقواعد السيادة الأكاديمية والسرية المطلقة للمداولات.\n\n'
-            '٢. يمنع منعاً باتاً إعادة توزيع أو تسجيل مرافعات ودوسيهات المستشار وائل السعيد دون إذن رسمي مكتوب.\n\n'
-            '٣. الانضباط الحركي واللفظي، والحياد الانفعالي، والالتزام بأعلى معايير النزاهة القانونية شرط لاستمرار القيد.'
-      : '1. Every scholar enrolled in EL METR ACADEMY is bound by strict academic sovereignty and confidentiality.\n\n'
-            '2. Course materials, dossiers, and strategic debate recordings may not be redistributed without formal authorization from Counselor Wael El Saeed.\n\n'
-            '3. Intellectual rigor, measured composure, and unyielding discipline are mandatory across all deliberations.';
 
   // Catalog (home, courses, subject detail)
   String get noOwnedCourses => isArabic

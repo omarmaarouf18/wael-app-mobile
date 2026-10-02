@@ -60,12 +60,9 @@ class AuthProvider extends ChangeNotifier {
 
   static const _blankUser = UserProfile(
     id: 'pending',
-    dossierId: '',
     fullName: '',
     email: '',
     phone: '',
-    specializationTrack: '',
-    bio: '',
   );
 
   UserProfile _currentUser = _blankUser;
@@ -324,11 +321,6 @@ class AuthProvider extends ChangeNotifier {
     _pendingVerificationEmail = null;
     _status = AuthStatus.unauthenticated;
     _isLoading = false;
-    notifyListeners();
-  }
-
-  void updateProfile(UserProfile updatedProfile) {
-    _currentUser = updatedProfile;
     notifyListeners();
   }
 
