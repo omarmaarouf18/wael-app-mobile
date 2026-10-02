@@ -33,6 +33,8 @@ void main() {
       String? capturedAccessToken;
       String? capturedRefreshToken;
 
+      const testDeviceId = '11111111-1111-4111-8111-111111111111';
+
       setUpAll(() {
         api = ApiClient(baseUrl: baseUrl, allowSelfSigned: true);
         authRepo = HttpAuthRepository(api);
@@ -107,7 +109,11 @@ void main() {
       test('4. OTP wrong fails with 401', () async {
         print('=== [SCENARIO 4] OTP wrong ===');
         try {
-          await authRepo.verifyOtp(email: testEmail, code: '000000');
+          await authRepo.verifyOtp(
+            email: testEmail,
+            code: '000000',
+            deviceId: testDeviceId,
+          );
           fail('Expected 401 wrong otp');
         } on ApiException catch (e) {
           print(
@@ -156,6 +162,7 @@ void main() {
         final tokens = await authRepo.verifyOtp(
           email: testEmail,
           code: capturedDevOtp!,
+          deviceId: testDeviceId,
         );
         capturedAccessToken = tokens.access;
         capturedRefreshToken = tokens.refresh;
@@ -169,7 +176,11 @@ void main() {
       test('7. OTP expired / replayed code fails with 401', () async {
         print('=== [SCENARIO 7] OTP expired / replayed ===');
         try {
-          await authRepo.verifyOtp(email: testEmail, code: capturedDevOtp!);
+          await authRepo.verifyOtp(
+            email: testEmail,
+            code: capturedDevOtp!,
+            deviceId: testDeviceId,
+          );
           fail('Expected 401 for already consumed OTP');
         } on ApiException catch (e) {
           print(
@@ -184,6 +195,7 @@ void main() {
         final tokens = await authRepo.login(
           email: testEmail,
           password: testPassword,
+          deviceId: testDeviceId,
         );
         print('Observed access_token: ${mask(tokens.access)}');
         print('Observed refresh_token: ${mask(tokens.refresh)}');
@@ -204,6 +216,7 @@ void main() {
           await authRepo.login(
             email: testEmail,
             password: 'IncorrectPassword999!',
+            deviceId: testDeviceId,
           );
           fail('Expected 401 invalid credentials');
         } on ApiException catch (e) {
@@ -242,7 +255,11 @@ void main() {
 
         // Login with old password fails
         try {
-          await authRepo.login(email: testEmail, password: testPassword);
+          await authRepo.login(
+            email: testEmail,
+            password: testPassword,
+            deviceId: testDeviceId,
+          );
           fail('Expected 401 with old password');
         } on ApiException catch (e) {
           print(
@@ -255,6 +272,7 @@ void main() {
         final newTokens = await authRepo.login(
           email: testEmail,
           password: newPassword,
+          deviceId: testDeviceId,
         );
         expect(newTokens.access, isNotEmpty);
         print(
@@ -417,7 +435,11 @@ void main() {
           email: lockoutEmail,
           password: testPassword,
         );
-        await authRepo.verifyOtp(email: lockoutEmail, code: res.devOtp!);
+        await authRepo.verifyOtp(
+          email: lockoutEmail,
+          code: res.devOtp!,
+          deviceId: testDeviceId,
+        );
 
         ApiException? lastErr;
         for (int i = 1; i <= 6; i++) {
@@ -425,6 +447,7 @@ void main() {
             await authRepo.login(
               email: lockoutEmail,
               password: 'BadPassword$i',
+              deviceId: testDeviceId,
             );
           } on ApiException catch (e) {
             lastErr = e;

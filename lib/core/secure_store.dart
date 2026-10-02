@@ -9,6 +9,8 @@ abstract class TokenStore {
   Future<String?> readAccessToken();
   Future<String?> readRefreshToken();
   Future<void> writeTokens({required String access, required String refresh});
+  Future<String?> readDeviceId();
+  Future<void> writeDeviceId(String deviceId);
   Future<void> clear();
 }
 
@@ -21,6 +23,7 @@ class SecureTokenStore implements TokenStore {
 
   static const _accessKey = 'wael_access_token';
   static const _refreshKey = 'wael_refresh_token';
+  static const _deviceIdKey = 'wael_device_id';
 
   final FlutterSecureStorage _storage;
   final Map<String, String> _fallback = {};
@@ -48,12 +51,24 @@ class SecureTokenStore implements TokenStore {
       _guard(() => _storage.read(key: _refreshKey), _fallback[_refreshKey]);
 
   @override
+  Future<String?> readDeviceId() =>
+      _guard(() => _storage.read(key: _deviceIdKey), _fallback[_deviceIdKey]);
+
+  @override
   Future<void> writeTokens({required String access, required String refresh}) {
     _fallback[_accessKey] = access;
     _fallback[_refreshKey] = refresh;
     return _guard(() async {
       await _storage.write(key: _accessKey, value: access);
       await _storage.write(key: _refreshKey, value: refresh);
+    }, null);
+  }
+
+  @override
+  Future<void> writeDeviceId(String deviceId) {
+    _fallback[_deviceIdKey] = deviceId;
+    return _guard(() async {
+      await _storage.write(key: _deviceIdKey, value: deviceId);
     }, null);
   }
 
@@ -72,6 +87,7 @@ class SecureTokenStore implements TokenStore {
 class MemoryTokenStore implements TokenStore {
   String? _access;
   String? _refresh;
+  String? _deviceId;
 
   @override
   Future<String?> readAccessToken() async => _access;
@@ -80,12 +96,20 @@ class MemoryTokenStore implements TokenStore {
   Future<String?> readRefreshToken() async => _refresh;
 
   @override
+  Future<String?> readDeviceId() async => _deviceId;
+
+  @override
   Future<void> writeTokens({
     required String access,
     required String refresh,
   }) async {
     _access = access;
     _refresh = refresh;
+  }
+
+  @override
+  Future<void> writeDeviceId(String deviceId) async {
+    _deviceId = deviceId;
   }
 
   @override

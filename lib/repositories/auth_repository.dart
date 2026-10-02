@@ -58,9 +58,20 @@ abstract class AuthRepository {
     required String email,
     required String password,
   });
-  Future<AuthTokens> verifyOtp({required String email, required String code});
-  Future<AuthTokens> login({required String email, required String password});
+  Future<AuthTokens> verifyOtp({
+    required String email,
+    required String code,
+    required String deviceId,
+    String? deviceLabel,
+  });
+  Future<AuthTokens> login({
+    required String email,
+    required String password,
+    required String deviceId,
+    String? deviceLabel,
+  });
   Future<AuthTokens> refresh({required String refreshToken});
+  Future<void> logout({required String accessToken});
   Future<String?> requestReset({required String email});
   Future<String> verifyResetCode({required String email, required String code});
   Future<void> confirmReset({
@@ -109,10 +120,18 @@ class HttpAuthRepository implements AuthRepository {
   Future<AuthTokens> verifyOtp({
     required String email,
     required String code,
+    required String deviceId,
+    String? deviceLabel,
   }) async {
     final res = await _client.post(
       '$_prefix/verify-otp',
-      body: {'email': email, 'code': code},
+      body: {
+        'email': email,
+        'code': code,
+        'device_id': deviceId,
+        if (deviceLabel != null && deviceLabel.isNotEmpty)
+          'device_label': deviceLabel,
+      },
     );
     return AuthTokens.fromJson(res);
   }
@@ -121,10 +140,18 @@ class HttpAuthRepository implements AuthRepository {
   Future<AuthTokens> login({
     required String email,
     required String password,
+    required String deviceId,
+    String? deviceLabel,
   }) async {
     final res = await _client.post(
       '$_prefix/login',
-      body: {'email': email, 'password': password},
+      body: {
+        'email': email,
+        'password': password,
+        'device_id': deviceId,
+        if (deviceLabel != null && deviceLabel.isNotEmpty)
+          'device_label': deviceLabel,
+      },
     );
     return AuthTokens.fromJson(res);
   }
@@ -136,6 +163,11 @@ class HttpAuthRepository implements AuthRepository {
       body: {'refresh_token': refreshToken},
     );
     return AuthTokens.fromJson(res);
+  }
+
+  @override
+  Future<void> logout({required String accessToken}) async {
+    await _client.postAuthed('$_prefix/logout', accessToken);
   }
 
   @override

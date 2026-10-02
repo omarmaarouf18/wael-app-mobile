@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart'
     show ChangeNotifier, kDebugMode, visibleForTesting;
+import 'package:flutter/widgets.dart' show GlobalKey, NavigatorState;
 import '../core/api_client.dart';
 import '../core/app_config.dart';
+import '../core/device_id.dart';
 import '../core/error_messages.dart';
 import '../core/secure_store.dart';
 import '../models/user_profile.dart';
@@ -16,12 +18,15 @@ class AuthProvider extends ChangeNotifier {
     AuthRepository? repository,
     TokenStore? tokenStore,
     ApiClient? api,
+    String? Function()? localeReader,
   }) : _tokens = tokenStore ?? SecureTokenStore(),
+       _localeReader = localeReader,
        _api =
            api ??
            ApiClient(
              baseUrl: AppConfig.baseUrl,
              allowSelfSigned: AppConfig.allowSelfSigned,
+             localeReader: localeReader,
            ) {
     _repo = repository ?? HttpAuthRepository(_plainApi());
     _apiWithCallbacks = ApiClient(
@@ -29,12 +34,37 @@ class AuthProvider extends ChangeNotifier {
       allowSelfSigned: AppConfig.allowSelfSigned,
       accessTokenReader: _tokens.readAccessToken,
       refreshTokens: _doRefresh,
+      localeReader: _localeReader,
+      onSessionReplaced: (msg) => handleSessionReplaced(msg),
     );
+  }
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  final String? Function()? _localeReader;
+  String? _forcedLocale;
+
+  @visibleForTesting
+  void setLocaleForTesting(String locale) {
+    _forcedLocale = locale;
+  }
+
+  bool get _isArabic {
+    final forced = _forcedLocale;
+    if (forced != null) return forced.startsWith('ar');
+    final reader = _localeReader;
+    if (reader != null) {
+      final lang = reader();
+      if (lang != null) return lang.startsWith('ar');
+    }
+    return false;
   }
 
   ApiClient _plainApi() => ApiClient(
     baseUrl: AppConfig.baseUrl,
     allowSelfSigned: AppConfig.allowSelfSigned,
+    localeReader: _localeReader,
   );
 
   late final AuthRepository _repo;
@@ -78,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
   void _begin() {
     _isLoading = true;
     _errorMessage = null;
+    _logoutNotice = null;
     notifyListeners();
   }
 
@@ -87,8 +118,30 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  static String _messageFor(Object e) {
-    return ErrorMessages.forException(e);
+  String _messageFor(Object e) {
+    return ErrorMessages.forException(e, isArabic: _isArabic);
+  }
+
+  String? _logoutNotice;
+  String? get logoutNotice => _logoutNotice;
+
+  void clearLogoutNotice() {
+    _logoutNotice = null;
+    notifyListeners();
+  }
+
+  Future<String> getDeviceId() => DeviceIdManager.getOrCreateDeviceId(_tokens);
+
+  Future<void> handleSessionReplaced([String? backendMessage]) async {
+    await _logoutLocal();
+    _errorMessage = (backendMessage != null && backendMessage.isNotEmpty)
+        ? backendMessage
+        : ErrorMessages.sessionReplaced(_isArabic);
+    notifyListeners();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false,
+    );
   }
 
   Future<void> _storeSession(AuthAccount account, AuthTokens tokens) async {
@@ -141,6 +194,10 @@ class AuthProvider extends ChangeNotifier {
       await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
       return true;
     } on ApiException catch (e) {
+      if (e.code == 'session_replaced') {
+        await handleSessionReplaced(e.message);
+        return false;
+      }
       if (e.statusCode == 401 || e.statusCode == 403) {
         await _logoutLocal();
       }
@@ -170,17 +227,29 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String identifier, String password) async {
+  Future<bool> login(
+    String identifier,
+    String password, {
+    String? deviceId,
+    String? deviceLabel,
+  }) async {
     _begin();
     final email = identifier.trim();
     if (email.isEmpty || password.isEmpty) {
       _isLoading = false;
-      _errorMessage = ErrorMessages.allFieldsRequired(false);
+      _errorMessage = ErrorMessages.allFieldsRequired(_isArabic);
       notifyListeners();
       return false;
     }
     try {
-      final tokens = await _repo.login(email: email, password: password);
+      final devId =
+          deviceId ?? await DeviceIdManager.getOrCreateDeviceId(_tokens);
+      final tokens = await _repo.login(
+        email: email,
+        password: password,
+        deviceId: devId,
+        deviceLabel: deviceLabel,
+      );
       final account = await _repo.me(accessToken: tokens.access);
       await _storeSession(account, tokens);
       return true;
@@ -231,12 +300,21 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> verifyOtp({required String email, required String code}) async {
+  Future<bool> verifyOtp({
+    required String email,
+    required String code,
+    String? deviceId,
+    String? deviceLabel,
+  }) async {
     _begin();
     try {
+      final devId =
+          deviceId ?? await DeviceIdManager.getOrCreateDeviceId(_tokens);
       final tokens = await _repo.verifyOtp(
         email: email.trim(),
         code: code.trim(),
+        deviceId: devId,
+        deviceLabel: deviceLabel,
       );
       final account = await _repo.me(accessToken: tokens.access);
       await _storeSession(account, tokens);
@@ -300,8 +378,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+  Future<bool> logout() async {
+    final access = await _tokens.readAccessToken();
+    bool confirmed = true;
+    if (access != null && access.isNotEmpty) {
+      try {
+        await _repo.logout(accessToken: access);
+        confirmed = true;
+      } on ApiException catch (e) {
+        if (e.statusCode == 204 || e.statusCode == 401) {
+          confirmed = true;
+        } else {
+          confirmed = false;
+        }
+      } catch (_) {
+        confirmed = false;
+      }
+    }
     await _logoutLocal();
+    _errorMessage = null;
+    if (!confirmed) {
+      _logoutNotice = ErrorMessages.signOutUnconfirmed(_isArabic);
+    }
+    notifyListeners();
+    return confirmed;
   }
 
   Future<void> _logoutLocal() async {

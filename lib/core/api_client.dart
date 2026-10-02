@@ -23,6 +23,8 @@ class ApiClient {
     this.accessTokenReader,
     this.refreshTokens,
     this.forceLogout,
+    this.localeReader,
+    this.onSessionReplaced,
     this.allowSelfSigned = false,
   }) : _client = client ?? _defaultClient(allowSelfSigned);
 
@@ -31,6 +33,8 @@ class ApiClient {
   final Future<String?> Function()? accessTokenReader;
   final Future<bool> Function()? refreshTokens;
   final Future<void> Function()? forceLogout;
+  final String? Function()? localeReader;
+  final Future<void> Function(String? message)? onSessionReplaced;
   final bool allowSelfSigned;
 
   Future<bool>? _refreshInFlight;
@@ -44,11 +48,15 @@ class ApiClient {
     return http.Client();
   }
 
-  Map<String, String> _headers(String? token) => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-  };
+  Map<String, String> _headers(String? token) {
+    final lang = localeReader?.call();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (lang != null && lang.isNotEmpty) 'Accept-Language': lang,
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<String?> _token() => accessTokenReader?.call() ?? Future.value(null);
 
@@ -103,6 +111,31 @@ class ApiClient {
     }
   }
 
+  /// Single authenticated POST with an explicit token (no refresh dance).
+  Future<Map<String, dynamic>> postAuthed(
+    String path,
+    String token, {
+    Map<String, dynamic>? body,
+  }) async {
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final res = await _client.post(
+        Uri.parse('$baseUrl$path'),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      );
+      statusCode = res.statusCode;
+      return _decode(res);
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('POST', path, statusCode, sw.elapsedMilliseconds);
+    }
+  }
+
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
@@ -132,6 +165,12 @@ class ApiClient {
     Future<Map<String, dynamic>> Function() retry,
   ) async {
     if (res.statusCode == 401) {
+      final body = _tryDecodeMap(res.body);
+      if (body != null && body['code'] == 'session_replaced') {
+        final msg = body['error']?.toString();
+        await onSessionReplaced?.call(msg);
+        return _decode(res);
+      }
       if (refreshTokens != null) {
         final ok = await _refreshOnce();
         if (ok) return retry();
@@ -139,6 +178,16 @@ class ApiClient {
       await forceLogout?.call();
     }
     return _decode(res);
+  }
+
+  Map<String, dynamic>? _tryDecodeMap(String body) {
+    if (body.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<bool> _refreshOnce() {

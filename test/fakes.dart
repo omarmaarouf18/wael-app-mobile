@@ -9,6 +9,7 @@ class FakeAuthRepository implements AuthRepository {
   /// ok | wrong-password | unverified | wrong-otp | wrong-reset-code | signup-conflict
   String mode;
   String refreshMode;
+  String logoutMode = 'ok';
 
   /// Identity `me()` returns; empty means the backend sent none (today).
   String meFullName = '';
@@ -17,7 +18,13 @@ class FakeAuthRepository implements AuthRepository {
   String? lastSignupEmail;
   int loginCalls = 0;
   String? lastLoginEmail;
+  String? lastLoginDeviceId;
+  String? lastLoginDeviceLabel;
   int verifyOtpCalls = 0;
+  String? lastVerifyOtpDeviceId;
+  String? lastVerifyOtpDeviceLabel;
+  int logoutCalls = 0;
+  String? lastLogoutToken;
   int requestResetCalls = 0;
   int verifyResetCalls = 0;
   int confirmResetCalls = 0;
@@ -27,9 +34,13 @@ class FakeAuthRepository implements AuthRepository {
   Future<AuthTokens> login({
     required String email,
     required String password,
+    required String deviceId,
+    String? deviceLabel,
   }) async {
     loginCalls++;
     lastLoginEmail = email;
+    lastLoginDeviceId = deviceId;
+    lastLoginDeviceLabel = deviceLabel;
     if (mode == 'wrong-password') {
       throw ApiException(statusCode: 401, message: 'invalid credentials');
     }
@@ -43,13 +54,32 @@ class FakeAuthRepository implements AuthRepository {
   Future<AuthTokens> verifyOtp({
     required String email,
     required String code,
+    required String deviceId,
+    String? deviceLabel,
   }) async {
     verifyOtpCalls++;
     lastOtpCode = code;
+    lastVerifyOtpDeviceId = deviceId;
+    lastVerifyOtpDeviceLabel = deviceLabel;
     if (mode == 'wrong-otp') {
       throw ApiException(statusCode: 401, message: 'invalid code');
     }
     return const AuthTokens(access: 'access-1', refresh: 'refresh-1');
+  }
+
+  @override
+  Future<void> logout({required String accessToken}) async {
+    logoutCalls++;
+    lastLogoutToken = accessToken;
+    if (logoutMode == '401') {
+      throw ApiException(statusCode: 401, message: 'unauthorized');
+    }
+    if (logoutMode == '503') {
+      throw ApiException(statusCode: 503, message: 'service unavailable');
+    }
+    if (logoutMode == 'network') {
+      throw const SocketException('network unreachable');
+    }
   }
 
   @override
@@ -77,6 +107,20 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthTokens> refresh({required String refreshToken}) async {
+    if (refreshMode == 'session_replaced') {
+      throw ApiException(
+        statusCode: 401,
+        message: "Sorry, this account's usage limit has been exceeded",
+        code: 'session_replaced',
+      );
+    }
+    if (refreshMode == 'session_replaced_ar') {
+      throw ApiException(
+        statusCode: 401,
+        message: "عفوًا، لقد تجاوزت الحد المسموح لاستخدام هذا الحساب",
+        code: 'session_replaced',
+      );
+    }
     if (refreshMode == '401') {
       throw ApiException(statusCode: 401, message: 'invalid refresh token');
     }

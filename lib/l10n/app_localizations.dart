@@ -121,6 +121,12 @@ class AppLocalizations {
   String get resetSentNote => isArabic
       ? 'إذا كان البريد مسجلاً، ستصلك رسالة برمز التأكيد.'
       : 'If the email is registered, a verification code was sent.';
+  String get sessionReplaced => isArabic
+      ? 'عفوًا، لقد تجاوزت الحد المسموح لاستخدام هذا الحساب'
+      : "Sorry, this account's usage limit has been exceeded";
+  String get signOutUnconfirmed => isArabic
+      ? 'تعذر تأكيد تسجيل الخروج على الخادم.'
+      : 'Could not confirm sign-out with the server.';
 
   // Home Screen
   String get heroHeadline =>

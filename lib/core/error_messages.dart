@@ -85,6 +85,14 @@ class ErrorMessages {
   static String tryAgainLater(bool isArabic) =>
       isArabic ? 'يرجى المحاولة لاحقاً.' : 'Please try again later.';
 
+  static String sessionReplaced(bool isArabic) => isArabic
+      ? 'عفوًا، لقد تجاوزت الحد المسموح لاستخدام هذا الحساب'
+      : "Sorry, this account's usage limit has been exceeded";
+
+  static String signOutUnconfirmed(bool isArabic) => isArabic
+      ? 'تعذر تأكيد تسجيل الخروج على الخادم.'
+      : 'Could not confirm sign-out with the server.';
+
   /// Message for a failed access request. 409 is the server's generic
   /// refusal (already owned, or the subject's access date has passed), so it
   /// is worded without guessing which.
@@ -116,6 +124,9 @@ class ErrorMessages {
   /// Resolves an [ApiException] into a sanitized, user-facing error message.
   /// Never displays raw exception text or internal stack traces.
   static String forApiError(ApiException e, {bool isArabic = false}) {
+    if (e.code == 'session_replaced') {
+      return sessionReplaced(isArabic);
+    }
     if (e.isRateLimited || e.code == 'locked_out') {
       return rateLimited(isArabic);
     }

@@ -79,7 +79,12 @@ class WaelApp extends StatelessWidget {
           providersOverride ??
           [
             ChangeNotifierProvider(create: (_) => LocaleProvider()),
-            ChangeNotifierProvider(create: (_) => AuthProvider()),
+            ChangeNotifierProvider(
+              create: (ctx) => AuthProvider(
+                localeReader: () =>
+                    ctx.read<LocaleProvider>().locale.languageCode,
+              ),
+            ),
             ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
               create: (ctx) => AcademyCatalogProvider(
                 HttpAcademyRepository(ctx.read<AuthProvider>().authedApi),
@@ -105,6 +110,7 @@ class WaelApp extends StatelessWidget {
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {
           return MaterialApp(
+            navigatorKey: AuthProvider.navigatorKey,
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,

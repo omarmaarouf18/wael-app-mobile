@@ -35,6 +35,7 @@ void main() {
       final tokens = await authRepo.verifyOtp(
         email: email,
         code: signup.devOtp!,
+        deviceId: '33333333-3333-4333-8333-333333333333',
       );
       final accessToken = tokens.access;
 

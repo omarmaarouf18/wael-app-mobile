@@ -68,6 +68,7 @@ void main() {
         final tokens = await authRepo.verifyOtp(
           email: email,
           code: res.devOtp!,
+          deviceId: '22222222-2222-4222-8222-222222222222',
         );
         validAccessToken = tokens.access;
       });
