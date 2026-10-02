@@ -21,8 +21,6 @@ class AppLocalizations {
   String get navHome => isArabic ? 'الرئيسية' : 'Home';
   String get navCourses => isArabic ? 'الدورات' : 'Courses';
   String get navNotes => isArabic ? 'المذكرات' : 'My Notes';
-  String get navMaterials => isArabic ? 'الكتب والمذكرات' : 'Books & Materials';
-  String get navEbooks => isArabic ? 'الكتب الدراسية' : 'E-Books';
   String get navSettings => isArabic ? 'الإعدادات' : 'Settings';
 
   // Academic Structure & Hierarchy
@@ -45,14 +43,7 @@ class AppLocalizations {
   String get tabBooks => isArabic ? 'الكتب' : 'Books';
   String get tabMaterials =>
       isArabic ? 'المذكرات والملفات التعليمية' : 'Academic Notes & PDFs';
-  String get booksAndMaterials =>
-      isArabic ? 'الكتب والمذكرات' : 'Books & Materials';
-  String get personalNotes => isArabic ? 'مذكراتي الشخصية' : 'Personal Notes';
   String get previewMaterial => isArabic ? 'معاينة الملف' : 'Preview Document';
-  String get downloadMaterial => isArabic ? 'تحميل' : 'Download';
-  String get emptyClasses => isArabic
-      ? 'لا توجد حصص مجدولة حالياً في هذه المادة.'
-      : 'No classes scheduled for this subject yet.';
   String get emptyVideos => isArabic
       ? 'لا توجد محاضرات مرئية مضافة حالياً.'
       : 'No video lectures added yet.';
@@ -87,7 +78,6 @@ class AppLocalizations {
   String get upcoming => isArabic ? 'الفعاليات القادمة' : 'UPCOMING';
   String get viewAll => isArabic ? 'عرض الكل' : 'VIEW ALL';
   String get resume => isArabic ? 'استئناف' : 'Resume';
-  String get rsvp => isArabic ? 'تأكيد الحضور' : 'RSVP';
   String get search => isArabic ? 'بحث...' : 'Search...';
   String get cancel => isArabic ? 'إلغاء' : 'Cancel';
   String get save => isArabic ? 'حفظ' : 'Save';
@@ -138,84 +128,26 @@ class AppLocalizations {
   String get heroSubheadline => isArabic
       ? 'تعلّم. استوعب. طبّق. لأن المعرفة قوة.'
       : 'Learn. Understand. Apply. Because knowledge is power.';
-  String get crisisSeminar => isArabic
-      ? 'ندوة إدارة الأزمات والخطاب السيادي'
-      : 'Crisis Communication Seminar';
-  String get todayGmt =>
-      isArabic ? 'اليوم، 20:00 بتوقيت القاهرة' : 'Today, 20:00 GMT';
 
   // Courses Screen
   String get searchCoursesHint => isArabic
       ? 'ابحث في الدورات، المحاضرين، الموضوعات...'
       : 'Search courses, topics, instructors...';
-  String get catAll => isArabic ? 'جميع الدورات' : 'All Courses';
-  String get catLeadership => isArabic ? 'القيادة التنفيذية' : 'Leadership';
-  String get catRhetoric => isArabic ? 'البلاغة والجدل' : 'Rhetoric';
-  String get catBehavioral =>
-      isArabic ? 'الاستراتيجية السلوكية' : 'Behavioral Strategy';
-  String get catProtocol => isArabic ? 'البروتوكول الخاص' : 'Private Protocol';
-  String get catAesthetics => isArabic ? 'الهيبة والحضور' : 'Aesthetics';
-  String get featuredProgram =>
-      isArabic ? 'برنامج أكاديمي متميز' : 'FEATURED ACADEMY PROGRAM';
   String get curriculumCatalog =>
       isArabic ? 'دليل البرامج الأكاديمية' : 'Curriculum Catalog';
-  String get sortBy => isArabic ? 'ترتيب حسب' : 'Sort By';
-  String get lessonsCount => isArabic ? 'درس' : 'Lessons';
-  String get hoursCount => isArabic ? 'ساعة' : 'Hours';
-  String get inProgress => isArabic ? 'قيد المتابعة' : 'In Progress';
-  String get enrolled => isArabic ? 'مسجل' : 'Enrolled';
   String get readyToStart => isArabic ? 'جاهز للبدء' : 'Ready to Start';
-  String get available => isArabic ? 'متاح للتسجيل' : 'Available';
-  String get coreDiscipline => isArabic ? 'مادة أساسية' : 'Core Discipline';
-  String get viewCourse => isArabic ? 'عرض الدورة' : 'View Course';
 
   // Course Details
   String get courseDossier =>
       isArabic ? 'ملف البرنامج الأكاديمي' : 'Course Dossier';
-  String get masterClass => isArabic ? 'ماستر كلاس' : 'MASTER CLASS';
-  String get addToNotes =>
-      isArabic ? 'إضافة إلى الملاحظات' : 'Add to Study Notes';
   String get downloadSyllabus => isArabic ? 'تحميل المنهج' : 'Syllabus';
-  String get curriculumStructure =>
-      isArabic ? 'هيكل المنهج الدراسي' : 'Curriculum Structure';
-  String get continueLesson =>
-      isArabic ? 'متابعة الدرس ٠٧' : 'CONTINUE LESSON 07';
-  String get currentTrack => isArabic ? 'المسار الحالي' : 'Current Track';
-  String get completedBadge => isArabic ? 'مكتمل ✓' : 'Completed ✓';
-  String get lockedBadge => isArabic ? '🔒 مقفل' : '🔒 Locked';
 
   // Lesson Screen
-  String get lessonTitleFallback => isArabic
-      ? 'قوة الصمت والتوقفات الاستراتيجية'
-      : 'The Power of Pauses & Strategic Stillness';
-  String get tabOverview => isArabic ? 'نظرة عامة' : 'Overview';
-  String get tabKeyMaxims => isArabic ? 'القواعد الجوهرية' : 'Key Maxims';
-  String get tabResources => isArabic ? 'المراجع والملفات' : 'Resources';
-  String get recordObservation =>
-      isArabic ? 'تدوين ملحوظة في المذكرات' : 'Record Observation in My Notes';
-  String get prevLesson => isArabic ? 'السابق' : 'Prev';
-  String get nextLesson => isArabic ? 'التالي' : 'Next';
 
   // E-Books & Notes
   String get materialsEmpty => isArabic
       ? 'ستظهر المذكرات والمواد الدراسية هنا.'
       : 'Study materials and notes will appear here.';
-  String get studyDossier =>
-      isArabic ? 'ملفات الدراسة والمذكرات' : 'Study Dossier';
-  String get newNote => isArabic ? 'مذكرة جديدة' : 'New Note';
-  String get allNotes => isArabic ? 'جميع المذكرات' : 'All Notes';
-  String get byCourse => isArabic ? 'حسب الدورة' : 'By Course';
-  String get pinnedNotes => isArabic ? 'المثبتة' : 'Pinned';
-  String get drafts => isArabic ? 'المسودات' : 'Drafts';
-  String get ebooksTitle => isArabic
-      ? 'الكتب والمؤلفات الأكاديمية'
-      : 'Academy Publications & E-Books';
-  String get readBook => isArabic ? 'قراءة الكتاب' : 'Read Material';
-  String get downloadOffline =>
-      isArabic ? 'حفظ للاطلاع دون اتصال' : 'Save Offline';
-  String get owned => isArabic ? 'متاح بالكامل' : 'Owned';
-  String get requiresEnrolment =>
-      isArabic ? 'يتطلب التسجيل' : 'Requires Enrolment';
 
   // Settings Screen
   String get languageAndSubtitles =>
@@ -231,9 +163,6 @@ class AppLocalizations {
   String get noNotifications => isArabic
       ? 'لا توجد إشعارات جديدة حالياً.'
       : 'No new notifications at this time.';
-  String get offlineDemoBanner => isArabic
-      ? 'وضع المعاينة المباشرة (دون اتصال) • جميع البيانات محلية'
-      : 'Live Interactive Demo Mode • Fully Offline';
 
   // Settings Screen
   String get languageAndPreferences =>
@@ -254,9 +183,6 @@ class AppLocalizations {
   String get termFirst => isArabic ? 'الفصل الدراسي الأول' : 'First Term';
   String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
 
-  String get noteCreated => isArabic
-      ? 'تم إنشاء مذكرة جديدة مرتبطة بهذه الدورة'
-      : 'New study note created for this course';
   String get accessActive => isArabic ? 'الاشتراك فعّال' : 'Access active';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
@@ -315,9 +241,6 @@ class AppLocalizations {
   String get noCoursesFound => isArabic
       ? 'لم يتم العثور على دورات مطابقة للبحث.'
       : 'No courses match your query.';
-  String get noNotesFound => isArabic
-      ? 'لا توجد مذكرات في هذا التصنيف.'
-      : 'No notes found in this category.';
   String get errorLoading => isArabic
       ? 'حدث خطأ أثناء تحميل البيانات.'
       : 'An error occurred while loading data.';
