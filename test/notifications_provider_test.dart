@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' show MockClient;
@@ -18,6 +19,16 @@ void main() {
         await repo.markRead('some-id'); // does not throw
       },
     );
+
+    test('a default provider has no items, in debug as in release', () {
+      // Tests run in debug mode: the old debug build used to seed sample
+      // notifications here.
+      expect(kDebugMode, isTrue);
+      final provider = NotificationsProvider();
+      expect(provider.notifications, isEmpty);
+      expect(provider.unreadCount, 0);
+      expect(provider.hasError, isFalse);
+    });
 
     test('deduplicates live notifications by id', () {
       final provider = NotificationsProvider(
@@ -93,6 +104,56 @@ void main() {
 
       expect(provider.hasError, isTrue);
       expect(provider.notifications, isEmpty);
+    });
+
+    test('a failed reload clears stale items in debug mode too', () async {
+      expect(kDebugMode, isTrue);
+      var fail = false;
+      final mock = MockClient((_) async {
+        if (fail) return http.Response(jsonEncode({'error': 'down'}), 503);
+        return http.Response(
+          jsonEncode({
+            'notifications': [
+              {'id': 'r1', 'title': 'Real', 'body': 'b', 'type': 'system'},
+            ],
+          }),
+          200,
+        );
+      });
+      final repo = HttpNotificationRepository(
+        ApiClient(baseUrl: 'https://localhost:8080', client: mock),
+      );
+      final provider = NotificationsProvider()..attachRemote(repo);
+
+      await provider.loadRemote();
+      expect(provider.notifications.map((n) => n.id), ['r1']);
+
+      fail = true;
+      await provider.loadRemote();
+      expect(provider.hasError, isTrue);
+      expect(provider.notifications, isEmpty);
+      expect(provider.unreadCount, 0);
+
+      // Recovery: the next successful load clears the error.
+      fail = false;
+      await provider.loadRemote();
+      expect(provider.hasError, isFalse);
+      expect(provider.notifications.map((n) => n.id), ['r1']);
+    });
+
+    test('no sample notification text is bundled', () {
+      // The removed mock list, by title.
+      final texts = [
+        'Payment Verified & Enrolment Active',
+        'Crisis Communication Seminar',
+      ];
+      final provider = NotificationsProvider();
+      for (final t in texts) {
+        expect(
+          provider.notifications.where((n) => n.title == t || n.titleAr == t),
+          isEmpty,
+        );
+      }
     });
   });
 }

@@ -63,6 +63,10 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // The bell shows its pip only while something is unread.
+    final hasUnread = context.select<NotificationsProvider, bool>(
+      (n) => n.unreadCount > 0,
+    );
 
     final screens = [
       HomeScreen(onExploreCourses: () => _onTabSelected(1)),
@@ -77,7 +81,7 @@ class _MainShellState extends State<MainShell> {
         HeaderIconButton(
           key: const ValueKey('top_bar_notifications_button'),
           icon: Icons.notifications_none,
-          showPip: true,
+          showPip: hasUnread,
           onTap: () => Navigator.of(context).pushNamed('/notifications'),
         ),
         const SizedBox(width: AppSpacing.spaceSm),

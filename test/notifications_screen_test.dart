@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +14,7 @@ import 'package:wael_app/screens/notifications_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/icon_tile.dart';
 import 'package:wael_app/widgets/status_dot.dart';
+import 'package:wael_app/widgets/themed_card.dart';
 import 'package:wael_app/widgets/themed_empty_state.dart';
 import 'package:wael_app/widgets/themed_error_banner.dart';
 
@@ -150,6 +152,48 @@ void main() {
         await tester.pumpAndSettle();
         expect(provider.unreadCount, 1);
         expect(find.text('route:/settings'), findsOneWidget);
+      });
+
+      testWidgets(
+        'debug mode: a failed load shows the error state, not sample items',
+        (tester) async {
+          expect(kDebugMode, isTrue);
+          final api = ApiClient(
+            baseUrl: 'https://localhost:8080',
+            client: MockClient(
+              (_) async => http.Response(jsonEncode({'error': 'down'}), 503),
+            ),
+          );
+          final provider = NotificationsProvider()
+            ..attachRemote(HttpNotificationRepository(api));
+          await provider.loadRemote();
+
+          await pump(tester, provider);
+          expect(find.byType(ThemedErrorBanner), findsOneWidget);
+          expect(
+            find.text(ErrorMessages.notificationLoadFailed(isArabic)),
+            findsOneWidget,
+          );
+          expect(find.byType(ThemedCard), findsNothing);
+          expect(find.byType(IconTile), findsNothing);
+          for (final sample in [
+            'Payment Verified & Enrolment Active',
+            'Crisis Communication Seminar',
+            'تم التحقق من إشعار السداد وتفعيل الاشتراك',
+            'ندوة إدارة الأزمات والخطاب السيادي',
+          ]) {
+            expect(find.text(sample), findsNothing);
+          }
+        },
+      );
+
+      testWidgets('a default provider shows the empty state, not samples', (
+        tester,
+      ) async {
+        await pump(tester, NotificationsProvider());
+        expect(find.byType(ThemedEmptyState), findsOneWidget);
+        expect(find.text(l10n.noNotifications), findsOneWidget);
+        expect(find.byType(ThemedCard), findsNothing);
       });
 
       testWidgets('no notifications shows the empty state', (tester) async {

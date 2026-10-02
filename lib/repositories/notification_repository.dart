@@ -3,10 +3,10 @@ import '../models/notification_model.dart';
 
 /// Notification data contract.
 ///
-/// [MockNotificationRepository] serves the bundled list (offline / service
-/// not yet shipped). [HttpNotificationRepository] talks to the gateway
-/// (`/api/v1/notifications/*`). Swapping bindings is one construction site
-/// in [NotificationsProvider].
+/// [HttpNotificationRepository] talks to the gateway
+/// (`/api/v1/notifications/*`). [EmptyNotificationRepository] is the binding
+/// before login (and in tests): it has nothing and never invents anything.
+/// Swapping bindings is one construction site in [NotificationsProvider].
 abstract class NotificationRepository {
   List<NotificationModel> initial();
   Future<List<NotificationModel>> list({int page = 1, int limit = 20});
@@ -27,49 +27,6 @@ NotificationModel _fromJson(Map<String, dynamic> json) {
     type: (json['type'] ?? 'system').toString(),
     targetRoute: (json['target_route'] ?? '/notifications').toString(),
   );
-}
-
-/// Bundled mock used until the notification-service ships list/send APIs.
-/// Live inserts still arrive via the SSE stream after login.
-class MockNotificationRepository implements NotificationRepository {
-  final List<NotificationModel> _items = const [
-    NotificationModel(
-      id: 'notif-1',
-      title: 'Payment Verified & Enrolment Active',
-      titleAr: 'تم التحقق من إشعار السداد وتفعيل الاشتراك',
-      body:
-          'Your transfer has been approved by the office. Full syllabus unlocked.',
-      bodyAr:
-          'تم قبول إشعار السداد من قِبل إدارة الأكاديمية. تم فتح المحتوى كاملاً.',
-      timestamp: '25m ago',
-      timestampAr: 'منذ ٢٥ دقيقة',
-      isRead: false,
-      type: 'payment',
-      targetRoute: '/courses',
-    ),
-    NotificationModel(
-      id: 'notif-2',
-      title: 'Crisis Communication Seminar',
-      titleAr: 'ندوة إدارة الأزمات والخطاب السيادي',
-      body: 'Live closed-door session commences today at 20:00 GMT.',
-      bodyAr: 'تنطلق الجلسة المغلقة الحية اليوم في تمام الساعة الثامنة مساءً.',
-      timestamp: '2h ago',
-      timestampAr: 'منذ ساعتين',
-      isRead: false,
-      type: 'event',
-      targetRoute: '/home',
-    ),
-  ];
-
-  @override
-  List<NotificationModel> initial() => List.of(_items);
-
-  @override
-  Future<List<NotificationModel>> list({int page = 1, int limit = 20}) async =>
-      List.of(_items);
-
-  @override
-  Future<void> markRead(String id) async {}
 }
 
 /// HTTP binding against the gateway notification routes.
@@ -97,7 +54,7 @@ class HttpNotificationRepository implements NotificationRepository {
   }
 }
 
-/// Empty fallback repository used in release builds or when no notifications exist.
+/// Repository with no notifications: used before the session is bound.
 class EmptyNotificationRepository implements NotificationRepository {
   const EmptyNotificationRepository();
 

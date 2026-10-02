@@ -1,17 +1,17 @@
-import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 import '../models/notification_model.dart';
 import '../repositories/notification_repository.dart';
 
+/// The student's notifications. Everything here comes from the notification
+/// service (list over HTTP, live inserts over SSE); before login, or when a
+/// load fails, the list is empty. A failed load never leaves stale or sample
+/// items on screen, in debug and release alike.
 class NotificationsProvider extends ChangeNotifier {
   NotificationsProvider({NotificationRepository? repository})
-    : _repository = repository ?? _defaultRepository(),
-      _notifications = List.of((repository ?? _defaultRepository()).initial());
-
-  static NotificationRepository _defaultRepository() {
-    return kDebugMode
-        ? MockNotificationRepository()
-        : const EmptyNotificationRepository();
-  }
+    : _repository = repository ?? const EmptyNotificationRepository(),
+      _notifications = List.of(
+        (repository ?? const EmptyNotificationRepository()).initial(),
+      );
 
   NotificationRepository _repository;
   final List<NotificationModel> _notifications;
@@ -24,13 +24,14 @@ class NotificationsProvider extends ChangeNotifier {
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
   bool get hasError => _hasError;
 
-  /// Binds the real HTTP repository after login. Keeps quiet backoff: a
-  /// failed first load leaves the bundled list in place (in debug only).
+  /// Binds the real HTTP repository after login.
   void attachRemote(HttpNotificationRepository repository) {
     _repository = repository;
     _remote = true;
   }
 
+  /// Loads the list. On failure the list is cleared and [hasError] is set, so
+  /// the screen shows the error state instead of anything stale.
   Future<void> loadRemote() async {
     if (!_remote) return;
     try {
@@ -41,10 +42,7 @@ class NotificationsProvider extends ChangeNotifier {
       _hasError = false;
       notifyListeners();
     } catch (_) {
-      // In release, a failed load shows an error or empty state, never fake items.
-      if (!kDebugMode) {
-        _notifications.clear();
-      }
+      _notifications.clear();
       _hasError = true;
       notifyListeners();
     }

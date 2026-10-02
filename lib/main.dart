@@ -20,7 +20,6 @@ import 'providers/notifications_provider.dart';
 import 'player/player_engine.dart';
 import 'player/youtube_iframe_engine.dart';
 import 'repositories/academy_repository.dart';
-import 'services/push_notification_service.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
@@ -39,7 +38,6 @@ import 'debug/diagnostics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await PushNotificationService().initialize();
   runApp(const WaelApp());
 }
 

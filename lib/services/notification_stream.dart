@@ -6,9 +6,9 @@ import '../models/notification_model.dart';
 /// Live notification stream over the gateway.
 ///
 /// Connect after login with a valid access token; cancel on logout.
-/// The notification-service list/send APIs do not exist yet, so a missing
-/// endpoint (404/connection refused) backs off quietly instead of surfacing
-/// errors — the bundled mock list stays visible until the service lands.
+/// A stream that cannot connect (service down, 404, connection refused) backs
+/// off quietly and retries; nothing is shown in its place, and the list screen
+/// reports its own load failures.
 class NotificationStream {
   NotificationStream(this._api);
 

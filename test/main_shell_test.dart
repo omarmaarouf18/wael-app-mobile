@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/models/notification_model.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/notifications_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/main_shell.dart';
 import 'package:wael_app/widgets/app_bottom_nav.dart';
@@ -23,10 +25,12 @@ void main() {
       WidgetTester tester, {
       int initialTab = 0,
       Size size = const Size(390, 844),
+      NotificationsProvider? notifications,
     }) => pumpScreen(
       tester,
       locale,
       MainShell(initialTab: initialTab),
+      notifications: notifications,
       extraProviders: [
         ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
@@ -89,7 +93,7 @@ void main() {
       testWidgets('notification pip sits at the end corner of its button', (
         tester,
       ) async {
-        await pump(tester);
+        await pump(tester, notifications: _withUnread());
         final button = find.byKey(
           const ValueKey('top_bar_notifications_button'),
         );
@@ -104,6 +108,33 @@ void main() {
         } else {
           expect(pipX, lessThan(centre));
         }
+      });
+
+      testWidgets('the notification pip is hidden while nothing is unread', (
+        tester,
+      ) async {
+        await pump(tester);
+        final button = find.byKey(
+          const ValueKey('top_bar_notifications_button'),
+        );
+        expect(button, findsOneWidget);
+        expect(
+          find.descendant(of: button, matching: find.byType(StatusDot)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('the pip follows the unread count', (tester) async {
+        final notifications = _withUnread();
+        await pump(tester, notifications: notifications);
+        final pip = find.descendant(
+          of: find.byKey(const ValueKey('top_bar_notifications_button')),
+          matching: find.byType(StatusDot),
+        );
+        expect(pip, findsOneWidget);
+        notifications.markAllAsRead();
+        await tester.pump();
+        expect(pip, findsNothing);
       });
 
       testWidgets('bottom nav order mirrors', (tester) async {
@@ -193,3 +224,14 @@ void main() {
 }
 
 void _noop() {}
+
+NotificationsProvider _withUnread() => NotificationsProvider()
+  ..addNotification(
+    const NotificationModel(
+      id: 'u1',
+      title: 'Unread',
+      body: 'b',
+      timestamp: 'now',
+      type: 'system',
+    ),
+  );
