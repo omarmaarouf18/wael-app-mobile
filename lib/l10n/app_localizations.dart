@@ -199,6 +199,9 @@ class AppLocalizations {
   String get nextLesson => isArabic ? 'التالي' : 'Next';
 
   // E-Books & Notes
+  String get materialsEmpty => isArabic
+      ? 'ستظهر المذكرات والمواد الدراسية هنا.'
+      : 'Study materials and notes will appear here.';
   String get studyDossier =>
       isArabic ? 'ملفات الدراسة والمذكرات' : 'Study Dossier';
   String get newNote => isArabic ? 'مذكرة جديدة' : 'New Note';

@@ -14,7 +14,6 @@ import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'providers/home_provider.dart';
-import 'providers/ebook_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/notifications_provider.dart';
 
@@ -104,7 +103,6 @@ class WaelApp extends StatelessWidget {
                   PlayerDependencies(engineFactory: YoutubeIframeEngine.new),
             ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
-            ChangeNotifierProvider(create: (_) => EBookProvider()),
             ChangeNotifierProvider(create: (_) => SettingsProvider()),
             ChangeNotifierProvider(create: (_) => NotificationsProvider()),
           ],

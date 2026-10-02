@@ -8,7 +8,6 @@ import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
-import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/settings_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
 
@@ -27,7 +26,6 @@ Widget testApp() {
       ),
       ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
       ChangeNotifierProvider(create: (_) => HomeProvider()),
-      ChangeNotifierProvider(create: (_) => EBookProvider()),
       ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ChangeNotifierProvider(create: (_) => NotificationsProvider()),
     ],

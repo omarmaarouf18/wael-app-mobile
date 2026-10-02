@@ -10,7 +10,6 @@ import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
-import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/course_detail/subject_content_section.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
@@ -46,7 +45,7 @@ void main() {
     final isArabic = locale.languageCode == 'ar';
     String title(String ar, String en) => isArabic ? ar : en;
 
-    Future<(AcademyCatalogProvider, FakeAcademyRepository, EBookProvider)> pump(
+    Future<(AcademyCatalogProvider, FakeAcademyRepository)> pump(
       WidgetTester tester,
       Map<String, dynamic> detail, {
       FakeAcademyRepository? repo,
@@ -57,7 +56,6 @@ void main() {
       final repository = repo ?? fake();
       if (detail.isNotEmpty) repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
-      final ebooks = EBookProvider();
       await pumpScreen(
         tester,
         locale,
@@ -67,12 +65,11 @@ void main() {
           ChangeNotifierProvider(
             create: (_) => HomeProvider(director: director),
           ),
-          ChangeNotifierProvider<EBookProvider>.value(value: ebooks),
         ],
         size: size,
         settle: settle,
       );
-      return (catalog, repository, ebooks);
+      return (catalog, repository);
     }
 
     Finder videoTiles() => find.byType(CatalogVideoTile);
@@ -89,7 +86,7 @@ void main() {
       testWidgets('loads the subject by id and shows the ready state', (
         tester,
       ) async {
-        final (_, repo, _) = await pump(tester, lockedBody);
+        final (_, repo) = await pump(tester, lockedBody);
         // Detail, then the automatic access request, then the detail again.
         expect(repo.detailCalls, 2);
         expect(repo.accessCalls, ['d1']);
@@ -453,7 +450,7 @@ void main() {
       testWidgets('owned: access banner with the expiry date, no request', (
         tester,
       ) async {
-        final (_, repo, _) = await pump(
+        final (_, repo) = await pump(
           tester,
           detailBody(owned: true, expires: '2027-01-15T10:00:00Z'),
         );
@@ -469,18 +466,6 @@ void main() {
         await pump(tester, detailBody(owned: true));
         expect(find.text(l10n.accessActive), findsOneWidget);
         expect(find.textContaining(l10n.accessUntil('').trim()), findsNothing);
-      });
-
-      testWidgets('add to notes creates a study note', (tester) async {
-        final (_, _, ebooks) = await pump(tester, lockedBody);
-        final before = ebooks.personalNotes.length;
-        final card = find.text(l10n.addToNotes);
-        await tester.ensureVisible(card);
-        await tester.tap(card);
-        await tester.pump();
-        expect(ebooks.personalNotes.length, before + 1);
-        expect(ebooks.personalNotes.first.course, 'Civil Law');
-        expect(find.text(l10n.noteCreated), findsOneWidget);
       });
 
       testWidgets('back button pops the screen', (tester) async {
@@ -503,7 +488,6 @@ void main() {
                   AcademyCatalogProvider(fake()..detailJson['d1'] = lockedBody),
             ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
-            ChangeNotifierProvider(create: (_) => EBookProvider()),
           ],
           size: const Size(390, 2400),
         );
@@ -522,7 +506,7 @@ void main() {
       testWidgets('not owned, no request: it is sent on open, then pending', (
         tester,
       ) async {
-        final (catalog, repo, _) = await pump(tester, lockedBody);
+        final (catalog, repo) = await pump(tester, lockedBody);
         expect(repo.accessCalls, ['d1']);
         // The detail was refetched, so pending is the server's answer.
         expect(repo.detailCalls, 2);
@@ -673,7 +657,7 @@ void main() {
       testWidgets('rebuilding the screen does not send the request again', (
         tester,
       ) async {
-        final (catalog, repo, _) = await pump(tester, lockedBody);
+        final (catalog, repo) = await pump(tester, lockedBody);
         expect(repo.accessCalls, hasLength(1));
         catalog.setSearchQuery('x');
         await tester.pumpAndSettle();

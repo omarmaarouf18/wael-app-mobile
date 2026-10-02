@@ -5,7 +5,6 @@ import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
-import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
 import 'package:wael_app/screens/video_player_screen.dart';
@@ -38,7 +37,6 @@ Future<void> _pumpSubject(
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
-        ChangeNotifierProvider(create: (_) => EBookProvider()),
         Provider<PlayerDependencies>.value(
           value: PlayerDependencies(
             engineFactory: () => engine,

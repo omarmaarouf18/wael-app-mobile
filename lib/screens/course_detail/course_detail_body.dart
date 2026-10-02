@@ -6,15 +6,12 @@ import '../../core/error_messages.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/academy_catalog.dart';
-import '../../models/ebook.dart';
 import '../../providers/academy_catalog_provider.dart';
-import '../../providers/ebook_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/director_strip.dart';
 import '../../widgets/owned_subject_tile.dart';
 import '../../widgets/secondary_button.dart';
 import '../../widgets/subject_hero_banner.dart';
-import '../../widgets/themed_card.dart';
 import '../../widgets/themed_error_banner.dart';
 import '../../widgets/themed_panel.dart';
 import 'subject_content_section.dart';
@@ -88,8 +85,6 @@ class CourseDetailBody extends StatelessWidget {
                 ],
                 const SizedBox(height: AppSpacing.spaceLg),
                 _Access(detail: detail),
-                const SizedBox(height: AppSpacing.spaceSm),
-                _AddToNotes(detail: detail),
                 const SizedBox(height: AppSpacing.spaceXl),
                 SubjectContentSection(detail: detail),
                 const SizedBox(height: AppSpacing.space2xl),
@@ -267,57 +262,6 @@ class _PendingRequest extends StatelessWidget {
               },
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AddToNotes extends StatelessWidget {
-  const _AddToNotes({required this.detail});
-
-  final AcademySubjectDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return ThemedCard(
-      padding: const EdgeInsetsDirectional.symmetric(vertical: 10),
-      onTap: () {
-        final title = detail.title.resolve(false);
-        Provider.of<EBookProvider>(context, listen: false).addNote(
-          StudyNote(
-            id: 'note-${DateTime.now().millisecondsSinceEpoch}',
-            title: 'Observations on $title',
-            course: title,
-            date: 'Just now',
-            tags: [if (detail.hasTerm) '#${detail.term}', '#Dossier'],
-            content: 'Key observations recorded for this curriculum.',
-          ),
-        );
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(l10n.noteCreated)));
-      },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.note_add_outlined,
-            size: 16,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              l10n.addToNotes,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.labelSm(
-                isArabic: l10n.isArabic,
-              ).copyWith(color: AppColors.textSecondary),
-            ),
-          ),
         ],
       ),
     );
