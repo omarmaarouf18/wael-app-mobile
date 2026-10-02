@@ -6,8 +6,8 @@ subjects, subject detail over `/api/v1/academy/`, models in
 `lib/models/academy_catalog.dart`). Home, courses and course detail are on it;
 the ebooks tab is an empty state until its backend phase (SPEC Phase 5). No
 screen shows mock or demo data: anything a student sees as real comes from the
-API, or from `lib/content/director_profile.dart` (the director card, empty
-until the owner supplies the text). `docs/frontend/CONTENT-GAPS.md` lists what
+API, or from `lib/content/director_profile.dart` (the director card: the
+owner's own name and titles, verified 2026-10-02). `docs/frontend/CONTENT-GAPS.md` lists what
 exists and what is missing.
 Opening a locked subject creates its access request through the real
 `POST /api/v1/academy/subjects/{id}/access-request` (SPEC decision 9, Phase 3.3);
