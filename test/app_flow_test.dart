@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/main.dart';
 import 'package:wael_app/widgets/app_bottom_nav.dart';
+import 'package:wael_app/widgets/framed_poster_card.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -42,8 +43,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Splash restores no session -> login screen.
-    expect(find.text('EL METR'), findsOneWidget);
-    expect(find.text('ACADEMY'), findsOneWidget);
+    expect(find.byType(FramedPosterCard), findsOneWidget);
     expect(find.text('SIGN IN'), findsOneWidget);
     expect(find.text("Don't have an account?"), findsOneWidget);
 

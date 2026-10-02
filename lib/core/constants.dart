@@ -13,7 +13,12 @@ class AppConstants {
       'assets/branding/el_metr_character_art.png';
   static const String imgLandscape = 'assets/branding/el_metr_landscape.jpg';
 
-  static const String imgLoginPortrait = 'assets/images/login_portrait.jpg';
+  /// The EL METR poster, shown on the login screen only.
+  static const String imgPoster = 'assets/branding/el_metr_poster.jpg';
+
+  /// Width over height of [imgPoster] (548 x 871), for framing it.
+  static const double posterAspectRatio = 548 / 871;
+
   static const String imgHomeHero = 'assets/images/home_hero.png';
   static const String imgCatalogComposure =
       'assets/images/catalog_composure.jpg';

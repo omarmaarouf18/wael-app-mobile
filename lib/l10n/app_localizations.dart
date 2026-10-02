@@ -92,13 +92,13 @@ class AppLocalizations {
   String get signIn => isArabic ? 'تسجيل الدخول' : 'Sign In';
   String get signUp => isArabic ? 'إنشاء حساب جديد' : 'Create Account';
   String get phoneNumber => isArabic ? 'رقم الهاتف المحمول' : 'Phone Number';
+  String get email => isArabic ? 'البريد الإلكتروني' : 'Email';
   String get emailOrPhone =>
       isArabic ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email or Phone Number';
   String get fullName => isArabic ? 'الاسم بالكامل' : 'Full Name';
   String get password => isArabic ? 'كلمة المرور' : 'Password';
   String get confirmPassword =>
       isArabic ? 'تأكيد كلمة المرور' : 'Confirm Password';
-  String get rememberMe => isArabic ? 'تذكرني' : 'Remember me';
   String get forgotPassword =>
       isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?';
   String get dontHaveAccount =>

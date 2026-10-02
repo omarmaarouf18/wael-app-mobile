@@ -66,9 +66,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Listed one by one: store_icon_512.png (Play Store listing only) and the
+  # unreferenced landscape image must not be bundled into the app.
   assets:
-    - assets/images/
-    - assets/branding/
+    - assets/branding/el_metr_character_art.png
+    - assets/branding/el_metr_poster.jpg
+    - assets/images/home_hero.png
+    - assets/images/catalog_composure.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

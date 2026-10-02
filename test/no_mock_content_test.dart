@@ -62,7 +62,8 @@ void main() {
 
   test('every committed asset is referenced by lib/ (or listed below)', () {
     // Committed but unreferenced on purpose; see docs/asset-provenance.md.
-    const knownUnreferenced = {'el_metr_landscape.jpg'};
+    // store_icon_512.png is the Play Store listing icon, not used by the app.
+    const knownUnreferenced = {'el_metr_landscape.jpg', 'store_icon_512.png'};
     final all = lib.map((f) => f.readAsStringSync()).join('\n');
     final orphans = <String>[];
     for (final e in Directory('assets').listSync(recursive: true)) {
@@ -72,6 +73,32 @@ void main() {
       if (!all.contains(name)) orphans.add(e.path);
     }
     expect(orphans, isEmpty);
+  });
+
+  test('every image path in AppConstants exists and is in pubspec.yaml', () {
+    final constants = File('lib/core/constants.dart').readAsStringSync();
+    final paths = RegExp(
+      r"'(assets/[^']+)'",
+    ).allMatches(constants).map((m) => m.group(1)!).toSet();
+    // The landscape image is committed but deliberately not bundled.
+    paths.remove('assets/branding/el_metr_landscape.jpg');
+    // Comments are ignored: only real entries count.
+    final pubspec = File(
+      'pubspec.yaml',
+    ).readAsLinesSync().where((l) => !l.trimLeft().startsWith('#')).join('\n');
+    for (final path in paths) {
+      expect(File(path).existsSync(), isTrue, reason: '$path is missing');
+      expect(
+        pubspec.contains('- $path'),
+        isTrue,
+        reason: '$path not in pubspec',
+      );
+    }
+    // Nothing is bundled that is not used: no whole-directory entries, and the
+    // store icon is not an app asset.
+    expect(pubspec.contains('- assets/images/\n'), isFalse);
+    expect(pubspec.contains('- assets/branding/\n'), isFalse);
+    expect(pubspec.contains('store_icon_512'), isFalse);
   });
 
   test('lib/content holds only the director profile', () {

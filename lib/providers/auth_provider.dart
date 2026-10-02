@@ -50,7 +50,6 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.unknown;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _rememberMe = true;
   AuthAccount? _account;
   String? _pendingVerificationEmail;
 
@@ -71,16 +70,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get rememberMe => _rememberMe;
   UserProfile get currentUser => _currentUser;
   AuthAccount? get account => _account;
   String? get pendingVerificationEmail => _pendingVerificationEmail;
   String? get lastDevOtp => kDebugMode ? _lastDevOtp : null;
-
-  void setRememberMe(bool value) {
-    _rememberMe = value;
-    notifyListeners();
-  }
 
   void _begin() {
     _isLoading = true;

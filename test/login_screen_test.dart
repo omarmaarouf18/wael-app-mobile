@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/core/constants.dart';
+import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/screens/login_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
+import 'package:wael_app/widgets/framed_poster_card.dart';
 import 'package:wael_app/widgets/hero_backdrop.dart';
 import 'package:wael_app/widgets/language_toggle_chip.dart';
 import 'package:wael_app/widgets/primary_button.dart';
@@ -37,31 +40,115 @@ void main() {
     }
 
     group('LoginScreen [$name]', () {
-      testWidgets('renders on the shared shell with the hero backdrop', (
+      testWidgets('renders on the shared shell with the framed poster', (
         tester,
       ) async {
         await pump(tester);
         expect(find.byType(AppShell), findsOneWidget);
         expect(find.byType(AppBar), findsNothing);
-        expect(find.byType(HeroBackdrop), findsOneWidget);
-        expect(find.text('EL METR'), findsOneWidget);
-        expect(find.text('ACADEMY'), findsOneWidget);
+        expect(find.byType(FramedPosterCard), findsOneWidget);
+        // The old full-bleed backdrop and the text wordmark are gone.
+        expect(find.byType(HeroBackdrop), findsNothing);
+        expect(find.text('ACADEMY'), findsNothing);
         // In Arabic the heading and the (case-less) button label are the same.
         expect(
           find.text(l10n.signIn),
           findsNWidgets(locale.languageCode == 'ar' ? 2 : 1),
         );
-        expect(find.text(l10n.rememberMe), findsOneWidget);
         expect(find.text(l10n.forgotPassword), findsOneWidget);
         expect(find.text(l10n.createAccountPrompt), findsOneWidget);
       });
 
-      testWidgets('hero art is full bleed (starts at the top edge)', (
+      testWidgets(
+        'shows the EL METR poster, whole, and not the character art',
+        (tester) async {
+          await pump(tester);
+          final image = tester.widget<Image>(
+            find.descendant(
+              of: find.byType(FramedPosterCard),
+              matching: find.byType(Image),
+            ),
+          );
+          expect((image.image as AssetImage).assetName, AppConstants.imgPoster);
+          expect(image.fit, BoxFit.contain);
+          expect(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is Image &&
+                  w.image is AssetImage &&
+                  (w.image as AssetImage).assetName ==
+                      AppConstants.imgCharacterArt,
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets('the poster card is framed and at most 55% of the height', (
         tester,
       ) async {
         await pump(tester);
-        expect(tester.getTopLeft(find.byType(HeroBackdrop)).dy, 0);
-        expect(tester.getSize(find.byType(HeroBackdrop)).width, 390);
+        final card = find.descendant(
+          of: find.byType(FramedPosterCard),
+          matching: find.byWidgetPredicate(
+            (w) => w is Container && w.decoration is BoxDecoration,
+          ),
+        );
+        final box = tester.widget<Container>(card).decoration! as BoxDecoration;
+        expect(box.borderRadius, AppRadius.radiusXl);
+        expect((box.border! as Border).top.width, 1);
+        expect((box.border! as Border).top.color.a, lessThan(1));
+        expect(box.boxShadow, isNotEmpty);
+        final size = tester.getSize(card);
+        expect(size.height, lessThanOrEqualTo(1400 * 0.55));
+        expect(
+          size.width / size.height,
+          closeTo(AppConstants.posterAspectRatio, 0.01),
+        );
+      });
+
+      testWidgets('email only: no phone wording, no remember me', (
+        tester,
+      ) async {
+        await pump(tester);
+        expect(find.text(l10n.email), findsOneWidget);
+        expect(find.text(l10n.emailOrPhone), findsNothing);
+        expect(
+          find.textContaining(RegExp('phone', caseSensitive: false)),
+          findsNothing,
+        );
+        expect(find.textContaining('هاتف'), findsNothing);
+        expect(find.byType(Checkbox), findsNothing);
+        expect(
+          find.textContaining(RegExp('remember', caseSensitive: false)),
+          findsNothing,
+        );
+        expect(find.textContaining('تذكرني'), findsNothing);
+        // Two inputs only: email and password.
+        expect(find.byType(TextFormField), findsNWidgets(2));
+      });
+
+      testWidgets('fits a 360x640 phone without overflow', (tester) async {
+        await pumpScreen(
+          tester,
+          locale,
+          const LoginScreen(),
+          auth: makeAuth(),
+          size: const Size(360, 640),
+        );
+        expect(tester.takeException(), isNull);
+        // The language chip and the whole poster are on screen at first.
+        expect(
+          tester.getRect(find.byType(LanguageToggleChip)).top,
+          greaterThanOrEqualTo(0),
+        );
+        final poster = tester.getRect(find.byType(FramedPosterCard));
+        expect(poster.top, greaterThanOrEqualTo(0));
+        expect(poster.height, lessThanOrEqualTo(640 * 0.55));
+        // The rest of the form is reachable by scrolling.
+        await tester.ensureVisible(find.widgetWithText(PrimaryButton, signIn));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
       });
 
       testWidgets('directional layout ($direction)', (tester) async {
@@ -69,18 +156,28 @@ void main() {
         final width = 390.0;
         // Language chip sits at the end edge of the top bar.
         final chip = tester.getCenter(find.byType(LanguageToggleChip)).dx;
-        // Heading and the remember-me / forgot-password row.
         final heading = tester.getCenter(find.text(l10n.signIn).first).dx;
-        final remember = find.text(l10n.rememberMe);
-        final forgot = find.text(l10n.forgotPassword);
+        final forgot = tester.getCenter(find.text(l10n.forgotPassword)).dx;
         if (direction == TextDirection.ltr) {
           expect(chip, greaterThan(width / 2));
           expect(heading, lessThan(width / 2));
+          expect(forgot, greaterThan(width / 2));
         } else {
           expect(chip, lessThan(width / 2));
           expect(heading, greaterThan(width / 2));
+          expect(forgot, lessThan(width / 2));
         }
-        expect(startsBefore(tester, remember, forgot, direction), isTrue);
+        // Top to bottom: chip, poster, heading, email, password, button.
+        double top(Finder f) => tester.getTopLeft(f.first).dy;
+        final order = [
+          top(find.byType(LanguageToggleChip)),
+          top(find.byType(FramedPosterCard)),
+          top(find.text(l10n.signIn)),
+          top(find.text(l10n.email)),
+          top(find.text(l10n.password)),
+          top(find.widgetWithText(PrimaryButton, signIn)),
+        ];
+        expect(order, [...order]..sort());
       });
 
       testWidgets('language chip toggles the locale provider', (tester) async {
