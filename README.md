@@ -4,7 +4,11 @@ Real auth against the wael-app gateway. Academy content is read through
 `AcademyRepository` (`lib/repositories/academy_repository.dart`: levels,
 subjects, subject detail over `/api/v1/academy/`, models in
 `lib/models/academy_catalog.dart`). Home, courses and course detail are on it;
-ebooks still use bundled mock data until their backend phase (SPEC Phase 5).
+the ebooks tab is an empty state until its backend phase (SPEC Phase 5). No
+screen shows mock or demo data: anything a student sees as real comes from the
+API, or from `lib/content/director_profile.dart` (the director card, empty
+until the owner supplies the text). `docs/frontend/CONTENT-GAPS.md` lists what
+exists and what is missing.
 Opening a locked subject creates its access request through the real
 `POST /api/v1/academy/subjects/{id}/access-request` (SPEC decision 9, Phase 3.3);
 the subject screen then shows "Request pending". There is no payment screen in
