@@ -29,9 +29,18 @@ class AppLocalizations {
       isArabic ? 'الفرقة / المستوى' : 'Academic Year / Level';
   String get subjectEntity => isArabic ? 'المادة الدراسية' : 'Subject';
   String get subjectContent => isArabic ? 'محتوى المادة' : 'Subject Content';
-  String get eduLisence => isArabic ? 'ليسانس الحقوق' : 'LL.B. (Bachelor)';
-  String get eduDiploma => isArabic ? 'دبلومة' : 'Diploma';
-  String get eduVocational => isArabic ? 'تدريب مهني' : 'Vocational Training';
+
+  /// Tab label for a study type; other keys use [fallback] (the server title).
+  String studyTypeLabel(String key, String fallback) => switch (key) {
+    'bachelor' => isArabic ? 'الفرق' : 'Years',
+    'diploma' => isArabic ? 'الدبلومات' : 'Diplomas',
+    'vocational' => isArabic ? 'التدريب المهني' : 'Vocational Training',
+    _ => fallback,
+  };
+  String get noDiplomasYet =>
+      isArabic ? 'لا توجد دبلومات بعد' : 'No diplomas yet';
+  String get noLevelsYet => isArabic ? 'لا توجد مستويات بعد' : 'No levels yet';
+  String get noSubjectsYet => isArabic ? 'لا توجد مواد بعد' : 'No subjects yet';
   String get levelYear1 => isArabic ? 'الفرقة الأولى' : 'First Year';
   String get levelYear2 => isArabic ? 'الفرقة الثانية' : 'Second Year';
   String get levelYear3 => isArabic ? 'الفرقة الثالثة' : 'Third Year';

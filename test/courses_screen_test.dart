@@ -74,6 +74,18 @@ FakeAcademyRepository longText() => FakeAcademyRepository(
   },
 );
 
+/// The seeded axes with nothing published: bachelor years 1-4 and the one
+/// vocational level, and no diploma.
+FakeAcademyRepository emptyAxes() => FakeAcademyRepository(
+  levelList: [
+    level('bachelor-y1', 'bachelor', 1),
+    level('bachelor-y2', 'bachelor', 2),
+    level('bachelor-y3', 'bachelor', 3),
+    level('bachelor-y4', 'bachelor', 4),
+    level('vocational', 'vocational', 5),
+  ],
+);
+
 void main() {
   for (final (name, locale, direction) in kLocales) {
     final l10n = l10nFor(locale);
@@ -126,7 +138,8 @@ void main() {
         expect(find.byType(SearchField), findsOneWidget);
         expect(find.text(upper(l10n.educationType)), findsOneWidget);
         // Study types (outlined) and the levels of the selected type (filled).
-        expect(find.byType(SelectableChip), findsNWidgets(2 + 2));
+        // Three study types (outlined) and the two levels of the first (filled).
+        expect(find.byType(SelectableChip), findsNWidgets(3 + 2));
         expect(find.byType(CatalogLevelHeader), findsOneWidget);
         expect(find.text(l10n.subjectsCount(2)), findsOneWidget);
         expect(find.byType(CatalogSubjectCard), findsNWidgets(2));
@@ -207,20 +220,20 @@ void main() {
         expect(find.text(l10n.subjectsCount(1)), findsOneWidget);
 
         // Vocational: one level, no subjects -> empty state.
-        final vocational = find.text(
-          title('نوع vocational', 'Type vocational'),
-        );
+        final vocational = find.text(l10n.studyTypeLabel('vocational', ''));
         await tester.ensureVisible(vocational);
         await tester.tap(vocational);
         await tester.pumpAndSettle();
         expect(catalog.selectedStudyTypeKey, 'vocational');
         expect(find.byType(CatalogSubjectCard), findsNothing);
         expect(find.byType(ThemedEmptyState), findsOneWidget);
-        expect(find.text(l10n.noCoursesFound), findsOneWidget);
+        // A level with nothing published says so; it is not a failed search.
+        expect(find.text(l10n.noSubjectsYet), findsOneWidget);
+        expect(find.text(l10n.noCoursesFound), findsNothing);
         expect(find.text(l10n.subjectsCount(0)), findsOneWidget);
 
         // Back to bachelor, then search.
-        await tester.tap(find.text(title('نوع bachelor', 'Type bachelor')));
+        await tester.tap(find.text(l10n.studyTypeLabel('bachelor', '')));
         await tester.pumpAndSettle();
         await tester.tap(
           find.text(title('ar-bachelor-y1', 'en-bachelor-y1')).first,
@@ -241,7 +254,9 @@ void main() {
         );
         await tester.enterText(find.byType(TextField), 'zzz');
         await tester.pump();
+        // A search with no match, in a level that does have subjects.
         expect(find.text(l10n.noCoursesFound), findsOneWidget);
+        expect(find.text(l10n.noSubjectsYet), findsNothing);
         await tester.tap(find.byIcon(Icons.close));
         await tester.pump();
         expect(find.byType(CatalogSubjectCard), findsNWidgets(2));
@@ -287,11 +302,187 @@ void main() {
         expect(find.byType(CatalogSubjectCard), findsNWidgets(2));
       });
 
-      testWidgets('empty catalog shows the empty state', (tester) async {
-        await pump(tester, FakeAcademyRepository(levelList: []));
-        expect(find.byType(ThemedEmptyState), findsOneWidget);
-        expect(find.byType(SelectableChip), findsNothing);
+      testWidgets('three study-type tabs are always there, in order', (
+        tester,
+      ) async {
+        await pump(tester, emptyAxes(), size: const Size(700, 1800));
+        final types = find.byWidgetPredicate(
+          (w) => w is SelectableChip && w.variant == ChipVariant.outlined,
+        );
+        expect(types, findsNWidgets(3));
+        for (final key in ['bachelor', 'diploma', 'vocational']) {
+          // Inside the tab chips (the selected type's name is also the level
+          // header's subtitle).
+          expect(
+            find.descendant(
+              of: types,
+              matching: find.text(l10n.studyTypeLabel(key, '')),
+            ),
+            findsOneWidget,
+            reason: key,
+          );
+        }
+        expect(
+          startsBefore(tester, types.at(0), types.at(1), direction),
+          isTrue,
+        );
+        expect(
+          startsBefore(tester, types.at(1), types.at(2), direction),
+          isTrue,
+        );
+        // Fixed labels, not the server's titles.
+        expect(find.text(title('نوع bachelor', 'Type bachelor')), findsNothing);
+        expect(l10n.studyTypeLabel('bachelor', ''), title('الفرق', 'Years'));
+        expect(
+          l10n.studyTypeLabel('diploma', ''),
+          title('الدبلومات', 'Diplomas'),
+        );
+        expect(
+          l10n.studyTypeLabel('vocational', ''),
+          title('التدريب المهني', 'Vocational Training'),
+        );
       });
+
+      testWidgets('empty catalog: every tab is an honest empty state', (
+        tester,
+      ) async {
+        final catalog = await pump(
+          tester,
+          emptyAxes(),
+          size: const Size(700, 1800),
+        );
+        final levelChips = find.byWidgetPredicate(
+          (w) => w is SelectableChip && w.variant == ChipVariant.filled,
+        );
+
+        // Bachelor: years 1-4, no subjects yet.
+        expect(catalog.selectedStudyTypeKey, 'bachelor');
+        expect(levelChips, findsNWidgets(4));
+        expect(find.byType(CatalogSubjectCard), findsNothing);
+        expect(find.text(l10n.noSubjectsYet), findsOneWidget);
+        expect(find.text(l10n.noCoursesFound), findsNothing);
+
+        // Diploma: no diplomas yet, no level chips, no level header.
+        await tester.tap(find.text(l10n.studyTypeLabel('diploma', '')));
+        await tester.pumpAndSettle();
+        expect(catalog.selectedStudyTypeKey, 'diploma');
+        expect(find.text(l10n.noDiplomasYet), findsOneWidget);
+        expect(
+          title('لا توجد دبلومات بعد', 'No diplomas yet'),
+          l10n.noDiplomasYet,
+        );
+        expect(levelChips, findsNothing);
+        expect(find.byType(CatalogLevelHeader), findsNothing);
+        expect(find.text(l10n.noSubjectsYet), findsNothing);
+        expect(find.text(l10n.noCoursesFound), findsNothing);
+
+        // Vocational: its one level, no term filter, no subjects yet.
+        await tester.tap(find.text(l10n.studyTypeLabel('vocational', '')));
+        await tester.pumpAndSettle();
+        expect(catalog.selectedStudyTypeKey, 'vocational');
+        expect(levelChips, findsOneWidget);
+        expect(find.text(l10n.noSubjectsYet), findsOneWidget);
+        expect(
+          title('لا توجد مواد بعد', 'No subjects yet'),
+          l10n.noSubjectsYet,
+        );
+        expect(find.text(l10n.termFirst), findsNothing);
+        expect(find.text(l10n.termSecond), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('all three tabs with data', (tester) async {
+        final repo = FakeAcademyRepository(
+          levelList: [
+            level('bachelor-y1', 'bachelor', 1),
+            level('diploma-crim', 'diploma', 6),
+            level('diploma-civil', 'diploma', 7),
+            level('vocational', 'vocational', 5),
+          ],
+          subjectsByLevel: {
+            'bachelor-y1': [
+              subject(
+                'b1',
+                'bachelor-y1',
+                en: 'Civil Law',
+                ar: 'القانون المدني',
+              ),
+            ],
+            'diploma-crim': [
+              subject('d1', 'diploma-crim', en: 'Forensics', ar: 'الطب الشرعي'),
+            ],
+            // diploma-civil has nothing published yet.
+            'vocational': [
+              AcademySubject(
+                id: 'v1',
+                levelKey: 'vocational',
+                term: '',
+                title: const LocalizedText(ar: 'الصياغة', en: 'Drafting'),
+                description: const LocalizedText(),
+                owned: false,
+                counts: const SubjectCounts(videos: 1),
+              ),
+            ],
+          },
+        );
+        final catalog = await pump(tester, repo, size: const Size(700, 1800));
+
+        // Bachelor.
+        expect(find.byType(CatalogSubjectCard), findsOneWidget);
+        expect(find.text(title('القانون المدني', 'Civil Law')), findsOneWidget);
+
+        // Diploma: two admin-created diplomas, the first selected.
+        await tester.tap(find.text(l10n.studyTypeLabel('diploma', '')));
+        await tester.pumpAndSettle();
+        expect(catalog.selectedLevelKey, 'diploma-crim');
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is SelectableChip && w.variant == ChipVariant.filled,
+          ),
+          findsNWidgets(2),
+        );
+        expect(find.text(title('الطب الشرعي', 'Forensics')), findsOneWidget);
+        expect(find.text(l10n.noDiplomasYet), findsNothing);
+
+        // The second diploma has no subjects: "No subjects yet".
+        await tester.tap(
+          find.text(title('ar-diploma-civil', 'en-diploma-civil')).first,
+        );
+        await tester.pumpAndSettle();
+        expect(catalog.selectedLevelKey, 'diploma-civil');
+        expect(find.byType(CatalogSubjectCard), findsNothing);
+        expect(find.text(l10n.noSubjectsYet), findsOneWidget);
+        expect(find.text(l10n.noCoursesFound), findsNothing);
+
+        // Vocational: one level, its subject, and no term anywhere.
+        await tester.tap(find.text(l10n.studyTypeLabel('vocational', '')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is SelectableChip && w.variant == ChipVariant.filled,
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(title('الصياغة', 'Drafting')), findsOneWidget);
+        expect(find.text(l10n.termFirst), findsNothing);
+        expect(find.text(l10n.termSecond), findsNothing);
+      });
+
+      testWidgets(
+        'a catalog that sends no levels shows the levels empty state',
+        (tester) async {
+          await pump(tester, FakeAcademyRepository(levelList: []));
+          // Three tabs; bachelor has no levels to pick.
+          expect(
+            find.byWidgetPredicate(
+              (w) => w is SelectableChip && w.variant == ChipVariant.outlined,
+            ),
+            findsNWidgets(3),
+          );
+          expect(find.text(l10n.noLevelsYet), findsOneWidget);
+          expect(find.byType(CatalogSubjectCard), findsNothing);
+        },
+      );
 
       for (final width in [360.0, 390.0]) {
         testWidgets('no overflow with long text at ${width.toInt()}px', (

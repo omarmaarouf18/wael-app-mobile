@@ -61,12 +61,48 @@ void main() {
       expect(repo.subjectCalls.every((c) => c.$3 == 100), isTrue);
     });
 
-    test('an empty catalog is ready with nothing selected', () async {
+    test('a catalog with no levels still has the three study types', () async {
+      // Like the real server: the axes are always there (SPEC Section 1
+      // decision 2, amended 2026-10-02), here with no levels at all.
       final p = AcademyCatalogProvider(FakeAcademyRepository(levelList: []));
       await p.reload();
       expect(p.status, LoadStatus.ready);
-      expect(p.studyTypes, isEmpty);
+      expect(p.studyTypes.map((t) => t.key), [
+        'bachelor',
+        'diploma',
+        'vocational',
+      ]);
+      expect(p.selectedStudyTypeKey, 'bachelor');
+      expect(p.levelsOfSelectedType, isEmpty);
       expect(p.selectedLevel, isNull);
+      expect(p.visibleSubjects, isEmpty);
+    });
+
+    test('the diploma type has no levels until one exists', () async {
+      final p = AcademyCatalogProvider(fake());
+      await p.reload();
+      p.selectStudyType('diploma');
+      expect(p.selectedStudyTypeKey, 'diploma');
+      expect(p.levelsOfSelectedType, isEmpty);
+      expect(p.selectedLevelKey, isNull);
+      expect(p.visibleSubjects, isEmpty);
+      p.selectStudyType('bachelor');
+      expect(p.selectedLevelKey, 'bachelor-y1');
+    });
+
+    test('a diploma with no subjects is a selectable level', () async {
+      final repo = FakeAcademyRepository(
+        levelList: [
+          level('bachelor-y1', 'bachelor', 1),
+          level('diploma-crim', 'diploma', 6),
+          level('vocational', 'vocational', 5),
+        ],
+      );
+      final p = AcademyCatalogProvider(repo);
+      await p.reload();
+      p.selectStudyType('diploma');
+      expect(p.selectedLevelKey, 'diploma-crim');
+      expect(p.subjectsOf('diploma-crim'), isEmpty);
       expect(p.visibleSubjects, isEmpty);
     });
   });

@@ -162,6 +162,78 @@ void main() {
     });
   });
 
+  group('levels: always-visible axes', () {
+    test('parses three study types, a diploma one with no levels', () async {
+      const body = {
+        'levels': [
+          {
+            'key': 'bachelor-y1',
+            'study_type': 'bachelor',
+            'title': {'ar': 'الفرقة الأولى', 'en': 'Year 1'},
+            'position': 1,
+          },
+          {
+            'key': 'vocational',
+            'study_type': 'vocational',
+            'title': {
+              'ar': 'التدريب المهني والعملي',
+              'en': 'Vocational Training',
+            },
+            'position': 5,
+          },
+        ],
+        'study_types': [
+          {
+            'key': 'bachelor',
+            'title': {'ar': 'ليسانس الحقوق', 'en': 'LL.B. (Bachelor)'},
+            'levels': [
+              {
+                'key': 'bachelor-y1',
+                'study_type': 'bachelor',
+                'title': {'ar': 'الفرقة الأولى', 'en': 'Year 1'},
+                'position': 1,
+              },
+            ],
+          },
+          {
+            'key': 'diploma',
+            'title': {
+              'ar': 'دبلومات الدراسات العليا',
+              'en': 'Postgraduate Diplomas',
+            },
+            'levels': <Object>[],
+          },
+          {
+            'key': 'vocational',
+            'title': {
+              'ar': 'التدريب المهني والعملي',
+              'en': 'Vocational Training',
+            },
+            'levels': [
+              {
+                'key': 'vocational',
+                'study_type': 'vocational',
+                'title': {
+                  'ar': 'التدريب المهني والعملي',
+                  'en': 'Vocational Training',
+                },
+                'position': 5,
+              },
+            ],
+          },
+        ],
+      };
+      final levels = await _Fake((_) => _json(body)).repo.levels();
+      expect(levels.studyTypes.map((t) => t.key), [
+        'bachelor',
+        'diploma',
+        'vocational',
+      ]);
+      expect(levels.studyTypes[1].levels, isEmpty);
+      expect(levels.levels.map((l) => l.key), ['bachelor-y1', 'vocational']);
+    });
+  });
+
   group('subjects', () {
     test('builds the query string and parses the page', () async {
       final fake = _Fake(

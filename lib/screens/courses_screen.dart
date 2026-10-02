@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../models/academy_catalog.dart';
 import '../providers/academy_catalog_provider.dart';
 import '../providers/home_provider.dart';
 import '../widgets/accent_title.dart';
@@ -136,6 +137,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
     final subjects = catalog.visibleSubjects;
     final level = catalog.selectedLevel;
     final type = catalog.selectedStudyType;
+    final levels = catalog.levelsOfSelectedType;
+    String typeLabel(AcademyStudyType t) =>
+        l10n.studyTypeLabel(t.key, t.title.resolve(isArabic));
 
     return [
       // Education type selector
@@ -166,7 +170,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
             return SelectableChip(
               variant: ChipVariant.outlined,
               icon: studyTypeIcon(t.key),
-              label: t.title.resolve(isArabic),
+              label: typeLabel(t),
               selected: t.key == catalog.selectedStudyTypeKey,
               onTap: () => catalog.selectStudyType(t.key),
             );
@@ -175,117 +179,133 @@ class _CoursesScreenState extends State<CoursesScreen> {
       ),
       const SizedBox(height: AppSpacing.spaceSm),
 
-      // Academic level selector
-      Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: AppSpacing.marginMobile,
-          vertical: AppSpacing.spaceXs,
-        ),
-        child: AccentTitle(
-          title: l10n.academicYearLevel,
-          color: AppColors.textMuted,
-          barHeight: 12,
-        ),
-      ),
-      const SizedBox(height: 4),
-      SizedBox(
-        height: 42,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: AppSpacing.marginMobile,
-          ),
-          itemCount: catalog.levelsOfSelectedType.length,
-          separatorBuilder: (context, index) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final l = catalog.levelsOfSelectedType[index];
-            return SelectableChip(
-              label: l.title.resolve(isArabic),
-              selected: l.key == catalog.selectedLevelKey,
-              onTap: () => catalog.selectLevel(l.key),
-            );
-          },
-        ),
-      ),
-      const SizedBox(height: AppSpacing.spaceSm),
-
-      // Level summary
-      if (level != null && type != null)
-        Padding(
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: AppSpacing.marginMobile,
-            vertical: AppSpacing.spaceSm,
-          ),
-          child: CatalogLevelHeader(
-            title: level.title.resolve(isArabic),
-            subtitle: type.title.resolve(isArabic),
-            countLabel: l10n.subjectsCount(subjects.length),
-          ),
-        ),
-
-      // Subjects header (both texts shrink instead of overflowing)
-      Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: AppSpacing.marginMobile,
-          vertical: AppSpacing.spaceXs,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                AppTypography.uppercaseLabel(l10n.subjectEntity),
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: isArabic ? 0 : 1.2,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.spaceSm),
-            Flexible(
-              child: Text(
-                l10n.curriculumCatalog,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.labelSm(
-                  isArabic: isArabic,
-                ).copyWith(color: AppColors.textMuted),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: AppSpacing.spaceXs),
-
-      // Subject cards
-      if (subjects.isEmpty)
-        ThemedEmptyState(icon: Icons.search_off, message: l10n.noCoursesFound)
-      else
+      // A study type with no levels (no diploma yet) is an honest empty state.
+      if (levels.isEmpty)
+        ThemedEmptyState(
+          icon: studyTypeIcon(type?.key ?? ''),
+          message: type?.key == 'diploma'
+              ? l10n.noDiplomasYet
+              : l10n.noLevelsYet,
+        )
+      else ...[
+        // Academic level selector
         Padding(
           padding: const EdgeInsetsDirectional.symmetric(
             horizontal: AppSpacing.marginMobile,
             vertical: AppSpacing.spaceXs,
           ),
-          child: Column(
+          child: AccentTitle(
+            title: l10n.academicYearLevel,
+            color: AppColors.textMuted,
+            barHeight: 12,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 42,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppSpacing.marginMobile,
+            ),
+            itemCount: levels.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final l = levels[index];
+              return SelectableChip(
+                label: l.title.resolve(isArabic),
+                selected: l.key == catalog.selectedLevelKey,
+                onTap: () => catalog.selectLevel(l.key),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.spaceSm),
+
+        // Level summary
+        if (level != null && type != null)
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppSpacing.marginMobile,
+              vertical: AppSpacing.spaceSm,
+            ),
+            child: CatalogLevelHeader(
+              title: level.title.resolve(isArabic),
+              subtitle: typeLabel(type),
+              countLabel: l10n.subjectsCount(subjects.length),
+            ),
+          ),
+
+        // Subjects header (both texts shrink instead of overflowing)
+        Padding(
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: AppSpacing.marginMobile,
+            vertical: AppSpacing.spaceXs,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (final subject in subjects)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    bottom: AppSpacing.spaceMd,
-                  ),
-                  child: CatalogSubjectCard(
-                    subject: subject,
-                    instructorName: instructor,
-                    onTap: () => Navigator.of(
-                      context,
-                    ).pushNamed('/course-details', arguments: subject.id),
+              Flexible(
+                child: Text(
+                  AppTypography.uppercaseLabel(l10n.subjectEntity),
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelSm(isArabic: isArabic).copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: isArabic ? 0 : 1.2,
                   ),
                 ),
+              ),
+              const SizedBox(width: AppSpacing.spaceSm),
+              Flexible(
+                child: Text(
+                  l10n.curriculumCatalog,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelSm(
+                    isArabic: isArabic,
+                  ).copyWith(color: AppColors.textMuted),
+                ),
+              ),
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.spaceXs),
+
+        // Subject cards
+        if (subjects.isEmpty)
+          // Nothing published in this level yet, versus a search with no match.
+          ThemedEmptyState(
+            icon: Icons.search_off,
+            message: level != null && catalog.subjectsOf(level.key).isEmpty
+                ? l10n.noSubjectsYet
+                : l10n.noCoursesFound,
+          )
+        else
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppSpacing.marginMobile,
+              vertical: AppSpacing.spaceXs,
+            ),
+            child: Column(
+              children: [
+                for (final subject in subjects)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      bottom: AppSpacing.spaceMd,
+                    ),
+                    child: CatalogSubjectCard(
+                      subject: subject,
+                      instructorName: instructor,
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed('/course-details', arguments: subject.id),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     ];
   }
 }

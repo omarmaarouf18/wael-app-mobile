@@ -66,7 +66,14 @@ class FakeAcademyRepository implements AcademyRepository {
   Future<AcademyLevels> levels() async {
     levelsCalls++;
     if (levelsError != null) throw levelsError!;
-    final byType = <String, List<AcademyLevel>>{};
+    // Like the real server (SPEC Section 1 decision 2, amended 2026-10-02):
+    // the three study types are always there, in this order, even with no
+    // levels; any other type follows.
+    final byType = <String, List<AcademyLevel>>{
+      'bachelor': [],
+      'diploma': [],
+      'vocational': [],
+    };
     for (final l in levelList) {
       byType.putIfAbsent(l.studyType, () => []).add(l);
     }
