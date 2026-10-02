@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/api_client.dart';
 import '../models/academy_catalog.dart';
 import '../repositories/academy_repository.dart';
 
@@ -16,6 +17,36 @@ class SubjectDetailState {
   final LoadStatus status;
   final AcademySubjectDetail? detail;
   final Object? error;
+}
+
+enum AccessRequestStatus { idle, sending, sent, failed }
+
+/// Progress of this session's access request for one subject. The server is
+/// the source of truth for whether a request is pending (the subject detail's
+/// `request`); this only tracks the call made from this device, and the
+/// support link its response carried.
+class AccessRequestState {
+  const AccessRequestState({
+    this.status = AccessRequestStatus.idle,
+    this.supportUrl,
+    this.error,
+  });
+
+  final AccessRequestStatus status;
+
+  /// `whatsapp_url` of the last successful request. The subject detail does
+  /// not carry it, so it is null when the pending state came from the detail
+  /// alone (for example after a restart).
+  final String? supportUrl;
+  final Object? error;
+
+  /// A 404 or 409 will not change by asking again (unknown subject, already
+  /// owned, or the subject's access date has passed); anything else may.
+  bool get canRetry {
+    final e = error;
+    if (e is ApiException) return e.statusCode != 404 && e.statusCode != 409;
+    return true;
+  }
 }
 
 /// Student-facing academy catalog: levels, the published subjects of every
@@ -44,6 +75,7 @@ class AcademyCatalogProvider extends ChangeNotifier {
   String? _levelKey;
   String _searchQuery = '';
   final Map<String, SubjectDetailState> _details = {};
+  final Map<String, AccessRequestState> _access = {};
 
   /// Bumped on [reset] so a response that arrives after logout is dropped.
   int _generation = 0;
@@ -263,6 +295,56 @@ class AcademyCatalogProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  AccessRequestState accessOf(String id) =>
+      _access[id] ?? const AccessRequestState();
+
+  /// Opens a subject: loads its detail and, when the student neither owns it
+  /// nor has a pending request, creates the access request (SPEC decision 9).
+  /// Meant to be called once per screen open (and on retry), never from a
+  /// build. A cached subject the student does not own is refetched, so a
+  /// request that was accepted or rejected meanwhile shows up.
+  Future<void> openSubject(String id, {bool force = false}) async {
+    // A failure from an earlier visit must not show while this one loads.
+    if (accessOf(id).status == AccessRequestStatus.failed) _access.remove(id);
+    final cached = detailOf(id).detail;
+    await loadDetail(id, force: force || (cached != null && !cached.owned));
+    final state = detailOf(id);
+    final detail = state.detail;
+    if (state.status != LoadStatus.ready || detail == null) return;
+    if (detail.owned || detail.hasPendingRequest) return;
+    await requestAccess(id);
+  }
+
+  /// `POST /academy/subjects/{id}/access-request`, then refreshes the detail
+  /// so the server's `request` is what the screen shows. The server answers a
+  /// repeat call with the existing pending request, so calling again is safe.
+  /// A failure is kept in [accessOf] (map it with
+  /// `ErrorMessages.forAccessRequest`); it is never retried automatically.
+  Future<void> requestAccess(String id) async {
+    if (accessOf(id).status == AccessRequestStatus.sending) return;
+    final generation = _generation;
+    _access[id] = const AccessRequestState(status: AccessRequestStatus.sending);
+    notifyListeners();
+    try {
+      final res = await _repository.requestAccess(id);
+      if (generation != _generation) return;
+      _access[id] = AccessRequestState(
+        status: AccessRequestStatus.sent,
+        supportUrl: res.supportUrl,
+      );
+      notifyListeners();
+    } catch (e) {
+      if (generation != _generation) return;
+      _access[id] = AccessRequestState(
+        status: AccessRequestStatus.failed,
+        error: e,
+      );
+      notifyListeners();
+      return;
+    }
+    await loadDetail(id, force: true);
+  }
+
   /// Asks the server whether the student may play [videoId] now and returns
   /// the playback answer. Nothing is kept here: the answer goes straight to
   /// the caller (the player screen), which must hold it in memory only.
@@ -284,6 +366,7 @@ class AcademyCatalogProvider extends ChangeNotifier {
     _levelKey = null;
     _searchQuery = '';
     _details.clear();
+    _access.clear();
     if (notify) notifyListeners();
   }
 }

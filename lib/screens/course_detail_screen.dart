@@ -9,7 +9,8 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import 'course_detail/course_detail_body.dart';
 
-/// Subject detail, read from `GET /academy/subjects/{id}`. Loading, error
+/// Subject detail, read from `GET /academy/subjects/{id}`; opening a locked
+/// subject also creates its access request (`openSubject`). Loading, error
 /// (persistent banner with Retry; also shown for an unknown or unpublished
 /// subject) and ready are separate states. The content itself lives in
 /// `course_detail/`.
@@ -28,7 +29,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<AcademyCatalogProvider>().loadDetail(widget.courseId);
+        context.read<AcademyCatalogProvider>().openSubject(widget.courseId);
       }
     });
   }
@@ -52,7 +53,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               state.error!,
               isArabic: l10n.isArabic,
             ),
-            onRetry: () => catalog.loadDetail(widget.courseId, force: true),
+            onRetry: () => catalog.openSubject(widget.courseId, force: true),
           ),
         ),
       );

@@ -25,6 +25,13 @@ abstract class AcademyRepository {
   /// (the server answers every refusal the same way). The result must not be
   /// stored, cached or logged by the caller.
   Future<VideoPlayback> playVideo(String videoId);
+
+  /// `POST /academy/subjects/{id}/access-request`: idempotent, so a repeat
+  /// call returns the existing pending request. Throws [ApiException] with
+  /// 404 (unknown or unpublished subject), 409 (already owned, or the
+  /// subject's access date has passed; the server does not say which), 429
+  /// (write rate limit) or 503.
+  Future<AccessRequest> requestAccess(String subjectId);
 }
 
 /// [AcademyRepository] over the authed gateway client. A 401 runs the usual
@@ -79,5 +86,13 @@ class HttpAcademyRepository implements AcademyRepository {
       '$_base/videos/${Uri.encodeComponent(videoId)}/play',
     );
     return VideoPlayback.fromJson(res);
+  }
+
+  @override
+  Future<AccessRequest> requestAccess(String subjectId) async {
+    final res = await _api.post(
+      '$_base/subjects/${Uri.encodeComponent(subjectId)}/access-request',
+    );
+    return AccessRequest.fromJson(res);
   }
 }

@@ -24,7 +24,6 @@ const kStubRoutes = [
   '/settings',
   '/ebooks',
   '/course-details',
-  '/payment',
   '/video-player',
 ];
 

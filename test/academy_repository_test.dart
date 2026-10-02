@@ -107,6 +107,9 @@ Map<String, dynamic> _subject({
   'currency': ?currency,
 };
 
+/// Marks "leave the key out" in `detail()` helpers.
+const Object _absent = Object();
+
 void main() {
   group('LocalizedText.resolve', () {
     test('prefers the active language', () {
@@ -393,6 +396,188 @@ void main() {
       final fake = _Fake((_) => _json(raw));
       expect(fake.repo.subject('s1'), throwsA(isA<AcademyParseException>()));
     });
+  });
+
+  group('subject detail request', () {
+    Map<String, dynamic> detail([Object? request = _absent]) => {
+      ..._subject(),
+      'videos': <Object>[],
+      'files': <Object>[],
+      if (!identical(request, _absent)) 'request': request,
+    };
+
+    test('absent: no request and nothing pending', () {
+      final d = AcademySubjectDetail.fromJson(detail());
+      expect(d.request, isNull);
+      expect(d.hasPendingRequest, isFalse);
+    });
+
+    test('null is the same as absent', () {
+      final d = AcademySubjectDetail.fromJson(detail(null));
+      expect(d.request, isNull);
+      expect(d.hasPendingRequest, isFalse);
+    });
+
+    test('{"status": "pending"} parses as a pending request', () {
+      final d = AcademySubjectDetail.fromJson(detail({'status': 'pending'}));
+      expect(d.request!.status, 'pending');
+      expect(d.request!.isPending, isTrue);
+      expect(d.hasPendingRequest, isTrue);
+    });
+
+    test('another status is kept but is not pending', () {
+      final d = AcademySubjectDetail.fromJson(detail({'status': 'rejected'}));
+      expect(d.request!.status, 'rejected');
+      expect(d.hasPendingRequest, isFalse);
+    });
+
+    test('an owned subject never counts as pending', () {
+      final d = AcademySubjectDetail.fromJson({
+        ...detail({'status': 'pending'}),
+        'owned': true,
+      });
+      expect(d.hasPendingRequest, isFalse);
+    });
+
+    test('a malformed request object is a contract error', () {
+      for (final bad in <Object>[
+        'pending',
+        1,
+        <Object>[],
+        <String, Object>{},
+      ]) {
+        expect(
+          () => AcademySubjectDetail.fromJson(detail(bad)),
+          throwsA(isA<AcademyParseException>()),
+          reason: '$bad',
+        );
+      }
+    });
+
+    test('is read from the detail response end to end', () async {
+      final fake = _Fake((_) => _json(detail({'status': 'pending'})));
+      final d = await fake.repo.subject('s1');
+      expect(d.hasPendingRequest, isTrue);
+    });
+  });
+
+  group('requestAccess', () {
+    const pending = {
+      'id': 'r1',
+      'subject_id': 's1',
+      'status': 'pending',
+      'created_at': '2026-10-02T09:30:00.123456Z',
+      'whatsapp_url': 'https://wa.me/201000000000',
+    };
+
+    test('POSTs to the access-request endpoint and parses a 200', () async {
+      final fake = _Fake((_) => _json(pending));
+      final r = await fake.repo.requestAccess('s1');
+
+      final req = fake.requests.single;
+      expect(req.method, 'POST');
+      expect(
+        req.url.toString(),
+        'https://gateway.test/api/v1/academy/subjects/s1/access-request',
+      );
+      expect(req.body, isEmpty);
+      expect(req.headers['Authorization'], 'Bearer access-1');
+      expect(r.id, 'r1');
+      expect(r.subjectId, 's1');
+      expect(r.status, 'pending');
+      expect(r.isPending, isTrue);
+      expect(r.createdAt, DateTime.utc(2026, 10, 2, 9, 30, 0, 123, 456));
+      expect(r.supportUrl, 'https://wa.me/201000000000');
+    });
+
+    test('the subject id is URL-encoded in the path', () async {
+      final fake = _Fake((_) => _json(pending));
+      await fake.repo.requestAccess('a b/c');
+      expect(
+        fake.requests.single.url.path,
+        '/api/v1/academy/subjects/a%20b%2Fc/access-request',
+      );
+    });
+
+    test('a repeat call returns the same pending request', () async {
+      final fake = _Fake((_) => _json(pending));
+      final a = await fake.repo.requestAccess('s1');
+      final b = await fake.repo.requestAccess('s1');
+      expect(a.id, b.id);
+    });
+
+    for (final (status, body) in [
+      (409, {'error': 'request conflict', 'code': 'conflict'}),
+      (404, {'error': 'subject not found', 'code': 'not_found'}),
+      (429, {'error': 'rate limit exceeded'}),
+      (503, {'error': 'service temporarily unavailable'}),
+    ]) {
+      test(
+        '$status surfaces as ApiException $status, session untouched',
+        () async {
+          final fake = _Fake((_) => _json(body, status));
+          await expectLater(
+            fake.repo.requestAccess('s1'),
+            throwsA(
+              isA<ApiException>().having((e) => e.statusCode, 'status', status),
+            ),
+          );
+          expect(fake.requests, hasLength(1));
+          expect(fake.refreshCalls, 0);
+          expect(fake.logoutCalls, 0);
+        },
+      );
+    }
+
+    test('429 reads as rate limited', () async {
+      final fake = _Fake((_) => _json({'error': 'rate limit'}, 429));
+      await expectLater(
+        fake.repo.requestAccess('s1'),
+        throwsA(isA<ApiException>().having((e) => e.isRateLimited, 'rl', true)),
+      );
+    });
+
+    test('a whatsapp_url that is not https is dropped', () async {
+      for (final bad in [
+        'http://wa.me/1',
+        'javascript:alert(1)',
+        'intent://wa.me/1',
+        'wa.me/1',
+        '',
+        'https://',
+      ]) {
+        final fake = _Fake((_) => _json({...pending, 'whatsapp_url': bad}));
+        final r = await fake.repo.requestAccess('s1');
+        expect(r.supportUrl, isNull, reason: bad);
+      }
+    });
+
+    test('a missing whatsapp_url leaves the request without a link', () async {
+      final body = {...pending}..remove('whatsapp_url');
+      final r = await _Fake((_) => _json(body)).repo.requestAccess('s1');
+      expect(r.supportUrl, isNull);
+      expect(r.isPending, isTrue);
+    });
+
+    test(
+      'a response missing id, subject_id, status or created_at fails',
+      () async {
+        for (final key in ['id', 'subject_id', 'status', 'created_at']) {
+          final body = {...pending}..remove(key);
+          await expectLater(
+            _Fake((_) => _json(body)).repo.requestAccess('s1'),
+            throwsA(isA<AcademyParseException>()),
+            reason: key,
+          );
+        }
+        await expectLater(
+          _Fake(
+            (_) => _json({...pending, 'created_at': 'yesterday'}),
+          ).repo.requestAccess('s1'),
+          throwsA(isA<AcademyParseException>()),
+        );
+      },
+    );
   });
 
   group('playVideo', () {

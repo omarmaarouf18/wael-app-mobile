@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
-import 'package:wael_app/models/course.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
@@ -85,7 +85,9 @@ void main() {
         tester,
       ) async {
         final (_, repo, _) = await pump(tester, lockedBody);
-        expect(repo.detailCalls, 1);
+        // Detail, then the automatic access request, then the detail again.
+        expect(repo.detailCalls, 2);
+        expect(repo.accessCalls, ['d1']);
         expect(find.byType(AppShell), findsOneWidget);
         expect(find.text(upper(l10n.courseDossier)), findsOneWidget);
         expect(find.text(title('القانون المدني', 'Civil Law')), findsOneWidget);
@@ -138,7 +140,8 @@ void main() {
           repo.detailError = null;
           await tester.tap(find.text(l10n.retry));
           await tester.pumpAndSettle();
-          expect(repo.detailCalls, 2);
+          // Retry: detail, the access request, then the detail again.
+          expect(repo.detailCalls, 3);
           expect(find.byType(ThemedErrorBanner), findsNothing);
           expect(find.byType(CatalogVideoTile), findsNWidgets(2));
         },
@@ -420,54 +423,20 @@ void main() {
     });
 
     group('CourseDetailScreen actions [$name]', () {
-      testWidgets('not owned: enrol button shows the price and opens payment', (
+      testWidgets('owned: access banner with the expiry date, no request', (
         tester,
       ) async {
-        await pump(tester, lockedBody);
-        final button = find.widgetWithText(
-          PrimaryButton,
-          '${l10n.enrollNow} (1800 EGP)',
+        final (_, repo, _) = await pump(
+          tester,
+          detailBody(owned: true, expires: '2027-01-15T10:00:00Z'),
         );
-        expect(button, findsOneWidget);
-        expect(find.text(l10n.accessActive), findsNothing);
-        await tester.ensureVisible(button);
-        await tester.tap(button);
-        await tester.pumpAndSettle();
-        expect(find.textContaining('route:/payment'), findsOneWidget);
-        final course = stubRouteArguments.last! as Course;
-        expect(course.id, 'd1');
-        expect(course.title, 'Civil Law');
-        expect(course.titleAr, 'القانون المدني');
-        expect(course.priceEgp, 1800);
-        expect(course.isEnrolled, isFalse);
-        expect(course.imagePath, isNotEmpty);
+        expect(find.text(l10n.accessActive), findsOneWidget);
+        expect(find.text(l10n.accessUntil('2027-01-15')), findsOneWidget);
+        expect(find.byType(PrimaryButton), findsNothing);
+        expect(find.text(l10n.requestPending), findsNothing);
+        expect(find.text(l10n.sendingAccessRequest), findsNothing);
+        expect(repo.accessCalls, isEmpty);
       });
-
-      testWidgets(
-        'price absent: the button has no price and the bridge uses 0',
-        (tester) async {
-          await pump(tester, detailBody(videos: [videoBody('v1', 1)]));
-          final button = find.widgetWithText(PrimaryButton, l10n.enrollNow);
-          expect(button, findsOneWidget);
-          await tester.ensureVisible(button);
-          await tester.tap(button);
-          await tester.pumpAndSettle();
-          expect((stubRouteArguments.last! as Course).priceEgp, 0);
-        },
-      );
-
-      testWidgets(
-        'owned: access banner with the expiry date, no enrol button',
-        (tester) async {
-          await pump(
-            tester,
-            detailBody(owned: true, expires: '2027-01-15T10:00:00Z'),
-          );
-          expect(find.text(l10n.accessActive), findsOneWidget);
-          expect(find.text(l10n.accessUntil('2027-01-15')), findsOneWidget);
-          expect(find.byType(PrimaryButton), findsNothing);
-        },
-      );
 
       testWidgets('owned without an expiry: banner only', (tester) async {
         await pump(tester, detailBody(owned: true));
@@ -517,6 +486,184 @@ void main() {
         await tester.tap(find.byTooltip(l10n.back));
         await tester.pumpAndSettle();
         expect(find.byType(CourseDetailScreen), findsNothing);
+      });
+    });
+
+    group('CourseDetailScreen access request [$name]', () {
+      Finder copyButton() => find.text(l10n.copySupportLink);
+
+      testWidgets('not owned, no request: it is sent on open, then pending', (
+        tester,
+      ) async {
+        final (catalog, repo, _) = await pump(tester, lockedBody);
+        expect(repo.accessCalls, ['d1']);
+        // The detail was refetched, so pending is the server's answer.
+        expect(repo.detailCalls, 2);
+        expect(catalog.detailOf('d1').detail!.hasPendingRequest, isTrue);
+        expect(find.text(l10n.requestPending), findsOneWidget);
+        expect(find.text(l10n.contactSupportToActivate), findsOneWidget);
+        expect(find.text(l10n.sendingAccessRequest), findsNothing);
+        expect(find.text(l10n.accessActive), findsNothing);
+        // Nothing to press to ask again: no button on this state.
+        expect(find.byType(PrimaryButton), findsNothing);
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+      });
+
+      testWidgets('sending: progress while the request is in flight', (
+        tester,
+      ) async {
+        final gate = Completer<void>();
+        final repo = fake()..accessGate = gate.future;
+        await pump(tester, lockedBody, repo: repo, settle: false);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(l10n.sendingAccessRequest), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text(l10n.requestPending), findsNothing);
+        expect(find.byType(PrimaryButton), findsNothing);
+
+        gate.complete();
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.sendingAccessRequest), findsNothing);
+        expect(find.text(l10n.requestPending), findsOneWidget);
+      });
+
+      testWidgets('already pending on the server: nothing is sent', (
+        tester,
+      ) async {
+        final repo = fake()..pendingIds.add('d1');
+        await pump(tester, lockedBody, repo: repo);
+        expect(repo.accessCalls, isEmpty);
+        expect(find.text(l10n.requestPending), findsOneWidget);
+        expect(find.text(l10n.contactSupportToActivate), findsOneWidget);
+        expect(find.byType(PrimaryButton), findsNothing);
+        // The detail carries no support link, so none is shown.
+        expect(copyButton(), findsNothing);
+      });
+
+      testWidgets('409: a clear message, no retry, nothing pending', (
+        tester,
+      ) async {
+        final repo = fake()
+          ..accessError = ApiException(statusCode: 409, message: 'raw-409');
+        await pump(tester, lockedBody, repo: repo);
+        expect(
+          find.text(ErrorMessages.accessRequestUnavailable(isArabic)),
+          findsOneWidget,
+        );
+        expect(find.text('raw-409'), findsNothing);
+        expect(find.text(l10n.retry), findsNothing);
+        expect(find.text(l10n.requestPending), findsNothing);
+        expect(repo.accessCalls, hasLength(1));
+        // The content below is still there and still locked.
+        expect(find.byType(CatalogVideoTile), findsNWidgets(2));
+        expect(isLocked(tester, 0), isTrue);
+      });
+
+      testWidgets('404: the unknown-subject message, no retry', (tester) async {
+        final repo = fake()
+          ..accessError = ApiException(statusCode: 404, message: 'raw-404');
+        await pump(tester, lockedBody, repo: repo);
+        expect(
+          find.text(ErrorMessages.subjectNotFound(isArabic)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.retry), findsNothing);
+      });
+
+      testWidgets('429: try again later, and retry sends it again', (
+        tester,
+      ) async {
+        final repo = fake()
+          ..accessError = ApiException(statusCode: 429, message: 'raw-429');
+        await pump(tester, lockedBody, repo: repo);
+        expect(
+          find.text(ErrorMessages.tryAgainLater(isArabic)),
+          findsOneWidget,
+        );
+        expect(find.text('raw-429'), findsNothing);
+        expect(repo.accessCalls, hasLength(1));
+
+        repo.accessError = null;
+        final retry = find.text(l10n.retry);
+        await tester.ensureVisible(retry);
+        await tester.tap(retry);
+        await tester.pumpAndSettle();
+        expect(repo.accessCalls, hasLength(2));
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+        expect(find.text(l10n.requestPending), findsOneWidget);
+      });
+
+      testWidgets('a network failure shows the network message with retry', (
+        tester,
+      ) async {
+        final repo = fake()..accessError = const SocketException('raw-net');
+        await pump(tester, lockedBody, repo: repo);
+        expect(find.text(ErrorMessages.networkError(isArabic)), findsOneWidget);
+        expect(find.textContaining('raw-net'), findsNothing);
+        expect(find.text(l10n.retry), findsOneWidget);
+      });
+
+      testWidgets('the support link from the response can be copied', (
+        tester,
+      ) async {
+        final copied = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied.add((call.arguments as Map)['text'] as String);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await pump(tester, lockedBody);
+        expect(copyButton(), findsOneWidget);
+        await tester.ensureVisible(copyButton());
+        await tester.tap(copyButton());
+        await tester.pump();
+        expect(copied, ['https://wa.me/201000000000']);
+        expect(find.text(l10n.supportLinkCopied), findsOneWidget);
+      });
+
+      testWidgets(
+        'no price or payment wording, even when the API sends a price',
+        (tester) async {
+          await pump(tester, lockedBody);
+          expect(find.textContaining('1800'), findsNothing);
+          expect(find.textContaining('EGP'), findsNothing);
+          expect(find.textContaining('route:/payment'), findsNothing);
+          expect(stubRouteArguments, isEmpty);
+        },
+      );
+
+      testWidgets('rebuilding the screen does not send the request again', (
+        tester,
+      ) async {
+        final (catalog, repo, _) = await pump(tester, lockedBody);
+        expect(repo.accessCalls, hasLength(1));
+        catalog.setSearchQuery('x');
+        await tester.pumpAndSettle();
+        expect(repo.accessCalls, hasLength(1));
+      });
+
+      testWidgets('detail retry after a load failure then sends the request', (
+        tester,
+      ) async {
+        final repo = fake()..detailError = const SocketException('down');
+        await pump(tester, lockedBody, repo: repo);
+        expect(repo.accessCalls, isEmpty);
+        repo.detailError = null;
+        await tester.tap(find.text(l10n.retry));
+        await tester.pumpAndSettle();
+        expect(repo.accessCalls, ['d1']);
+        expect(find.text(l10n.requestPending), findsOneWidget);
       });
     });
 

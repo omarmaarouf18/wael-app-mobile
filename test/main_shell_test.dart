@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
-import 'package:wael_app/providers/courses_provider.dart';
 import 'package:wael_app/providers/ebook_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
-import 'package:wael_app/providers/payment_provider.dart';
 import 'package:wael_app/screens/main_shell.dart';
 import 'package:wael_app/widgets/app_bottom_nav.dart';
 import 'package:wael_app/widgets/app_shell.dart';
@@ -33,8 +31,6 @@ void main() {
       extraProviders: [
         ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
-        ChangeNotifierProvider(create: (_) => CoursesProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentProvider()),
         ChangeNotifierProvider(create: (_) => EBookProvider()),
       ],
       size: size,

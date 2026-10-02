@@ -63,10 +63,6 @@ class ErrorMessages {
       ? 'تعذر تحميل الإشعارات. يرجى المحاولة لاحقاً.'
       : 'Unable to load notifications. Please try again later.';
 
-  static String paymentProofRequired(bool isArabic) => isArabic
-      ? 'يرجى إرفاق إيصال التحويل أو رقم العملية لتأكيد الطلب.'
-      : 'Please provide the transaction reference or receipt to verify payment.';
-
   static String courseLocked(bool isArabic) => isArabic
       ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل والاشتراك للوصول.'
       : 'This content is restricted. Complete enrolment to gain access.';
@@ -81,6 +77,28 @@ class ErrorMessages {
   static String serviceUnavailable(bool isArabic) => isArabic
       ? 'الخدمة غير متاحة مؤقتاً. يرجى المحاولة بعد قليل.'
       : 'The service is temporarily unavailable. Please try again shortly.';
+
+  static String accessRequestUnavailable(bool isArabic) => isArabic
+      ? 'لا يمكن طلب هذه المادة حالياً.'
+      : 'This subject can\'t be requested right now.';
+
+  static String tryAgainLater(bool isArabic) =>
+      isArabic ? 'يرجى المحاولة لاحقاً.' : 'Please try again later.';
+
+  /// Message for a failed access request. 409 is the server's generic
+  /// refusal (already owned, or the subject's access date has passed), so it
+  /// is worded without guessing which.
+  static String forAccessRequest(Object e, {bool isArabic = false}) {
+    if (e is ApiException) {
+      if (e.isRateLimited) return tryAgainLater(isArabic);
+      if (e.statusCode == 404) return subjectNotFound(isArabic);
+      if (e.statusCode == 409) return accessRequestUnavailable(isArabic);
+      if (e.statusCode == 503) return serviceUnavailable(isArabic);
+      return requestFailed(isArabic);
+    }
+    if (e is AcademyParseException) return requestFailed(isArabic);
+    return networkError(isArabic);
+  }
 
   /// Message for a failed catalog request. Unlike [forApiError] it never
   /// reads a 401 as bad credentials or a 403 as an unverified email.

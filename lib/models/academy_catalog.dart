@@ -1,5 +1,6 @@
 /// Dart models for the academy-service student API
-/// (`GET /api/v1/academy/levels`, `/subjects`, `/subjects/{id}`).
+/// (`GET /api/v1/academy/levels`, `/subjects`, `/subjects/{id}`, and
+/// `POST /subjects/{id}/access-request`).
 ///
 /// Field names and shapes mirror the Go DTOs in
 /// `services/academy-service/internal/models` exactly (snake_case in JSON).
@@ -338,6 +339,65 @@ class AcademyFile {
   }
 }
 
+/// `SubjectRequestDTO`: the `request` object of a not-owned subject detail.
+/// The server sends it only while a request is pending
+/// (`{"status": "pending"}`) and omits it otherwise.
+class SubjectRequest {
+  const SubjectRequest({required this.status});
+
+  final String status;
+
+  bool get isPending => status == 'pending';
+
+  factory SubjectRequest.fromJson(Object? json) {
+    final m = _map(json, 'request');
+    return SubjectRequest(status: _requiredString(m, 'status'));
+  }
+}
+
+/// Answer of `POST /academy/subjects/{id}/access-request`:
+/// `AccessRequestResponseDTO`. It carries no payment data.
+///
+/// [supportUrl] is the `whatsapp_url` field, kept only when it is an `https`
+/// URL (the backend builds `https://wa.me/<digits>` from `SUPPORT_WHATSAPP`,
+/// or passes through a configured http(s) URL); anything else is dropped so a
+/// malformed value can never reach the UI.
+class AccessRequest {
+  const AccessRequest({
+    required this.id,
+    required this.subjectId,
+    required this.status,
+    required this.createdAt,
+    this.supportUrl,
+  });
+
+  final String id;
+  final String subjectId;
+  final String status;
+  final DateTime createdAt;
+  final String? supportUrl;
+
+  bool get isPending => status == 'pending';
+
+  factory AccessRequest.fromJson(Map<String, dynamic> json) {
+    final created = DateTime.tryParse(_string(json, 'created_at'));
+    if (created == null) {
+      throw AcademyParseException('missing or invalid "created_at"');
+    }
+    final url = Uri.tryParse(_string(json, 'whatsapp_url'));
+    final safeUrl = url != null && url.scheme == 'https' && url.host.isNotEmpty
+        ? url.toString()
+        : null;
+    return AccessRequest(
+      id: _requiredString(json, 'id'),
+      subjectId: _requiredString(json, 'subject_id'),
+      status: _requiredString(json, 'status'),
+      createdAt: created.toUtc(),
+      supportUrl: safeUrl,
+    );
+  }
+}
+
 /// `GET /academy/subjects/{id}`: `SubjectDetailDTO`.
 class AcademySubjectDetail extends AcademySubject {
   // `m` is also read by the initialisers, so it cannot be a super parameter.
@@ -345,10 +405,19 @@ class AcademySubjectDetail extends AcademySubject {
   AcademySubjectDetail.fromJson(Map<String, dynamic> m)
     : videos = _list(m, 'videos').map(AcademyVideo.fromJson).toList(),
       files = _list(m, 'files').map(AcademyFile.fromJson).toList(),
+      request = m['request'] == null
+          ? null
+          : SubjectRequest.fromJson(m['request']),
       super._parse(m);
 
   final List<AcademyVideo> videos;
   final List<AcademyFile> files;
+
+  /// Present only while the student has a pending access request.
+  final SubjectRequest? request;
+
+  /// A pending request on a subject the student does not own.
+  bool get hasPendingRequest => !owned && (request?.isPending ?? false);
 
   List<AcademyFile> get books => files.where((f) => f.isBook).toList();
   List<AcademyFile> get notes => files.where((f) => f.isNote).toList();

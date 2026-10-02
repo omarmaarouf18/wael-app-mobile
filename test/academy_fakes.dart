@@ -52,6 +52,16 @@ class FakeAcademyRepository implements AcademyRepository {
   /// When set, `subject()` waits for it before answering.
   Future<void>? detailGate;
 
+  /// `requestAccess` throws [accessError] when set. Otherwise it records the
+  /// subject in [pendingIds], so later `subject()` answers carry
+  /// `request: {"status": "pending"}` like the server's. [accessGate] holds
+  /// the answer back; [accessSupportUrl] is the `whatsapp_url` it returns.
+  Object? accessError;
+  Future<void>? accessGate;
+  String accessSupportUrl = 'https://wa.me/201000000000';
+  final List<String> accessCalls = [];
+  final Set<String> pendingIds = {};
+
   @override
   Future<AcademyLevels> levels() async {
     levelsCalls++;
@@ -109,19 +119,39 @@ class FakeAcademyRepository implements AcademyRepository {
     detailCalls++;
     if (detailGate != null) await detailGate;
     if (detailError != null) throw detailError!;
-    final scripted = detailJson[id];
-    if (scripted != null) return AcademySubjectDetail.fromJson(scripted);
-    return AcademySubjectDetail.fromJson({
-      'id': id,
-      'level_key': 'bachelor-y1',
-      'term': 'first',
-      'title': {'ar': 'مادة', 'en': 'Subject'},
-      'description': {'ar': '', 'en': ''},
-      'owned': false,
-      'counts': {'videos': 0, 'books': 0, 'notes': 0},
-      'videos': <Object>[],
-      'files': <Object>[],
-    });
+    final json = Map<String, dynamic>.of(
+      detailJson[id] ??
+          {
+            'id': id,
+            'level_key': 'bachelor-y1',
+            'term': 'first',
+            'title': {'ar': 'مادة', 'en': 'Subject'},
+            'description': {'ar': '', 'en': ''},
+            'owned': false,
+            'counts': {'videos': 0, 'books': 0, 'notes': 0},
+            'videos': <Object>[],
+            'files': <Object>[],
+          },
+    );
+    if (pendingIds.contains(id) && json['owned'] != true) {
+      json['request'] = {'status': 'pending'};
+    }
+    return AcademySubjectDetail.fromJson(json);
+  }
+
+  @override
+  Future<AccessRequest> requestAccess(String subjectId) async {
+    accessCalls.add(subjectId);
+    if (accessGate != null) await accessGate;
+    if (accessError != null) throw accessError!;
+    pendingIds.add(subjectId);
+    return AccessRequest(
+      id: 'r-$subjectId',
+      subjectId: subjectId,
+      status: 'pending',
+      createdAt: DateTime.utc(2026, 10, 2),
+      supportUrl: accessSupportUrl,
+    );
   }
 }
 

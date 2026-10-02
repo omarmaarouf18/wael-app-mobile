@@ -218,35 +218,6 @@ class AppLocalizations {
   String get requiresEnrolment =>
       isArabic ? 'يتطلب التسجيل' : 'Requires Enrolment';
 
-  // Payment Screen
-  String get paymentTitle =>
-      isArabic ? 'تأكيد التسجيل والدفع' : 'Enrolment & Payment';
-  String get selectAccessTier =>
-      isArabic ? 'اختر باقة الالتحاق' : 'Select Access Tier';
-  String get paymentMethod => isArabic ? 'طريقة السداد' : 'Payment Method';
-  String get paymentInstructions =>
-      isArabic ? 'تعليمات التحويل' : 'Payment Instructions';
-  String get vodafoneCash => isArabic ? 'فودافون كاش' : 'Vodafone Cash';
-  String get instaPay => isArabic ? 'إنستاباي (InstaPay)' : 'InstaPay';
-  String get bankTransfer => isArabic ? 'تحويل بنكي' : 'Bank Transfer';
-  String get transactionRef => isArabic
-      ? 'رقم العملية / هاتف التحويل'
-      : 'Transaction Reference / Sender Phone';
-  String get uploadReceipt =>
-      isArabic ? 'إرفاق إشعار التحويل' : 'Attach Transfer Receipt';
-  String get receiptAttached =>
-      isArabic ? 'تم إرفاق الإشعار بنجاح' : 'Receipt Attached';
-  String get submitPaymentRequest =>
-      isArabic ? 'إرسال طلب التحقق من الدفع' : 'SUBMIT PAYMENT REQUEST';
-  String get statusPending => isArabic ? 'قيد المراجعة' : 'Pending Review';
-  String get statusApproved =>
-      isArabic ? 'تم التحقق بنجاح' : 'Approved & Verified';
-  String get statusRejected =>
-      isArabic ? 'مرفوض - يرجى مراجعة الإيصال' : 'Rejected';
-  String get paymentInstructionBody => isArabic
-      ? 'يرجى تحويل المبلغ المستحق إلى أحد الحسابات المعتمدة أدناه، ثم كتابة رقم العملية أو هاتف المُرسل للتحقق الفوري من قبل الإدارة الأكاديمية.'
-      : 'Please transfer the required fee to one of the approved academy channels below, then enter your transaction reference or sender line for administrative verification.';
-
   // Settings Screen
   String get scholarDossier => isArabic ? 'ملف الدارس' : 'Scholar Dossier';
   String get editProfile => isArabic ? 'تعديل الملف الشخصي' : 'Edit Profile';
@@ -337,6 +308,17 @@ class AppLocalizations {
       ? 'تم إنشاء مذكرة جديدة مرتبطة بهذه الدورة'
       : 'New study note created for this course';
   String get accessActive => isArabic ? 'الاشتراك فعّال' : 'Access active';
+  String get requestPending =>
+      isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
+  String get contactSupportToActivate => isArabic
+      ? 'تواصل مع الدعم لتفعيل هذه المادة.'
+      : 'Contact support to activate this subject.';
+  String get sendingAccessRequest =>
+      isArabic ? 'جارٍ إرسال طلبك…' : 'Sending your request…';
+  String get copySupportLink =>
+      isArabic ? 'نسخ رابط الدعم' : 'Copy support link';
+  String get supportLinkCopied =>
+      isArabic ? 'تم نسخ رابط الدعم' : 'Support link copied';
   String get directorTagline => isArabic
       ? 'مستشار ومحكم دولي • عضو اتحاد المحامين العرب'
       : 'Counselor • International Arbitrator • Arab Lawyers Union';

@@ -1,5 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/api_client.dart';
+import 'package:wael_app/core/error_messages.dart';
+import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 
 import 'academy_fakes.dart';
@@ -235,6 +240,270 @@ void main() {
       await p.loadDetail('s1', force: true);
       expect(p.detailOf('s1').status, LoadStatus.ready);
     });
+  });
+
+  group('access request', () {
+    FakeAcademyRepository repoWith({bool owned = false, bool pending = false}) {
+      final repo = fake()
+        ..detailJson['s1'] = detailBody(id: 's1', owned: owned);
+      if (pending) repo.pendingIds.add('s1');
+      return repo;
+    }
+
+    test('opening an unowned subject without a request creates one', () async {
+      final repo = repoWith();
+      final p = AcademyCatalogProvider(repo);
+
+      await p.openSubject('s1');
+
+      expect(repo.accessCalls, ['s1']);
+      expect(p.accessOf('s1').status, AccessRequestStatus.sent);
+      expect(p.accessOf('s1').supportUrl, 'https://wa.me/201000000000');
+      // The detail was refreshed, so the server's pending state is what shows.
+      expect(repo.detailCalls, 2);
+      expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+    });
+
+    test('an owned subject creates no request', () async {
+      final repo = repoWith(owned: true);
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      expect(repo.accessCalls, isEmpty);
+      expect(p.accessOf('s1').status, AccessRequestStatus.idle);
+    });
+
+    test('a subject that is already pending creates no request', () async {
+      final repo = repoWith(pending: true);
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      expect(repo.accessCalls, isEmpty);
+      expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+    });
+
+    test('a detail that failed to load creates no request', () async {
+      final repo = repoWith()
+        ..detailError = ApiException(statusCode: 404, message: 'nf');
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      expect(repo.accessCalls, isEmpty);
+      expect(p.detailOf('s1').status, LoadStatus.error);
+    });
+
+    test('the retry after a failed detail load sends the request', () async {
+      final repo = repoWith()..detailError = const SocketException('down');
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      repo.detailError = null;
+      await p.openSubject('s1', force: true);
+      expect(repo.accessCalls, ['s1']);
+    });
+
+    test(
+      're-opening a pending subject refetches it but does not re-send',
+      () async {
+        final repo = repoWith();
+        final p = AcademyCatalogProvider(repo);
+        await p.openSubject('s1');
+        final calls = repo.detailCalls;
+        await p.openSubject('s1');
+        expect(repo.detailCalls, calls + 1);
+        expect(repo.accessCalls, ['s1']);
+      },
+    );
+
+    test('re-opening shows an accepted request as owned', () async {
+      final repo = repoWith();
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      repo.detailJson['s1'] = detailBody(id: 's1', owned: true);
+      await p.openSubject('s1');
+      expect(p.detailOf('s1').detail!.owned, isTrue);
+      expect(repo.accessCalls, ['s1']);
+    });
+
+    test('a rejected request is sent again on the next open', () async {
+      final repo = repoWith();
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      repo.pendingIds.clear(); // the admin rejected it
+      await p.openSubject('s1');
+      expect(repo.accessCalls, ['s1', 's1']);
+      expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+    });
+
+    test(
+      'sending is visible, and a second call while sending is ignored',
+      () async {
+        final gate = Completer<void>();
+        final repo = repoWith()..accessGate = gate.future;
+        final p = AcademyCatalogProvider(repo);
+        await p.loadDetail('s1');
+
+        final first = p.requestAccess('s1');
+        await Future<void>.delayed(Duration.zero);
+        expect(p.accessOf('s1').status, AccessRequestStatus.sending);
+        await p.requestAccess('s1');
+        expect(repo.accessCalls, ['s1']);
+
+        gate.complete();
+        await first;
+        expect(p.accessOf('s1').status, AccessRequestStatus.sent);
+      },
+    );
+
+    for (final (name, error, retry) in [
+      ('409', ApiException(statusCode: 409, message: 'conflict'), false),
+      ('404', ApiException(statusCode: 404, message: 'nf'), false),
+      ('429', ApiException(statusCode: 429, message: 'slow down'), true),
+      ('503', ApiException(statusCode: 503, message: 'down'), true),
+      ('network', const SocketException('down'), true),
+    ]) {
+      test(
+        'a $name failure is kept, not retried by itself, and retry=$retry',
+        () async {
+          final repo = repoWith()..accessError = error;
+          final p = AcademyCatalogProvider(repo);
+
+          await p.openSubject('s1');
+
+          final access = p.accessOf('s1');
+          expect(access.status, AccessRequestStatus.failed);
+          expect(access.error, same(error));
+          expect(access.canRetry, retry);
+          expect(repo.accessCalls, hasLength(1));
+          expect(repo.detailCalls, 1, reason: 'no refresh after a failure');
+          expect(p.detailOf('s1').detail!.hasPendingRequest, isFalse);
+        },
+      );
+    }
+
+    test('retry after a failure sends again and recovers', () async {
+      final repo = repoWith()
+        ..accessError = ApiException(statusCode: 429, message: 'slow');
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      repo.accessError = null;
+      await p.requestAccess('s1');
+      expect(p.accessOf('s1').status, AccessRequestStatus.sent);
+      expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+    });
+
+    test(
+      'a stale failure is cleared when the subject is opened again',
+      () async {
+        final repo = repoWith()
+          ..accessError = ApiException(statusCode: 409, message: 'conflict');
+        final p = AcademyCatalogProvider(repo);
+        await p.openSubject('s1');
+        repo.accessError = null;
+        final seen = <AccessRequestStatus>[];
+        p.addListener(() => seen.add(p.accessOf('s1').status));
+        await p.openSubject('s1');
+        expect(seen, isNot(contains(AccessRequestStatus.failed)));
+        expect(p.accessOf('s1').status, AccessRequestStatus.sent);
+      },
+    );
+
+    test('state is per subject', () async {
+      final repo = repoWith()
+        ..accessError = ApiException(statusCode: 409, message: 'conflict');
+      final p = AcademyCatalogProvider(repo);
+      await p.openSubject('s1');
+      expect(p.accessOf('s2').status, AccessRequestStatus.idle);
+    });
+
+    test('reset drops the state, and a late answer is dropped', () async {
+      final gate = Completer<void>();
+      final repo = repoWith()..accessGate = gate.future;
+      final p = AcademyCatalogProvider(repo);
+      await p.loadDetail('s1');
+      final sending = p.requestAccess('s1');
+      await Future<void>.delayed(Duration.zero);
+
+      p.reset();
+      gate.complete();
+      await sending;
+
+      expect(p.accessOf('s1').status, AccessRequestStatus.idle);
+      expect(p.isPristine, isTrue);
+      expect(repo.detailCalls, 1, reason: 'no refresh after logout');
+    });
+
+    test(
+      'the support link is not in the detail, so it is only a session fact',
+      () async {
+        final repo = repoWith(pending: true);
+        final p = AcademyCatalogProvider(repo);
+        await p.openSubject('s1');
+        expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+        expect(p.accessOf('s1').supportUrl, isNull);
+      },
+    );
+  });
+
+  group('access request messages', () {
+    for (final isArabic in [false, true]) {
+      String m(Object e) =>
+          ErrorMessages.forAccessRequest(e, isArabic: isArabic);
+
+      test('maps statuses to fixed messages (ar=$isArabic)', () {
+        expect(
+          m(ApiException(statusCode: 429, message: 'x')),
+          ErrorMessages.tryAgainLater(isArabic),
+        );
+        expect(
+          m(ApiException(statusCode: 404, message: 'x')),
+          ErrorMessages.subjectNotFound(isArabic),
+        );
+        expect(
+          m(ApiException(statusCode: 409, message: 'x')),
+          ErrorMessages.accessRequestUnavailable(isArabic),
+        );
+        expect(
+          m(ApiException(statusCode: 503, message: 'x')),
+          ErrorMessages.serviceUnavailable(isArabic),
+        );
+        expect(
+          m(ApiException(statusCode: 500, message: 'x')),
+          ErrorMessages.requestFailed(isArabic),
+        );
+        expect(
+          m(AcademyParseException('bad')),
+          ErrorMessages.requestFailed(isArabic),
+        );
+        expect(
+          m(const SocketException('down')),
+          ErrorMessages.networkError(isArabic),
+        );
+      });
+
+      test('never shows raw server or exception text (ar=$isArabic)', () {
+        const raw = 'secret-internal-detail';
+        for (final e in <Object>[
+          ApiException(statusCode: 409, message: raw),
+          ApiException(statusCode: 429, message: raw),
+          ApiException(statusCode: 418, message: raw),
+          AcademyParseException(raw),
+          const SocketException(raw),
+          StateError(raw),
+        ]) {
+          expect(m(e), isNot(contains(raw)));
+        }
+      });
+
+      test(
+        '429 says to try again later, 409 and 404 are distinct (ar=$isArabic)',
+        () {
+          expect(ErrorMessages.tryAgainLater(isArabic), isNotEmpty);
+          final texts = {
+            m(ApiException(statusCode: 429, message: '')),
+            m(ApiException(statusCode: 409, message: '')),
+            m(ApiException(statusCode: 404, message: '')),
+          };
+          expect(texts, hasLength(3));
+        },
+      );
+    }
   });
 
   group('reset', () {

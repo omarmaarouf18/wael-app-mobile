@@ -8,15 +8,12 @@ import 'core/theme.dart';
 
 import 'core/constants.dart';
 import 'l10n/app_localizations.dart';
-import 'models/course.dart';
 
 // Providers
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'providers/home_provider.dart';
-import 'providers/courses_provider.dart';
-import 'providers/payment_provider.dart';
 import 'providers/ebook_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/notifications_provider.dart';
@@ -35,7 +32,6 @@ import 'screens/otp_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/course_detail_screen.dart';
-import 'screens/payment_screen.dart';
 import 'screens/video_player_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
@@ -108,8 +104,6 @@ class WaelApp extends StatelessWidget {
                   PlayerDependencies(engineFactory: YoutubeIframeEngine.new),
             ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
-            ChangeNotifierProvider(create: (_) => CoursesProvider()),
-            ChangeNotifierProvider(create: (_) => PaymentProvider()),
             ChangeNotifierProvider(create: (_) => EBookProvider()),
             ChangeNotifierProvider(create: (_) => SettingsProvider()),
             ChangeNotifierProvider(create: (_) => NotificationsProvider()),
@@ -146,16 +140,6 @@ class WaelApp extends StatelessWidget {
                   return MaterialPageRoute<PlayerExit>(
                     settings: const RouteSettings(name: '/video-player'),
                     builder: (context) => VideoPlayerScreen(args: args),
-                  );
-                }
-              }
-              if (settings.name == '/payment') {
-                // Only the subject screen opens this, always with a Course
-                // built from server data; there is no default course.
-                final course = settings.arguments;
-                if (course is Course) {
-                  return MaterialPageRoute(
-                    builder: (context) => PaymentScreen(course: course),
                   );
                 }
               }

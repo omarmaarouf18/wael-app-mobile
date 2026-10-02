@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../../core/error_messages.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/academy_catalog.dart';
-import '../../models/course.dart';
 import '../../models/ebook.dart';
+import '../../providers/academy_catalog_provider.dart';
 import '../../providers/ebook_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/director_strip.dart';
 import '../../widgets/owned_subject_tile.dart';
-import '../../widgets/primary_button.dart';
+import '../../widgets/secondary_button.dart';
 import '../../widgets/subject_hero_banner.dart';
 import '../../widgets/themed_card.dart';
+import '../../widgets/themed_error_banner.dart';
 import '../../widgets/themed_panel.dart';
 import 'subject_content_section.dart';
 
 /// The ready state of the subject screen: hero, title, director, description,
-/// access (owned banner or enrol button), "add to notes" and the content.
+/// access (owned, request pending, sending or failed), "add to notes" and the
+/// content.
 class CourseDetailBody extends StatelessWidget {
   const CourseDetailBody({super.key, required this.detail});
 
@@ -99,6 +103,10 @@ class CourseDetailBody extends StatelessWidget {
   }
 }
 
+/// Access state of the subject. Opening a locked subject creates the access
+/// request by itself (SPEC decision 9, see `AcademyCatalogProvider.openSubject`),
+/// so there is no button to ask for access: the student sees the request being
+/// sent, then pending, or the reason it could not be sent.
 class _Access extends StatelessWidget {
   const _Access({required this.detail});
 
@@ -145,31 +153,123 @@ class _Access extends StatelessWidget {
       );
     }
 
-    final price = detail.price;
-    final label = price == null
-        ? l10n.enrollNow
-        : '${l10n.enrollNow} ($price ${detail.currency ?? 'EGP'})';
-    return PrimaryButton(
-      text: label,
-      leadingIcon: const Icon(
-        Icons.lock_open,
-        size: 18,
-        color: AppColors.textPrimary,
+    final catalog = context.watch<AcademyCatalogProvider>();
+    final access = catalog.accessOf(detail.id);
+
+    if (detail.hasPendingRequest || access.status == AccessRequestStatus.sent) {
+      return _PendingRequest(supportUrl: access.supportUrl);
+    }
+    if (access.status == AccessRequestStatus.failed) {
+      return ThemedErrorBanner(
+        message: ErrorMessages.forAccessRequest(
+          access.error!,
+          isArabic: isArabic,
+        ),
+        onRetry: access.canRetry
+            ? () => catalog.requestAccess(detail.id)
+            : null,
+      );
+    }
+    // Idle (the first frame before the request starts) and sending.
+    return ThemedPanel(
+      tone: PanelTone.raised,
+      borderRadius: AppRadius.radiusLg,
+      padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+      child: Semantics(
+        liveRegion: true,
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.crimson),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.spaceMd),
+            Expanded(
+              child: Text(
+                l10n.sendingAccessRequest,
+                style: AppTypography.bodyMd(
+                  isArabic: isArabic,
+                ).copyWith(color: AppColors.textPrimary),
+              ),
+            ),
+          ],
+        ),
       ),
-      onPressed: () {
-        final director = Provider.of<HomeProvider>(
-          context,
-          listen: false,
-        ).instructor;
-        Navigator.of(context).pushNamed(
-          '/payment',
-          arguments: Course.fromAcademy(
-            detail,
-            instructor: director.name,
-            instructorAr: director.nameAr ?? director.name,
+    );
+  }
+}
+
+/// A request is pending: nothing to press, the admin decides. [supportUrl] is
+/// the WhatsApp link from this session's request response; the detail does not
+/// carry it, so after a restart the panel shows the message alone.
+class _PendingRequest extends StatelessWidget {
+  const _PendingRequest({this.supportUrl});
+
+  final String? supportUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.isArabic;
+    final url = supportUrl;
+
+    return ThemedPanel(
+      tone: PanelTone.raised,
+      borderRadius: AppRadius.radiusLg,
+      padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.schedule,
+                size: 18,
+                color: AppColors.statusPending,
+              ),
+              const SizedBox(width: AppSpacing.spaceSm),
+              Expanded(
+                child: Text(
+                  l10n.requestPending,
+                  style: AppTypography.bodyMd(isArabic: isArabic).copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+          const SizedBox(height: AppSpacing.spaceXs),
+          Text(
+            l10n.contactSupportToActivate,
+            style: AppTypography.bodySm(isArabic: isArabic),
+          ),
+          if (url != null) ...[
+            const SizedBox(height: AppSpacing.spaceMd),
+            SecondaryButton(
+              text: l10n.copySupportLink,
+              height: 44,
+              leadingIcon: const Icon(
+                Icons.copy,
+                size: 16,
+                color: AppColors.textPrimary,
+              ),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final message = l10n.supportLinkCopied;
+                await Clipboard.setData(ClipboardData(text: url));
+                messenger
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(SnackBar(content: Text(message)));
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
