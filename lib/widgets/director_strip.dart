@@ -5,18 +5,21 @@ import '../l10n/app_localizations.dart';
 import 'status_dot.dart';
 import 'themed_card.dart';
 
-/// Compact card naming the academy director on a subject: round portrait,
-/// name with a crimson dot, and a one-line tagline.
+/// Compact card naming the academy director on a subject: round portrait (a
+/// neutral icon when there is none), name with a crimson dot, and a one-line
+/// tagline that is left out when empty.
 class DirectorStrip extends StatelessWidget {
   const DirectorStrip({
     super.key,
     required this.name,
-    required this.tagline,
-    required this.imageAsset,
+    this.tagline = '',
+    this.imageAsset = '',
   });
 
   final String name;
   final String tagline;
+
+  /// Asset path of the portrait; empty shows a person icon.
   final String imageAsset;
 
   @override
@@ -33,11 +36,20 @@ class DirectorStrip extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.glassHairline),
-              image: DecorationImage(
-                image: AssetImage(imageAsset),
-                fit: BoxFit.cover,
-              ),
+              image: imageAsset.isEmpty
+                  ? null
+                  : DecorationImage(
+                      image: AssetImage(imageAsset),
+                      fit: BoxFit.cover,
+                    ),
             ),
+            child: imageAsset.isEmpty
+                ? const Icon(
+                    Icons.person_outline,
+                    size: 24,
+                    color: AppColors.textMuted,
+                  )
+                : null,
           ),
           const SizedBox(width: AppSpacing.spaceMd),
           Expanded(
@@ -61,13 +73,15 @@ class DirectorStrip extends StatelessWidget {
                     const StatusDot(size: 6),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  tagline,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodyXs(isArabic: isArabic),
-                ),
+                if (tagline.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tagline,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyXs(isArabic: isArabic),
+                  ),
+                ],
               ],
             ),
           ),

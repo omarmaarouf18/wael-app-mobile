@@ -66,8 +66,6 @@ class AppLocalizations {
   // Instructor / Owner Section
   String get instructorSectionTitle =>
       isArabic ? 'المشرف والمحاضر العام' : 'ACADEMY DIRECTOR & INSTRUCTOR';
-  String get aboutInstructor =>
-      isArabic ? 'عن المحاضر' : 'About the Instructor';
   String get readMore => isArabic ? 'اقرأ المزيد' : 'Read More';
   String get showLess => isArabic ? 'عرض أقل' : 'Show Less';
 
@@ -319,9 +317,6 @@ class AppLocalizations {
       isArabic ? 'نسخ رابط الدعم' : 'Copy support link';
   String get supportLinkCopied =>
       isArabic ? 'تم نسخ رابط الدعم' : 'Support link copied';
-  String get directorTagline => isArabic
-      ? 'مستشار ومحكم دولي • عضو اتحاد المحامين العرب'
-      : 'Counselor • International Arbitrator • Arab Lawyers Union';
   String itemsCount(int n) => isArabic ? '$n محتوى' : '$n Items';
   String videoNumber(int n) => isArabic ? 'الفيديو $n' : 'Video $n';
   String get videoLocked => isArabic ? 'مقفل' : 'Locked';

@@ -31,10 +31,7 @@ class CourseDetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isArabic = l10n.isArabic;
-    final director = Provider.of<HomeProvider>(
-      context,
-      listen: false,
-    ).instructor;
+    final director = Provider.of<HomeProvider>(context, listen: false).director;
     final description = detail.description.resolve(isArabic);
 
     return SingleChildScrollView(
@@ -72,12 +69,14 @@ class CourseDetailBody extends StatelessWidget {
                     ).copyWith(fontWeight: FontWeight.w800, height: 1.2),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.spaceMd),
-                DirectorStrip(
-                  name: director.localizedName(isArabic),
-                  tagline: l10n.directorTagline,
-                  imageAsset: AppConstants.imgCharacterArt,
-                ),
+                if (director.hasContent) ...[
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  DirectorStrip(
+                    name: director.localizedName(isArabic),
+                    tagline: director.localizedTitle(isArabic),
+                    imageAsset: director.portraitAsset,
+                  ),
+                ],
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.spaceMd),
                   Text(

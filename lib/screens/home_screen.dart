@@ -16,7 +16,8 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
 
-/// Home tab: hero, the academy director, and the subjects the student owns.
+/// Home tab: hero, the academy director (only when the owner has filled in
+/// `lib/content/director_profile.dart`), and the subjects the student owns.
 ///
 /// "My courses" comes from the academy service (`owned` flags); it has
 /// loading, error (with retry) and empty states. Pull to refresh reloads the
@@ -69,25 +70,26 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               HomeHeroBanner(onExplore: _explore),
 
-              // Academy director
-              Padding(
-                padding: const EdgeInsetsDirectional.symmetric(
-                  horizontal: AppSpacing.marginMobile,
-                  vertical: AppSpacing.spaceSm,
+              // Academy director: hidden while the profile has no content.
+              if (home.director.hasContent)
+                Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: AppSpacing.marginMobile,
+                    vertical: AppSpacing.spaceSm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AccentTitle(title: l10n.instructorSectionTitle),
+                      const SizedBox(height: AppSpacing.spaceSm),
+                      InstructorDossierCard(
+                        profile: home.director,
+                        bioExpanded: home.isBioExpanded,
+                        onToggleBio: home.toggleBioExpansion,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AccentTitle(title: l10n.instructorSectionTitle),
-                    const SizedBox(height: AppSpacing.spaceSm),
-                    InstructorDossierCard(
-                      profile: home.instructor,
-                      bioExpanded: home.isBioExpanded,
-                      onToggleBio: home.toggleBioExpansion,
-                    ),
-                  ],
-                ),
-              ),
 
               // My courses (owned subjects)
               Padding(

@@ -4,6 +4,7 @@ import 'dart:io' show SocketException;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/content/director_profile.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
@@ -19,6 +20,7 @@ import 'package:wael_app/widgets/themed_error_banner.dart';
 import 'package:wael_app/widgets/themed_loading_indicator.dart';
 
 import 'academy_fakes.dart';
+import 'director_fixture.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
 
@@ -82,6 +84,7 @@ void main() {
       FakeAcademyRepository repo, {
       Size size = const Size(390, 1800),
       bool settle = true,
+      bool withDirector = true,
     }) async {
       final catalog = AcademyCatalogProvider(repo);
       await pumpScreen(
@@ -90,7 +93,11 @@ void main() {
         const CoursesScreen(),
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
-          ChangeNotifierProvider(create: (_) => HomeProvider()),
+          ChangeNotifierProvider(
+            create: (_) => HomeProvider(
+              director: withDirector ? testDirector : kDirectorProfile,
+            ),
+          ),
         ],
         size: size,
         settle: settle,
@@ -99,9 +106,18 @@ void main() {
     }
 
     String title(String ar, String en) => isArabic ? ar : en;
-    final director = isArabic ? 'المستشار د. وائل المتر' : 'Dean Wael El Metr';
+    final director = isArabic ? testDirector.nameAr : testDirector.name;
 
     group('CoursesScreen [$name]', () {
+      testWidgets(
+        'subject cards have no director row while the profile is empty',
+        (tester) async {
+          await pump(tester, fake(), withDirector: false);
+          expect(find.byType(CatalogSubjectCard), findsWidgets);
+          expect(find.byIcon(Icons.person_pin_circle_outlined), findsNothing);
+        },
+      );
+
       testWidgets('shell, filters, level summary and subject cards', (
         tester,
       ) async {

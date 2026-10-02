@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:wael_app/content/director_profile.dart';
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
@@ -26,6 +27,7 @@ import 'package:wael_app/widgets/themed_error_banner.dart';
 import 'package:wael_app/widgets/themed_loading_indicator.dart';
 
 import 'academy_fakes.dart';
+import 'director_fixture.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
 
@@ -50,6 +52,7 @@ void main() {
       FakeAcademyRepository? repo,
       Size size = const Size(390, 2400),
       bool settle = true,
+      DirectorProfile director = testDirector,
     }) async {
       final repository = repo ?? fake();
       if (detail.isNotEmpty) repository.detailJson['d1'] = detail;
@@ -61,7 +64,9 @@ void main() {
         const CourseDetailScreen(courseId: 'd1'),
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
-          ChangeNotifierProvider(create: (_) => HomeProvider()),
+          ChangeNotifierProvider(
+            create: (_) => HomeProvider(director: director),
+          ),
           ChangeNotifierProvider<EBookProvider>.value(value: ebooks),
         ],
         size: size,
@@ -99,7 +104,11 @@ void main() {
         expect(find.text(upper(l10n.termLabel('first'))), findsOneWidget);
         expect(find.byType(DirectorStrip), findsOneWidget);
         expect(
-          find.text(title('المستشار د. وائل المتر', 'Dean Wael El Metr')),
+          find.text(title(testDirector.nameAr, testDirector.name)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(title(testDirector.titleAr, testDirector.title)),
           findsOneWidget,
         );
         // Gone with the mock: rating, hours, bookmark, share, syllabus download.
@@ -108,6 +117,16 @@ void main() {
         expect(find.byIcon(Icons.share_outlined), findsNothing);
         expect(find.text(l10n.downloadSyllabus), findsNothing);
         expect(find.text(l10n.tabClasses), findsNothing);
+      });
+
+      testWidgets('no director strip while the director profile is empty', (
+        tester,
+      ) async {
+        await pump(tester, lockedBody, director: kDirectorProfile);
+        expect(find.byType(DirectorStrip), findsNothing);
+        // The subject itself is unaffected.
+        expect(find.text(title('القانون المدني', 'Civil Law')), findsOneWidget);
+        expect(find.byType(CatalogVideoTile), findsNWidgets(2));
       });
 
       testWidgets('loading state until the detail arrives', (tester) async {
@@ -178,10 +197,18 @@ void main() {
         // Director portrait before the name; title at the start edge.
         final strip = find.byType(DirectorStrip);
         final avatar = find
-            .descendant(of: strip, matching: find.byType(Container))
-            .first;
+            .descendant(
+              of: strip,
+              matching: find.byWidgetPredicate(
+                (w) =>
+                    w is Container &&
+                    w.decoration is BoxDecoration &&
+                    (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+              ),
+            )
+            .first; // the 48px portrait; the status dot is the second circle
         final director = find.text(
-          title('المستشار د. وائل المتر', 'Dean Wael El Metr'),
+          title(testDirector.nameAr, testDirector.name),
         );
         expect(startsBefore(tester, avatar, director, direction), isTrue);
         final heading = find.text(title('القانون المدني', 'Civil Law'));

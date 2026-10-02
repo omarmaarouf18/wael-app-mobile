@@ -18,6 +18,7 @@ import 'package:wael_app/widgets/themed_error_banner.dart';
 import 'package:wael_app/widgets/themed_loading_indicator.dart';
 
 import 'academy_fakes.dart';
+import 'director_fixture.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
 
@@ -55,7 +56,7 @@ void main() {
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider<HomeProvider>.value(
-            value: home ?? HomeProvider(),
+            value: home ?? HomeProvider(director: testDirector),
           ),
         ],
         settle: settle,
@@ -81,11 +82,28 @@ void main() {
         expect(find.byType(HomeHeroBanner), findsOneWidget);
         expect(find.text(l10n.heroHeadline), findsOneWidget);
         expect(find.byType(InstructorDossierCard), findsOneWidget);
+        expect(find.text(l10n.instructorSectionTitle), findsOneWidget);
+        expect(
+          find.text(isArabic ? testDirector.nameAr : testDirector.name),
+          findsOneWidget,
+        );
         expect(find.text(l10n.myCourses), findsOneWidget);
         expect(find.text(l10n.viewAll), findsOneWidget);
         // Removed: mock "continue learning" and upcoming-event sections.
         expect(find.text(l10n.continueLearning), findsNothing);
         expect(find.text(l10n.upcoming), findsNothing);
+      });
+
+      testWidgets('the director card is hidden while the profile is empty', (
+        tester,
+      ) async {
+        await pump(tester, fake(), home: HomeProvider());
+        expect(find.byType(InstructorDossierCard), findsNothing);
+        expect(find.text(l10n.instructorSectionTitle), findsNothing);
+        expect(find.text(l10n.readMore), findsNothing);
+        // The rest of Home is unaffected.
+        expect(find.byType(HomeHeroBanner), findsOneWidget);
+        expect(find.text(l10n.myCourses), findsOneWidget);
       });
 
       testWidgets('layout mirrors ($direction)', (tester) async {
@@ -103,10 +121,12 @@ void main() {
         }
         // Director card: portrait before the name, founder tag after it.
         final name = find.text(
-          isArabic ? 'المستشار د. وائل المتر' : 'Dean Wael El Metr',
+          isArabic ? testDirector.nameAr : testDirector.name,
         );
-        final founder = find.text(isArabic ? 'المؤسس' : 'FOUNDER');
-        expect(startsBefore(tester, name, founder, direction), isTrue);
+        final tag = find.text(
+          isArabic ? testDirector.badgeAr : testDirector.badge,
+        );
+        expect(startsBefore(tester, name, tag, direction), isTrue);
         // "View all" is at the end edge of the my-courses header.
         expect(
           startsBefore(
@@ -238,7 +258,7 @@ void main() {
       });
 
       testWidgets('biography toggle expands and collapses', (tester) async {
-        final home = HomeProvider();
+        final home = HomeProvider(director: testDirector);
         await pump(tester, fake(), home: home);
         expect(home.isBioExpanded, isFalse);
         await tester.tap(find.text(l10n.readMore));

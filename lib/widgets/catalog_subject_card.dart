@@ -11,12 +11,13 @@ import 'themed_panel.dart';
 /// director's name, a two-line description, content counts (videos, books,
 /// notes) and a "View subject" / "Continue" link. Everything shown comes from
 /// the academy service except [instructorName], which is the single academy
-/// director (the platform has one teacher).
+/// director (the platform has one teacher). The director row is left out when
+/// [instructorName] is empty (no director content yet).
 class CatalogSubjectCard extends StatelessWidget {
   const CatalogSubjectCard({
     super.key,
     required this.subject,
-    required this.instructorName,
+    this.instructorName = '',
     required this.onTap,
   });
 
@@ -51,28 +52,30 @@ class CatalogSubjectCard extends StatelessWidget {
               isArabic: isArabic,
             ).copyWith(fontSize: 16, fontWeight: FontWeight.w700, height: 1.3),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(
-                Icons.person_pin_circle_outlined,
-                size: 14,
-                color: AppColors.crimson,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  instructorName,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodySm(isArabic: isArabic).copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+          if (instructorName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_pin_circle_outlined,
+                  size: 14,
+                  color: AppColors.crimson,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    instructorName,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySm(isArabic: isArabic).copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           if (description.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(

@@ -56,7 +56,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     final catalog = Provider.of<AcademyCatalogProvider>(context);
     final instructor = Provider.of<HomeProvider>(
       context,
-    ).instructor.localizedName(l10n.isArabic);
+    ).director.localizedName(l10n.isArabic);
 
     return AppShell(
       showHeader: false,
