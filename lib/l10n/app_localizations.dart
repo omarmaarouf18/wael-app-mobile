@@ -180,8 +180,6 @@ class AppLocalizations {
       isArabic ? 'هيكل المنهج الدراسي' : 'Curriculum Structure';
   String get continueLesson =>
       isArabic ? 'متابعة الدرس ٠٧' : 'CONTINUE LESSON 07';
-  String get enrollNow =>
-      isArabic ? 'طلب الالتحاق بالدورة' : 'ENROL IN PROGRAM';
   String get currentTrack => isArabic ? 'المسار الحالي' : 'Current Track';
   String get completedBadge => isArabic ? 'مكتمل ✓' : 'Completed ✓';
   String get lockedBadge => isArabic ? '🔒 مقفل' : '🔒 Locked';
