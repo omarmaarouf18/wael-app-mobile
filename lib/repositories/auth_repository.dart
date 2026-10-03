@@ -136,8 +136,7 @@ class HttpAuthRepository implements AuthRepository {
         'device_id': deviceId,
         if (deviceLabel != null && deviceLabel.isNotEmpty)
           'device_label': deviceLabel,
-        if (pendingId != null && pendingId.isNotEmpty)
-          'pending_id': pendingId,
+        if (pendingId != null && pendingId.isNotEmpty) 'pending_id': pendingId,
       },
     );
     return AuthTokens.fromJson(res);
