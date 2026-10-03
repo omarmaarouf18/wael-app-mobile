@@ -325,6 +325,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Resends the signup OTP for an unverified pending email.
+  /// The backend answer is always generic; true means the call succeeded
+  /// (a new code was sent unless throttled). Updates the debug OTP when present.
+  Future<bool> resendSignupOtp({required String email}) async {
+    _begin();
+    try {
+      final devOtp = await _repo.resendSignup(email: email.trim());
+      _lastDevOtp = kDebugMode ? devOtp ?? _lastDevOtp : null;
+      _isLoading = false;
+      // Keep the pending email so the OTP screen stays in context.
+      _pendingVerificationEmail = email.trim();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _fail(e);
+      return false;
+    }
+  }
+
   Future<String?> requestReset(String email) async {
     _begin();
     try {

@@ -79,6 +79,7 @@ abstract class AuthRepository {
     required String newPassword,
   });
   Future<AuthAccount> me({required String accessToken});
+  Future<String?> resendSignup({required String email});
 }
 
 const _prefix = '/api/v1/auth';
@@ -206,5 +207,14 @@ class HttpAuthRepository implements AuthRepository {
   Future<AuthAccount> me({required String accessToken}) async {
     final res = await _client.getAuthed('$_prefix/me', accessToken);
     return AuthAccount.fromJson(res);
+  }
+
+  @override
+  Future<String?> resendSignup({required String email}) async {
+    final res = await _client.post(
+      '$_prefix/signup/resend',
+      body: {'email': email},
+    );
+    return res['dev_otp']?.toString();
   }
 }

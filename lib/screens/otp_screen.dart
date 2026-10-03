@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -22,10 +24,13 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final _codeController = TextEditingController();
+  int _resendCooldown = 0;
+  Timer? _cooldownTimer;
 
   @override
   void dispose() {
     _codeController.dispose();
+    _cooldownTimer?.cancel();
     super.dispose();
   }
 
@@ -36,6 +41,29 @@ class _OtpScreenState extends State<OtpScreen> {
     if (ok && mounted) {
       Navigator.of(context).pushReplacementNamed('/main');
     }
+  }
+
+  Future<void> _resend() async {
+    if (_resendCooldown > 0) return;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final email = auth.pendingVerificationEmail ?? '';
+    if (email.isEmpty) return;
+    await auth.resendSignupOtp(email: email);
+    if (!mounted) return;
+    setState(() => _resendCooldown = 60);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCooldown <= 1) {
+        timer.cancel();
+        setState(() => _resendCooldown = 0);
+      } else {
+        setState(() => _resendCooldown -= 1);
+      }
+    });
   }
 
   @override
@@ -100,6 +128,30 @@ class _OtpScreenState extends State<OtpScreen> {
                   text: AppTypography.uppercaseLabel(l10n.verify),
                   isLoading: auth.isLoading,
                   onPressed: _verify,
+                ),
+                const SizedBox(height: AppSpacing.spaceMd),
+                Center(
+                  child: _resendCooldown > 0
+                      ? Text(
+                          ErrorMessages.resendCooldown(
+                            l10n.isArabic,
+                            _resendCooldown,
+                          ),
+                          style: AppTypography.bodySm(
+                            isArabic: l10n.isArabic,
+                          ).copyWith(color: AppColors.textSecondary),
+                        )
+                      : TextButton(
+                          onPressed: auth.isLoading ? null : _resend,
+                          child: Text(
+                            l10n.resendCode,
+                            style: AppTypography.bodySm(isArabic: l10n.isArabic)
+                                .copyWith(
+                                  color: AppColors.crimson,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
                 ),
               ],
             ),

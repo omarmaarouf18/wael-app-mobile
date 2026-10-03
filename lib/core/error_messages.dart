@@ -28,6 +28,31 @@ class ErrorMessages {
       ? 'كلمة المرور يجب ألا تقل عن 6 أحرف.'
       : 'Password must be at least 6 characters.';
 
+  static String passwordTooLong(bool isArabic) =>
+      isArabic ? 'كلمة السر طويلة جدًا' : 'Password is too long.';
+
+  static String tooManyAttempts(bool isArabic, [int? waitSeconds]) {
+    if (waitSeconds != null && waitSeconds > 0) {
+      return isArabic
+          ? 'محاولات كثيرة جدًا. يرجى الانتظار $waitSeconds ثانية والمحاولة لاحقاً.'
+          : 'Too many attempts. Please wait $waitSeconds seconds and try again.';
+    }
+    return isArabic
+        ? 'محاولات كثيرة جداً. يرجى الانتظار والمحاولة لاحقاً.'
+        : 'Too many attempts. Please wait and try again.';
+  }
+
+  static String resendCooldown(bool isArabic, [int? waitSeconds]) {
+    if (waitSeconds != null && waitSeconds > 0) {
+      return isArabic
+          ? 'يمكنك إعادة إرسال الكود بعد $waitSeconds ثانية.'
+          : 'You can resend the code in $waitSeconds seconds.';
+    }
+    return isArabic
+        ? 'يرجى الانتظار قليلاً قبل إعادة إرسال الكود.'
+        : 'Please wait a moment before resending the code.';
+  }
+
   static String passwordMinLength(bool isArabic, int minLength) => isArabic
       ? 'كلمة المرور يجب ألا تقل عن $minLength أحرف.'
       : 'Password must be at least $minLength characters.';
@@ -127,8 +152,13 @@ class ErrorMessages {
     if (e.code == 'session_replaced') {
       return sessionReplaced(isArabic);
     }
-    if (e.isRateLimited || e.code == 'locked_out') {
-      return rateLimited(isArabic);
+    if (e.code == 'password_too_long') {
+      return passwordTooLong(isArabic);
+    }
+    if (e.isRateLimited ||
+        e.code == 'locked_out' ||
+        e.code == 'too_many_attempts') {
+      return tooManyAttempts(isArabic, e.retryAfterSeconds);
     }
     if (e.code == 'duplicate_email') {
       return duplicateEmail(isArabic);
@@ -147,7 +177,7 @@ class ErrorMessages {
       return invalidCredentials(isArabic);
     }
     if (msg.contains('too many') || msg.contains('locked')) {
-      return rateLimited(isArabic);
+      return tooManyAttempts(isArabic, e.retryAfterSeconds);
     }
     if (msg.contains('already exists') || msg.contains('already registered')) {
       return duplicateEmail(isArabic);

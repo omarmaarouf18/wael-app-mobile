@@ -123,6 +123,7 @@ class AppLocalizations {
       isArabic ? 'تأكيد البريد الإلكتروني' : 'Verify Email';
   String get verificationCode => isArabic ? 'رمز التأكيد' : 'Verification Code';
   String get verify => isArabic ? 'تأكيد' : 'Verify';
+  String get resendCode => isArabic ? 'إعادة إرسال الكود' : 'Resend code';
   String get resetPassword =>
       isArabic ? 'إعادة تعيين كلمة المرور' : 'Reset Password';
   String get sendCode => isArabic ? 'إرسال الرمز' : 'Send Code';

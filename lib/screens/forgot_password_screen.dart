@@ -1,6 +1,8 @@
+import 'dart:convert' show utf8;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -24,6 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _passwordController = TextEditingController();
   int _step = 0;
   String? _resetToken;
+  String? _validationError;
 
   @override
   void dispose() {
@@ -35,12 +38,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _request() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    setState(() => _validationError = null);
     await auth.requestReset(_emailController.text);
     if (mounted) setState(() => _step = 1);
   }
 
   Future<void> _verify() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    setState(() => _validationError = null);
     final token = await auth.verifyResetCode(
       email: _emailController.text,
       code: _codeController.text,
@@ -55,6 +60,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _confirm() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context);
+    setState(() => _validationError = null);
+    // Client-side bcrypt byte-length check (72 bytes).
+    if (utf8.encode(_passwordController.text).length > 72) {
+      setState(
+        () => _validationError = ErrorMessages.passwordTooLong(l10n.isArabic),
+      );
+      return;
+    }
     final ok = await auth.confirmReset(
       resetToken: _resetToken ?? '',
       newPassword: _passwordController.text,
@@ -144,15 +158,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onPressed: _confirm,
                   ),
                 ],
-                if (auth.errorMessage != null) ...[
+                if (auth.errorMessage != null || _validationError != null) ...[
                   const SizedBox(height: AppSpacing.spaceSm),
                   ThemedErrorBanner(
-                    message: auth.errorMessage!,
-                    onRetry: switch (_step) {
-                      0 => _request,
-                      1 => _verify,
-                      _ => _confirm,
-                    },
+                    message: _validationError ?? auth.errorMessage!,
+                    onRetry: _validationError != null
+                        ? null
+                        : switch (_step) {
+                            0 => _request,
+                            1 => _verify,
+                            _ => _confirm,
+                          },
                   ),
                 ],
               ],

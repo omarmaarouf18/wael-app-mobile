@@ -29,6 +29,8 @@ class FakeAuthRepository implements AuthRepository {
   int verifyResetCalls = 0;
   int confirmResetCalls = 0;
   String? lastOtpCode;
+  int resendSignupCalls = 0;
+  String? lastResendEmail;
 
   @override
   Future<AuthTokens> login({
@@ -175,5 +177,12 @@ class FakeAuthRepository implements AuthRepository {
       fullName: meFullName,
       phone: mePhone,
     );
+  }
+
+  @override
+  Future<String?> resendSignup({required String email}) async {
+    resendSignupCalls++;
+    lastResendEmail = email;
+    return '123456';
   }
 }

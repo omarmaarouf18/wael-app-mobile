@@ -130,6 +130,21 @@ void main() {
         expect(repo.verifyOtpCalls, 2);
         expect(repo.lastOtpCode, '000000');
       });
+
+      testWidgets('resend button sends a new code and starts a cooldown', (
+        tester,
+      ) async {
+        final repo = FakeAuthRepository();
+        final auth = await pendingAuth(repo);
+        await pumpScreen(tester, locale, const OtpScreen(), auth: auth);
+        expect(find.text(l10n.resendCode), findsOneWidget);
+        await tester.tap(find.text(l10n.resendCode));
+        await tester.pumpAndSettle();
+        expect(repo.resendSignupCalls, 1);
+        expect(repo.lastResendEmail, 'u@e.com');
+        // Cooldown message replaces the button.
+        expect(find.text(l10n.resendCode), findsNothing);
+      });
     });
   }
 }

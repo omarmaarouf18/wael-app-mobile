@@ -220,10 +220,16 @@ class ApiClient {
       return body is Map<String, dynamic> ? body : {'data': body};
     }
     final map = body is Map ? body : {};
+    int? retryAfter;
+    final rawRetry = res.headers['retry-after'] ?? res.headers['Retry-After'];
+    if (rawRetry != null) {
+      retryAfter = int.tryParse(rawRetry.trim());
+    }
     throw ApiException(
       statusCode: res.statusCode,
       message: (map['error'] ?? 'Request failed').toString(),
       code: map['code']?.toString(),
+      retryAfterSeconds: retryAfter,
     );
   }
 
@@ -293,8 +299,14 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
   final String? code;
+  final int? retryAfterSeconds;
 
-  ApiException({required this.statusCode, required this.message, this.code});
+  ApiException({
+    required this.statusCode,
+    required this.message,
+    this.code,
+    this.retryAfterSeconds,
+  });
 
   bool get isRateLimited => statusCode == 429;
   bool get isUnauthorized => statusCode == 401;

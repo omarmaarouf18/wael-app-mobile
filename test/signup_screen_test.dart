@@ -45,6 +45,11 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    Future<void> agreeToTerms(WidgetTester tester) async {
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+    }
+
     group('SignupScreen [$name]', () {
       testWidgets('shell with brand lockup and a localised form', (
         tester,
@@ -128,6 +133,7 @@ void main() {
       ) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
+        await agreeToTerms(tester);
         await submit(tester);
         expect(
           find.text(ErrorMessages.allFieldsRequired(isArabic)),
@@ -144,6 +150,7 @@ void main() {
       testWidgets('short password and mismatch are reported', (tester) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
+        await agreeToTerms(tester);
         await fill(tester, password: 'short', confirm: 'short');
         await submit(tester);
         expect(
@@ -164,15 +171,32 @@ void main() {
         expect(repo.signupCalls, 0);
       });
 
-      testWidgets('declining the terms blocks the submit', (tester) async {
+      testWidgets('consent unticked by default; submit disabled until ticked', (
+        tester,
+      ) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
         await fill(tester);
-        await tester.tap(find.byType(Checkbox));
-        await tester.pump();
+        // Button disabled while unticked: tapping does nothing, no API call.
+        await submit(tester);
+        expect(repo.signupCalls, 0);
+        expect(find.text('route:/otp'), findsNothing);
+        // Ticking enables the submit.
+        await agreeToTerms(tester);
+        await submit(tester);
+        expect(repo.signupCalls, 1);
+        expect(find.text('route:/otp'), findsOneWidget);
+      });
+
+      testWidgets('long password over 72 bytes is reported', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await agreeToTerms(tester);
+        final longPw = List.filled(73, 'a').join();
+        await fill(tester, password: longPw, confirm: longPw);
         await submit(tester);
         expect(
-          find.text(ErrorMessages.agreeToTermsRequired(isArabic)),
+          find.text(ErrorMessages.passwordTooLong(isArabic)),
           findsOneWidget,
         );
         expect(repo.signupCalls, 0);
@@ -182,6 +206,7 @@ void main() {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
         await fill(tester);
+        await agreeToTerms(tester);
         await submit(tester);
         expect(repo.signupCalls, 1);
         expect(repo.lastSignupEmail, 'jane@e.com');
@@ -194,6 +219,7 @@ void main() {
         final repo = FakeAuthRepository(mode: 'signup-conflict');
         await pump(tester, repo: repo);
         await fill(tester);
+        await agreeToTerms(tester);
         await submit(tester);
         expect(repo.signupCalls, 1);
         expect(find.byType(ThemedErrorBanner), findsOneWidget);

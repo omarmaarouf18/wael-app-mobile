@@ -1,3 +1,4 @@
+import 'dart:convert' show utf8;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
@@ -23,7 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _agreeToTerms = true;
+  bool _agreeToTerms = false;
   bool _obscurePassword = true;
 
   /// Client-side validation message; shown in a persistent banner until the
@@ -71,6 +72,13 @@ class _SignupScreenState extends State<SignupScreen> {
           l10n.isArabic,
           8,
         ),
+      );
+      return;
+    }
+    // Client-side bcrypt byte-length check (72 bytes; Arabic is 2 bytes/char).
+    if (utf8.encode(password).length > 72) {
+      setState(
+        () => _validationError = ErrorMessages.passwordTooLong(l10n.isArabic),
       );
       return;
     }
@@ -285,11 +293,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
 
-                  // Submit CTA
+                  // Submit CTA (disabled until the honor-code box is ticked).
                   PrimaryButton(
                     text: AppTypography.uppercaseLabel(l10n.signUp),
                     isLoading: auth.isLoading,
-                    onPressed: _handleSignup,
+                    onPressed: _agreeToTerms ? _handleSignup : null,
                   ),
                   const SizedBox(height: AppSpacing.spaceLg),
 
