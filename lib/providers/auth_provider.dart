@@ -83,6 +83,10 @@ class AuthProvider extends ChangeNotifier {
   AuthAccount? _account;
   String? _pendingVerificationEmail;
 
+  /// Pending signup session id issued at signup (rotated on replacement,
+  /// kept on resend, cleared on verification). Sent with verify-otp.
+  String? _pendingVerificationId;
+
   /// Last dev OTP returned by the backend in local mode. Set in debug
   /// builds only; always null in release builds.
   String? _lastDevOtp;
@@ -103,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
   UserProfile get currentUser => _currentUser;
   AuthAccount? get account => _account;
   String? get pendingVerificationEmail => _pendingVerificationEmail;
+  String? get pendingVerificationId => _pendingVerificationId;
   String? get lastDevOtp => kDebugMode ? _lastDevOtp : null;
 
   void _begin() {
@@ -150,6 +155,7 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = _withAccount(_currentUser, account);
     _status = AuthStatus.authenticated;
     _pendingVerificationEmail = null;
+    _pendingVerificationId = null;
     _isLoading = false;
     notifyListeners();
   }
@@ -292,6 +298,7 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       _status = AuthStatus.needsVerification;
       _pendingVerificationEmail = email.trim();
+      _pendingVerificationId = result.pendingId;
       notifyListeners();
       return true;
     } catch (e) {
@@ -315,6 +322,7 @@ class AuthProvider extends ChangeNotifier {
         code: code.trim(),
         deviceId: devId,
         deviceLabel: deviceLabel,
+        pendingId: _pendingVerificationId,
       );
       final account = await _repo.me(accessToken: tokens.access);
       await _storeSession(account, tokens);
@@ -431,6 +439,7 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = _blankUser;
     _lastDevOtp = null;
     _pendingVerificationEmail = null;
+    _pendingVerificationId = null;
     _status = AuthStatus.unauthenticated;
     _isLoading = false;
     notifyListeners();

@@ -46,8 +46,9 @@ class AuthTokens {
 class SignupResult {
   final AuthAccount account;
   final String? devOtp;
+  final String? pendingId;
 
-  const SignupResult({required this.account, this.devOtp});
+  const SignupResult({required this.account, this.devOtp, this.pendingId});
 }
 
 /// Auth backend contract. HTTP binding below; tests use fakes.
@@ -63,6 +64,7 @@ abstract class AuthRepository {
     required String code,
     required String deviceId,
     String? deviceLabel,
+    String? pendingId,
   });
   Future<AuthTokens> login({
     required String email,
@@ -114,6 +116,7 @@ class HttpAuthRepository implements AuthRepository {
         emailVerified: false,
       ),
       devOtp: res['dev_otp']?.toString(),
+      pendingId: res['pending_id']?.toString(),
     );
   }
 
@@ -123,6 +126,7 @@ class HttpAuthRepository implements AuthRepository {
     required String code,
     required String deviceId,
     String? deviceLabel,
+    String? pendingId,
   }) async {
     final res = await _client.post(
       '$_prefix/verify-otp',
@@ -132,6 +136,8 @@ class HttpAuthRepository implements AuthRepository {
         'device_id': deviceId,
         if (deviceLabel != null && deviceLabel.isNotEmpty)
           'device_label': deviceLabel,
+        if (pendingId != null && pendingId.isNotEmpty)
+          'pending_id': pendingId,
       },
     );
     return AuthTokens.fromJson(res);

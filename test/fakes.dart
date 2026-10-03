@@ -23,6 +23,7 @@ class FakeAuthRepository implements AuthRepository {
   int verifyOtpCalls = 0;
   String? lastVerifyOtpDeviceId;
   String? lastVerifyOtpDeviceLabel;
+  String? lastVerifyOtpPendingId;
   int logoutCalls = 0;
   String? lastLogoutToken;
   int requestResetCalls = 0;
@@ -58,11 +59,13 @@ class FakeAuthRepository implements AuthRepository {
     required String code,
     required String deviceId,
     String? deviceLabel,
+    String? pendingId,
   }) async {
     verifyOtpCalls++;
     lastOtpCode = code;
     lastVerifyOtpDeviceId = deviceId;
     lastVerifyOtpDeviceLabel = deviceLabel;
+    lastVerifyOtpPendingId = pendingId;
     if (mode == 'wrong-otp') {
       throw ApiException(statusCode: 401, message: 'invalid code');
     }
@@ -104,6 +107,7 @@ class FakeAuthRepository implements AuthRepository {
         emailVerified: false,
       ),
       devOtp: '123456',
+      pendingId: 'pending-test-id',
     );
   }
 

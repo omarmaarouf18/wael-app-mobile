@@ -45,6 +45,23 @@ void main() {
     expect(ok, isTrue);
     expect(auth.status, AuthStatus.needsVerification);
     expect(auth.pendingVerificationEmail, 'new@e.com');
+    expect(auth.pendingVerificationId, 'pending-test-id');
+  });
+
+  test('verifyOtp passes the stored pending_id', () async {
+    final store = MemoryTokenStore();
+    final repo = FakeAuthRepository();
+    final auth = providerWith(repo, store);
+    await auth.signup(
+      fullName: 'New User',
+      phone: '+201000000001',
+      email: 'new@e.com',
+      password: 'password123',
+    );
+    final ok = await auth.verifyOtp(email: 'new@e.com', code: '123456');
+    expect(ok, isTrue);
+    expect(repo.lastVerifyOtpPendingId, 'pending-test-id');
+    expect(auth.pendingVerificationId, isNull);
   });
 
   test('logout clears tokens and session', () async {
