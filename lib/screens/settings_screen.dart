@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/confirm_action_dialog.dart';
 import '../widgets/icon_tile.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/themed_card.dart';
@@ -111,12 +112,20 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 3. SIGN OUT BUTTON
+            // 3. SIGN OUT BUTTON (with confirmation)
             SizedBox(
               width: double.infinity,
               height: 48,
               child: OutlinedButton.icon(
-                onPressed: () => LogoutHelper.performLogout(context),
+                onPressed: () async {
+                  final confirmed = await ConfirmActionDialog.show(
+                    context,
+                    title: l10n.signOutConfirmTitle,
+                    message: l10n.signOutConfirmMessage,
+                  );
+                  if (!confirmed || !context.mounted) return;
+                  await LogoutHelper.performLogout(context);
+                },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: AppColors.surfaceLayer1,
                   side: const BorderSide(color: AppColors.subtleHairline),

@@ -91,134 +91,141 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.signIn,
-                        style: AppTypography.headlineMd(
-                          isArabic: l10n.isArabic,
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.signIn,
+                          style: AppTypography.headlineMd(
+                            isArabic: l10n.isArabic,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.spaceLg),
+                        const SizedBox(height: AppSpacing.spaceLg),
 
-                      // Email (phone sign-in comes later)
-                      ThemedTextField(
-                        label: l10n.email,
-                        hintText: 'name@example.com',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: const Icon(
-                          Icons.alternate_email,
-                          size: 18,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.spaceMd),
-
-                      // Password field
-                      ThemedTextField(
-                        label: l10n.password,
-                        hintText: '••••••••••••',
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          size: 18,
-                          color: AppColors.textTertiary,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                        // Email (phone sign-in comes later)
+                        ThemedTextField(
+                          label: l10n.email,
+                          hintText: 'name@example.com',
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          textInputAction: TextInputAction.next,
+                          prefixIcon: const Icon(
+                            Icons.alternate_email,
                             size: 18,
-                            color: _obscurePassword
-                                ? AppColors.textTertiary
-                                : AppColors.crimson,
+                            color: AppColors.textTertiary,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.spaceSm),
+                        const SizedBox(height: AppSpacing.spaceMd),
 
-                      // Forgot password, at the end edge.
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushNamed('/forgot');
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              l10n.forgotPassword,
-                              style: AppTypography.bodySm(
-                                isArabic: l10n.isArabic,
-                              ).copyWith(color: AppColors.textMuted),
+                        // Password field
+                        ThemedTextField(
+                          label: l10n.password,
+                          hintText: '••••••••••••',
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          autofillHints: const [AutofillHints.password],
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _handleLogin(),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            size: 18,
+                            color: AppColors.textTertiary,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              size: 18,
+                              color: _obscurePassword
+                                  ? AppColors.textTertiary
+                                  : AppColors.crimson,
                             ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.spaceMd),
+                        const SizedBox(height: AppSpacing.spaceSm),
 
-                      // Server / validation error
-                      if (auth.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(
-                            bottom: AppSpacing.spaceSm,
-                          ),
-                          child: ThemedErrorBanner(
-                            message: auth.errorMessage!,
-                            onRetry: _handleLogin,
-                          ),
-                        ),
-
-                      // Sign In CTA
-                      PrimaryButton(
-                        text: AppTypography.uppercaseLabel(l10n.signIn),
-                        isLoading: auth.isLoading,
-                        onPressed: _handleLogin,
-                      ),
-                      const SizedBox(height: AppSpacing.spaceLg),
-
-                      // Create Account Footer Link
-                      Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              l10n.dontHaveAccount,
-                              style: AppTypography.bodySm(
-                                isArabic: l10n.isArabic,
-                              ).copyWith(color: AppColors.textMuted),
-                            ),
-                            const SizedBox(width: AppSpacing.spaceXs),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pushNamed('/signup');
-                              },
+                        // Forgot password, at the end edge.
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pushNamed('/forgot');
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Text(
-                                l10n.createAccountPrompt,
-                                style:
-                                    AppTypography.bodySm(
-                                      isArabic: l10n.isArabic,
-                                    ).copyWith(
-                                      color: AppColors.crimson,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                l10n.forgotPassword,
+                                style: AppTypography.bodySm(
+                                  isArabic: l10n.isArabic,
+                                ).copyWith(color: AppColors.textMuted),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.spaceXl),
-                    ],
+                        const SizedBox(height: AppSpacing.spaceMd),
+
+                        // Server / validation error
+                        if (auth.errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                              bottom: AppSpacing.spaceSm,
+                            ),
+                            child: ThemedErrorBanner(
+                              message: auth.errorMessage!,
+                              onRetry: _handleLogin,
+                            ),
+                          ),
+
+                        // Sign In CTA
+                        PrimaryButton(
+                          text: AppTypography.uppercaseLabel(l10n.signIn),
+                          isLoading: auth.isLoading,
+                          onPressed: _handleLogin,
+                        ),
+                        const SizedBox(height: AppSpacing.spaceLg),
+
+                        // Create Account Footer Link
+                        Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                l10n.dontHaveAccount,
+                                style: AppTypography.bodySm(
+                                  isArabic: l10n.isArabic,
+                                ).copyWith(color: AppColors.textMuted),
+                              ),
+                              const SizedBox(width: AppSpacing.spaceXs),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pushNamed('/signup');
+                                },
+                                child: Text(
+                                  l10n.createAccountPrompt,
+                                  style:
+                                      AppTypography.bodySm(
+                                        isArabic: l10n.isArabic,
+                                      ).copyWith(
+                                        color: AppColors.crimson,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.spaceXl),
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -172,16 +172,33 @@ void main() {
         expect(find.text(l10n.languageSwitched(true)), findsOneWidget);
       });
 
-      testWidgets('sign out clears the session and goes to /login', (
+      testWidgets('sign out asks first, then clears and goes to /login', (
         tester,
       ) async {
         final auth = await pump(tester);
         expect(auth.isAuthenticated, isTrue);
         await tester.tap(find.text(upper(l10n.signOut)));
         await tester.pumpAndSettle();
+        // Still signed in with the question open.
+        expect(auth.isAuthenticated, isTrue);
+        expect(find.text(l10n.signOutConfirmTitle), findsOneWidget);
+        await tester.tap(find.text(l10n.confirm));
+        await tester.pumpAndSettle();
         expect(auth.isAuthenticated, isFalse);
         expect(find.text('route:/login'), findsOneWidget);
         expect(find.byType(SettingsScreen), findsNothing);
+      });
+
+      testWidgets('cancelling sign out stays signed in', (tester) async {
+        final auth = await pump(tester);
+        expect(auth.isAuthenticated, isTrue);
+        await tester.tap(find.text(upper(l10n.signOut)));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.signOutConfirmTitle), findsOneWidget);
+        await tester.tap(find.text(l10n.cancel));
+        await tester.pumpAndSettle();
+        expect(auth.isAuthenticated, isTrue);
+        expect(find.byType(SettingsScreen), findsOneWidget);
       });
 
       testWidgets('does not overflow on a small phone', (tester) async {

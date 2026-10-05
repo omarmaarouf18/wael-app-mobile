@@ -84,10 +84,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('u@e.com'), findsOneWidget);
 
-    // Sign out returns to login.
+    // Sign out returns to login (after confirming the dialog).
     await tester.ensureVisible(find.text('SIGN OUT OF EL METR ACADEMY'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('SIGN OUT OF EL METR ACADEMY'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign out?'), findsOneWidget);
+    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     expect(find.text('SIGN IN'), findsOneWidget);
   });

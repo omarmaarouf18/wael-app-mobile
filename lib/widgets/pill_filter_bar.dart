@@ -39,7 +39,7 @@ class PillFilterBar extends StatelessWidget {
               : item.label;
 
           return Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.spaceSm),
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.spaceSm),
             child: Material(
               color: Colors.transparent,
               child: InkWell(

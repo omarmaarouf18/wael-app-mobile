@@ -11,6 +11,7 @@ import 'package:wael_app/widgets/hero_backdrop.dart';
 import 'package:wael_app/widgets/language_toggle_chip.dart';
 import 'package:wael_app/widgets/primary_button.dart';
 import 'package:wael_app/widgets/themed_error_banner.dart';
+import 'package:wael_app/widgets/themed_text_field.dart';
 
 import 'fakes.dart';
 import 'screen_harness.dart';
@@ -126,6 +127,29 @@ void main() {
         expect(find.textContaining('تذكرني'), findsNothing);
         // Two inputs only: email and password.
         expect(find.byType(TextFormField), findsNWidgets(2));
+      });
+
+      testWidgets('form autofills with next, done and submits', (tester) async {
+        await pump(tester);
+        expect(find.byType(AutofillGroup), findsOneWidget);
+        final email = tester.widget<ThemedTextField>(
+          find.byType(ThemedTextField).at(0),
+        );
+        expect(email.autofillHints, contains(AutofillHints.email));
+        expect(email.textInputAction, TextInputAction.next);
+        final password = tester.widget<ThemedTextField>(
+          find.byType(ThemedTextField).at(1),
+        );
+        expect(password.autofillHints, contains(AutofillHints.password));
+        expect(password.textInputAction, TextInputAction.done);
+        expect(password.onFieldSubmitted, isNotNull);
+
+        await tester.enterText(find.byType(TextFormField).at(0), 'u@e.com');
+        await tester.tap(find.byType(TextFormField).at(1));
+        await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(find.text('route:/main'), findsOneWidget);
       });
 
       testWidgets('fits a 360x640 phone without overflow', (tester) async {

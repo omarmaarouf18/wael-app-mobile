@@ -7,8 +7,11 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 
 import 'core/constants.dart';
+import 'core/error_messages.dart';
 import 'core/secure_store.dart';
 import 'l10n/app_localizations.dart';
+import 'widgets/app_shell.dart';
+import 'widgets/themed_error_banner.dart';
 
 // Providers
 import 'providers/locale_provider.dart';
@@ -149,8 +152,17 @@ class WaelApp extends StatelessWidget {
             routes: buildAppRoutes(),
             onGenerateRoute: (settings) {
               if (settings.name == '/course-details') {
-                final courseId =
-                    settings.arguments as String? ?? 'architectural-discipline';
+                // Missing (or mistyped) arguments must never open a fake
+                // subject: show an error the student can back out of.
+                final args = settings.arguments;
+                final courseId = args is String && args.isNotEmpty
+                    ? args
+                    : null;
+                if (courseId == null) {
+                  return MaterialPageRoute(
+                    builder: (context) => const _MissingSubjectRoute(),
+                  );
+                }
                 return MaterialPageRoute(
                   builder: (context) => CourseDetailScreen(courseId: courseId),
                 );
@@ -170,6 +182,29 @@ class WaelApp extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Opened `/course-details` without a subject id: an error with back
+/// navigation, never a fake subject.
+class _MissingSubjectRoute extends StatelessWidget {
+  const _MissingSubjectRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AppShell(
+      showBack: true,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+          child: ThemedErrorBanner(
+            message: ErrorMessages.subjectNotFound(l10n.isArabic),
+            onRetry: () => Navigator.of(context).pop(),
+          ),
+        ),
       ),
     );
   }

@@ -24,10 +24,6 @@ class ErrorMessages {
       ? 'يرجى إدخال بريد إلكتروني صالح.'
       : 'Please enter a valid email address.';
 
-  static String passwordTooShort(bool isArabic) => isArabic
-      ? 'كلمة المرور يجب ألا تقل عن 6 أحرف.'
-      : 'Password must be at least 6 characters.';
-
   static String passwordTooLong(bool isArabic) =>
       isArabic ? 'كلمة السر طويلة جدًا' : 'Password is too long.';
 

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/core/secure_store.dart';
@@ -33,5 +34,31 @@ void main() {
     // Splash found no stored session and routed to login.
     expect(find.text('Sign In'), findsOneWidget);
     expect(find.text('EL METR'), findsNothing);
+  });
+
+  testWidgets('course details without an id show an error, not a subject', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      WaelApp(
+        providersOverride: [
+          ChangeNotifierProvider(create: (_) => LocaleProvider()),
+          ChangeNotifierProvider(
+            create: (_) => AuthProvider(
+              repository: FakeAuthRepository(),
+              tokenStore: MemoryTokenStore(),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Sign In'), findsOneWidget);
+
+    tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .pushNamed('/course-details');
+    await tester.pumpAndSettle();
+    expect(find.text('This subject is not available.'), findsOneWidget);
   });
 }

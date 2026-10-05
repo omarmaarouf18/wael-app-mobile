@@ -171,6 +171,10 @@ class AppLocalizations {
   String get signOut => isArabic
       ? 'تسجيل الخروج من أكاديمية المتر'
       : 'Sign Out of EL METR ACADEMY';
+  String get signOutConfirmTitle => isArabic ? 'تسجيل الخروج؟' : 'Sign out?';
+  String get signOutConfirmMessage => isArabic
+      ? 'سيتم إنهاء جلستك على هذا الجهاز.'
+      : 'Your session on this device will end.';
 
   // Notifications Screen
   String get dispatchesTitle =>
