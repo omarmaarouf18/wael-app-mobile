@@ -1,6 +1,7 @@
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/widgets/accent_title.dart';
@@ -244,6 +245,27 @@ void main() {
           find.byType(ThemedSkeletonCard).first,
         );
         expect(card, isNotNull);
+      });
+
+      testWidgets('SelectableChip has a label and a 48dp target', (
+        tester,
+      ) async {
+        await pumpLocalized(
+          tester,
+          locale,
+          Scaffold(
+            body: SelectableChip(label: 'Chip', selected: false, onTap: () {}),
+          ),
+        );
+        final chip = find.byType(SelectableChip);
+        expect(chip, findsOneWidget);
+        final size = tester.getSize(chip);
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+        final semantics = tester.getSemantics(chip);
+        expect(semantics.label, contains('Chip'));
+        // ignore: deprecated_member_use (flagsCollection has no contains yet)
+        expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
       });
     });
   }

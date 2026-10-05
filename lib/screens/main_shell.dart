@@ -117,11 +117,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           key: const ValueKey('top_bar_notifications_button'),
           icon: Icons.notifications_none,
           showPip: hasUnread,
+          tooltip: l10n.dispatchesTitle,
           onTap: () => Navigator.of(context).pushNamed('/notifications'),
         ),
         const SizedBox(width: AppSpacing.spaceSm),
         HeaderIconButton(
           icon: Icons.person_outline,
+          tooltip: l10n.navSettings,
           onTap: () => _onTabSelected(3),
         ),
         const SizedBox(width: AppSpacing.spaceSm),

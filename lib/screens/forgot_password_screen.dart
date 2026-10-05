@@ -196,6 +196,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         onChanged: (_) => setState(() {}),
                         onFieldSubmitted: (_) => _confirm(),
                         suffixIcon: IconButton(
+                          tooltip: _obscurePassword
+                              ? l10n.showPassword
+                              : l10n.hidePassword,
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined

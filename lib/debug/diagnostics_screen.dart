@@ -72,6 +72,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             onPressed: () => Navigator.of(context).pushNamed('/components'),
           ),
           IconButton(
+            tooltip: 'Reload session snapshot',
             icon: const Icon(Icons.refresh, size: 20),
             onPressed: () {
               _loadMaskedToken();
@@ -79,6 +80,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             },
           ),
           IconButton(
+            tooltip: 'Clear recorded calls',
             icon: const Icon(Icons.delete_outline, size: 20),
             onPressed: () {
               _tracker.clear();

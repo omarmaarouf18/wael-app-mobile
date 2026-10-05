@@ -53,69 +53,86 @@ class SelectableChip extends StatelessWidget {
         ? (selected ? AppColors.crimson : AppColors.textMuted)
         : (selected ? AppColors.textPrimary : AppColors.textMuted);
 
+    // 48x48 dp min tap target around a compact pill visual. The Align
+    // factors keep the box hugging the visual (no full-width stretch) while
+    // centering it in the target.
     return Semantics(
       button: true,
       selected: selected,
+      label: label,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: radius,
-          child: AnimatedContainer(
-            duration: AppMotion.durationFast,
-            padding: const EdgeInsetsDirectional.symmetric(
-              horizontal: 14,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: radius,
-              border: Border.all(
-                color: border,
-                width: outlined && selected ? 1.5 : 1.0,
-              ),
-              boxShadow: outlined && selected ? AppElevation.crimsonGlow : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 14, color: iconColor),
-                  SizedBox(width: outlined ? 8 : 6),
-                ],
-                Text(
-                  label,
-                  style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                    color: foreground,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 12,
-                  ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Align(
+              alignment: Alignment.center,
+              widthFactor: 1.0,
+              heightFactor: 1.0,
+              child: AnimatedContainer(
+                duration: AppMotion.durationFast,
+                padding: const EdgeInsetsDirectional.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-                if (count != null) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsetsDirectional.symmetric(
-                      horizontal: 5,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.textPrimary.withValues(alpha: 0.2)
-                          : AppColors.surfaceElevated,
-                      borderRadius: AppRadius.radiusPill,
-                    ),
-                    child: Text(
-                      '$count',
-                      style: AppTypography.labelSm().copyWith(
-                        color: selected
-                            ? AppColors.textPrimary
-                            : AppColors.textMuted,
-                        fontWeight: FontWeight.bold,
+                decoration: BoxDecoration(
+                  color: background,
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: border,
+                    width: outlined && selected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: outlined && selected
+                      ? AppElevation.crimsonGlow
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 14, color: iconColor),
+                      SizedBox(width: outlined ? 8 : 6),
+                    ],
+                    Text(
+                      label,
+                      style: AppTypography.labelSm(isArabic: isArabic).copyWith(
+                        color: foreground,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        fontSize: 12,
                       ),
                     ),
-                  ),
-                ],
-              ],
+                    if (count != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.textPrimary.withValues(alpha: 0.2)
+                              : AppColors.surfaceElevated,
+                          borderRadius: AppRadius.radiusPill,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: AppTypography.labelSm().copyWith(
+                            color: selected
+                                ? AppColors.textPrimary
+                                : AppColors.textMuted,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

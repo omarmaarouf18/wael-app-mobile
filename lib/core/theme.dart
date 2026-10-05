@@ -30,12 +30,14 @@ class AppColors {
   static const Color crimsonTinted = Color(0x1FC1121F);
   static const Color crimsonGlow = Color(0x38C1121F);
 
-  // Typographic Contrast
+  // Typographic Contrast (F-UX4: textTertiary, textPlaceholder and danger
+  // were lightened, same hue, to reach WCAG AA 4.5:1 on the surfaces they
+  // are used on; see test/theme_tokens_test.dart).
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFB8B8B8);
   static const Color textMuted = Color(0xFF9A9A9A);
-  static const Color textTertiary = Color(0xFF666666);
-  static const Color textPlaceholder = Color(0xFF4A4A4A);
+  static const Color textTertiary = Color(0xFF8A8A8A);
+  static const Color textPlaceholder = Color(0xFF808080);
 
   // Status Colors
   static const Color statusPending = Color(0xFFF59E0B);
@@ -56,7 +58,7 @@ class AppColors {
   static const Color successBg = statusApprovedBg;
   static const Color warning = statusPending;
   static const Color warningBg = statusPendingBg;
-  static const Color danger = Color(0xFFF4707A);
+  static const Color danger = Color(0xFFF67E86);
   static const Color dangerBg = Color(0x26F4707A);
   static const Color info = Color(0xFF60A5FA);
   static const Color infoBg = Color(0x2660A5FA);

@@ -202,7 +202,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
         ),
         const SizedBox(height: 4),
         SizedBox(
-          height: 42,
+          // Fits the 48dp chip tap targets.
+          height: 52,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),

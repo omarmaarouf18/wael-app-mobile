@@ -221,6 +221,40 @@ void main() {
     expect(withPip.showPip, isTrue);
     expect(without.showPip, isFalse);
   });
+
+  for (final (name, locale, _) in kLocales) {
+    group('header accessibility [$name]', () {
+      testWidgets('icon-only buttons have tooltips and 48dp targets', (
+        tester,
+      ) async {
+        Future<void> pump(WidgetTester tester) => pumpScreen(
+          tester,
+          locale,
+          MainShell(initialTab: 0),
+          extraProviders: [
+            ChangeNotifierProvider(
+              create: (_) => AcademyCatalogProvider(fake()),
+            ),
+            ChangeNotifierProvider(create: (_) => HomeProvider()),
+          ],
+        );
+        await pump(tester);
+        final buttons = find.byType(HeaderIconButton);
+        expect(buttons, findsNWidgets(2));
+        for (final element in buttons.evaluate()) {
+          final button = element.widget as HeaderIconButton;
+          expect(button.tooltip, isNotNull, reason: 'tooltip in $name');
+          expect(button.tooltip, isNotEmpty);
+        }
+        // 48x48 dp min tap targets.
+        for (final element in buttons.evaluate()) {
+          final size = tester.getSize(find.byWidget(element.widget));
+          expect(size.width, greaterThanOrEqualTo(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        }
+      });
+    });
+  }
 }
 
 void _noop() {}

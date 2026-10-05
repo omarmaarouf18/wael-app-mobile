@@ -223,9 +223,11 @@ void main() {
             .widget<EditableText>(find.byType(EditableText).at(1))
             .obscureText;
         expect(obscured(), isTrue);
+        expect(find.byTooltip(l10n.showPassword), findsOneWidget);
         await tester.tap(find.byIcon(Icons.visibility_outlined));
         await tester.pump();
         expect(obscured(), isFalse);
+        expect(find.byTooltip(l10n.hidePassword), findsOneWidget);
       });
 
       testWidgets('valid credentials: one login call, then /main', (

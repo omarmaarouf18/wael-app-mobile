@@ -139,6 +139,8 @@ class AppLocalizations {
       : 'Max 72 bytes (Arabic letters count as multi-byte)';
   String get ruleMet => isArabic ? 'مستوفى' : 'Met';
   String get ruleUnmet => isArabic ? 'غير مستوفى' : 'Not met';
+  String get showPassword => isArabic ? 'إظهار كلمة المرور' : 'Show password';
+  String get hidePassword => isArabic ? 'إخفاء كلمة المرور' : 'Hide password';
   String get resetSentNote => isArabic
       ? 'إذا كان البريد مسجلاً، ستصلك رسالة برمز التأكيد.'
       : 'If the email is registered, a verification code was sent.';
