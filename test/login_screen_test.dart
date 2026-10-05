@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/core/constants.dart';
+import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/screens/login_screen.dart';
@@ -238,13 +239,49 @@ void main() {
         expect(find.text('route:/main'), findsOneWidget);
       });
 
-      testWidgets('empty fields: banner, no API call', (tester) async {
+      testWidgets('empty fields: inline errors, no banner, no API call', (
+        tester,
+      ) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
         await tester.tap(find.widgetWithText(PrimaryButton, signIn));
         await tester.pumpAndSettle();
-        expect(find.byType(ThemedErrorBanner), findsOneWidget);
+        // Field errors render inline under each field; the banner stays for
+        // server errors only.
+        expect(find.byType(ThemedErrorBanner), findsNothing);
         expect(repo.loginCalls, 0);
+      });
+
+      testWidgets('field errors appear on blur', (tester) async {
+        await pump(tester);
+        await tester.enterText(
+          find.byType(TextFormField).at(0),
+          'not-an-email',
+        );
+        // Moving focus away validates the blurred field inline.
+        await tester.tap(find.byType(TextFormField).at(1));
+        await tester.pump();
+        expect(
+          find.text(ErrorMessages.invalidEmail(locale.languageCode == 'ar')),
+          findsOneWidget,
+        );
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+      });
+
+      testWidgets('next moves focus, done submits', (tester) async {
+        await pump(tester);
+        await tester.enterText(find.byType(TextFormField).at(0), 'u@e.com');
+        await tester.testTextInput.receiveAction(TextInputAction.next);
+        await tester.pump();
+        final passwordFocused = tester
+            .widget<EditableText>(find.byType(EditableText).at(1))
+            .focusNode
+            .hasFocus;
+        expect(passwordFocused, isTrue);
+        await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(find.text('route:/main'), findsOneWidget);
       });
 
       testWidgets('wrong password: persistent banner, retry logs in again', (

@@ -17,6 +17,7 @@ class ThemedTextField extends StatelessWidget {
   final Iterable<String>? autofillHints;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onFieldSubmitted;
+  final FocusNode? focusNode;
 
   const ThemedTextField({
     super.key,
@@ -35,6 +36,7 @@ class ThemedTextField extends StatelessWidget {
     this.autofillHints,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.focusNode,
   });
 
   @override
@@ -65,6 +67,7 @@ class ThemedTextField extends StatelessWidget {
           autofillHints: autofillHints,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted,
+          focusNode: focusNode,
           style: AppTypography.bodyMd().copyWith(color: AppColors.textPrimary),
           cursorColor: AppColors.crimson,
           decoration: InputDecoration(

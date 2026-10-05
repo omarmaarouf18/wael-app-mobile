@@ -93,6 +93,27 @@ void main() {
         expect(find.byType(OtpScreen), findsNothing);
       });
 
+      testWidgets('oneTimeCode autofill with done submit', (tester) async {
+        final auth = await pendingAuth(FakeAuthRepository());
+        await pumpScreen(tester, locale, const OtpScreen(), auth: auth);
+        expect(find.byType(AutofillGroup), findsOneWidget);
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.autofillHints, contains(AutofillHints.oneTimeCode));
+        expect(field.textInputAction, TextInputAction.done);
+      });
+
+      testWidgets('done submits the code', (tester) async {
+        final repo = FakeAuthRepository();
+        final auth = await pendingAuth(repo);
+        await pumpScreen(tester, locale, const OtpScreen(), auth: auth);
+        await tester.enterText(find.byType(TextField), '123456');
+        await tester.pump();
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(repo.verifyOtpCalls, 1);
+        expect(find.text('route:/main'), findsOneWidget);
+      });
+
       testWidgets('a correct code calls verifyOtp once and goes to /main', (
         tester,
       ) async {

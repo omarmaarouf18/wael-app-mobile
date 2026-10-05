@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/field_validators.dart';
 import '../core/theme.dart';
 import '../core/constants.dart';
 import '../l10n/app_localizations.dart';
@@ -27,16 +28,22 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
   Future<void> _handleLogin() async {
+    // Inline field errors first; the banner stays for server errors only.
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final success = await auth.login(
       _emailController.text,
@@ -91,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Form(
                   key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: AutofillGroup(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,9 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: l10n.email,
                           hintText: 'name@example.com',
                           controller: _emailController,
+                          focusNode: _emailFocus,
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           textInputAction: TextInputAction.next,
+                          validator: (v) =>
+                              FieldValidators.email(v, isArabic: l10n.isArabic),
+                          onFieldSubmitted: (_) =>
+                              _passwordFocus.requestFocus(),
                           prefixIcon: const Icon(
                             Icons.alternate_email,
                             size: 18,
@@ -124,9 +137,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: l10n.password,
                           hintText: '••••••••••••',
                           controller: _passwordController,
+                          focusNode: _passwordFocus,
                           obscureText: _obscurePassword,
                           autofillHints: const [AutofillHints.password],
                           textInputAction: TextInputAction.done,
+                          validator: (v) => FieldValidators.loginPassword(
+                            v,
+                            isArabic: l10n.isArabic,
+                          ),
                           onFieldSubmitted: (_) => _handleLogin(),
                           prefixIcon: const Icon(
                             Icons.lock_outline,

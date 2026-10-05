@@ -122,12 +122,23 @@ class AppLocalizations {
   String get verifyCode =>
       isArabic ? 'تأكيد البريد الإلكتروني' : 'Verify Email';
   String get verificationCode => isArabic ? 'رمز التأكيد' : 'Verification Code';
+  String get verificationCodeRequired => isArabic
+      ? 'يرجى إدخال رمز التأكيد كاملاً.'
+      : 'Please enter the full code.';
   String get verify => isArabic ? 'تأكيد' : 'Verify';
   String get resendCode => isArabic ? 'إعادة إرسال الكود' : 'Resend code';
   String get resetPassword =>
       isArabic ? 'إعادة تعيين كلمة المرور' : 'Reset Password';
   String get sendCode => isArabic ? 'إرسال الرمز' : 'Send Code';
   String get newPassword => isArabic ? 'كلمة المرور الجديدة' : 'New Password';
+  String get passwordRules => isArabic ? 'شروط كلمة المرور' : 'Password rules';
+  String get passwordRuleLength =>
+      isArabic ? '8 أحرف على الأقل' : 'At least 8 characters';
+  String get passwordRuleBytes => isArabic
+      ? 'بحد أقصى 72 بايت (الحروف العربية تُحسب بايتات متعددة)'
+      : 'Max 72 bytes (Arabic letters count as multi-byte)';
+  String get ruleMet => isArabic ? 'مستوفى' : 'Met';
+  String get ruleUnmet => isArabic ? 'غير مستوفى' : 'Not met';
   String get resetSentNote => isArabic
       ? 'إذا كان البريد مسجلاً، ستصلك رسالة برمز التأكيد.'
       : 'If the email is registered, a verification code was sent.';

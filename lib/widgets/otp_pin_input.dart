@@ -47,6 +47,7 @@ class OtpPinInput extends StatefulWidget {
     this.focusNode,
     this.onChanged,
     this.onCompleted,
+    this.onSubmitted,
     this.autofocus = false,
     this.enabled = true,
     this.hasError = false,
@@ -59,6 +60,9 @@ class OtpPinInput extends StatefulWidget {
 
   /// Called once the last digit is entered.
   final ValueChanged<String>? onCompleted;
+
+  /// Called when the keyboard's done action runs.
+  final ValueChanged<String>? onSubmitted;
   final bool autofocus;
   final bool enabled;
   final bool hasError;
@@ -166,6 +170,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
                       counterText: '',
                     ),
                     onChanged: _onChanged,
+                    onSubmitted: widget.onSubmitted,
                   ),
                 ),
               ),

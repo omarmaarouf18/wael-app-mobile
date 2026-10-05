@@ -5,6 +5,7 @@ import 'package:wael_app/screens/signup_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/primary_button.dart';
 import 'package:wael_app/widgets/themed_error_banner.dart';
+import 'package:wael_app/widgets/themed_text_field.dart';
 
 import 'fakes.dart';
 import 'screen_harness.dart';
@@ -128,23 +129,81 @@ void main() {
         expect(find.byType(SignupScreen), findsNothing);
       });
 
-      testWidgets('empty form: persistent validation banner, no API call', (
+      testWidgets('empty form: inline field errors, no banner, no API call', (
         tester,
       ) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
         await agreeToTerms(tester);
         await submit(tester);
+        // Field errors render inline under each field; the banner stays for
+        // server errors only.
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+        expect(repo.signupCalls, 0);
+        expect(find.text(ErrorMessages.emptyField(isArabic)), findsNWidgets(5));
+        await tester.pump(const Duration(minutes: 1));
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+        expect(find.byType(SnackBar), findsNothing);
+      });
+
+      testWidgets('field errors appear on blur', (tester) async {
+        await pump(tester);
+        await tester.enterText(
+          find.byType(TextFormField).at(1),
+          'not-an-email',
+        );
+        // Moving focus away validates the blurred field inline.
+        await tester.tap(find.byType(TextFormField).at(2));
+        await tester.pump();
+        expect(find.text(ErrorMessages.invalidEmail(isArabic)), findsOneWidget);
+        expect(find.byType(ThemedErrorBanner), findsNothing);
+      });
+
+      testWidgets('autofill hints and next/done chain', (tester) async {
+        await pump(tester);
+        expect(find.byType(AutofillGroup), findsOneWidget);
+        final fields = tester.widgetList<ThemedTextField>(
+          find.byType(ThemedTextField),
+        );
+        expect(fields.elementAt(0).autofillHints, contains(AutofillHints.name));
         expect(
-          find.text(ErrorMessages.allFieldsRequired(isArabic)),
+          fields.elementAt(1).autofillHints,
+          contains(AutofillHints.email),
+        );
+        expect(
+          fields.elementAt(2).autofillHints,
+          contains(AutofillHints.telephoneNumber),
+        );
+        expect(
+          fields.elementAt(3).autofillHints,
+          contains(AutofillHints.newPassword),
+        );
+        expect(fields.elementAt(3).textInputAction, TextInputAction.next);
+        expect(fields.elementAt(4).textInputAction, TextInputAction.done);
+        expect(fields.elementAt(4).onFieldSubmitted, isNotNull);
+      });
+
+      testWidgets('next moves focus, done submits', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await agreeToTerms(tester);
+        await fill(tester);
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(repo.signupCalls, 1);
+        expect(find.text('route:/otp'), findsOneWidget);
+      });
+
+      testWidgets('password rules show live under the field', (tester) async {
+        await pump(tester);
+        expect(find.text(l10n.passwordRuleLength), findsOneWidget);
+        expect(find.text(l10n.passwordRuleBytes), findsOneWidget);
+        await tester.enterText(find.byType(TextFormField).at(3), 'short');
+        await tester.pump();
+        expect(
+          find.text(ErrorMessages.passwordMinLength(isArabic, 8)),
           findsOneWidget,
         );
-        expect(repo.signupCalls, 0);
-        await tester.pump(const Duration(minutes: 1));
-        expect(find.byType(ThemedErrorBanner), findsOneWidget);
-        // Validation errors are fixed by editing, so no retry button.
-        expect(find.text(l10n.retry), findsNothing);
-        expect(find.byType(SnackBar), findsNothing);
       });
 
       testWidgets('short password and mismatch are reported', (tester) async {

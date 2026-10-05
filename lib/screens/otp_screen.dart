@@ -79,81 +79,86 @@ class _OtpScreenState extends State<OtpScreen> {
           constraints: const BoxConstraints(maxWidth: 420),
           child: Padding(
             padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.verifyCode,
-                  style: AppTypography.headlineMd(isArabic: l10n.isArabic),
-                ),
-                const SizedBox(height: AppSpacing.spaceSm),
-                Text(
-                  auth.pendingVerificationEmail ?? '',
-                  style: AppTypography.bodySm(
-                    isArabic: l10n.isArabic,
-                  ).copyWith(color: AppColors.textSecondary),
-                ),
-                if (kDebugMode && devOtp != null && devOtp.isNotEmpty) ...[
+            child: AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.verifyCode,
+                    style: AppTypography.headlineMd(isArabic: l10n.isArabic),
+                  ),
+                  const SizedBox(height: AppSpacing.spaceSm),
+                  Text(
+                    auth.pendingVerificationEmail ?? '',
+                    style: AppTypography.bodySm(
+                      isArabic: l10n.isArabic,
+                    ).copyWith(color: AppColors.textSecondary),
+                  ),
+                  if (kDebugMode && devOtp != null && devOtp.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.spaceMd),
+                    ThemedPanel(
+                      tone: PanelTone.inset,
+                      padding: const EdgeInsetsDirectional.all(
+                        AppSpacing.spaceSm,
+                      ),
+                      child: Text(
+                        'DEBUG OTP: $devOtp',
+                        style: AppTypography.bodySm(
+                          isArabic: l10n.isArabic,
+                        ).copyWith(color: AppColors.crimson),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.spaceLg),
+                  OtpPinInput(
+                    controller: _codeController,
+                    hasError: auth.errorMessage != null,
+                    onSubmitted: (_) => _verify(),
+                  ),
                   const SizedBox(height: AppSpacing.spaceMd),
-                  ThemedPanel(
-                    tone: PanelTone.inset,
-                    padding: const EdgeInsetsDirectional.all(
-                      AppSpacing.spaceSm,
+                  if (auth.errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        bottom: AppSpacing.spaceSm,
+                      ),
+                      child: ThemedErrorBanner(
+                        message: auth.errorMessage!,
+                        onRetry: _verify,
+                      ),
                     ),
-                    child: Text(
-                      'DEBUG OTP: $devOtp',
-                      style: AppTypography.bodySm(
-                        isArabic: l10n.isArabic,
-                      ).copyWith(color: AppColors.crimson),
-                    ),
+                  PrimaryButton(
+                    text: AppTypography.uppercaseLabel(l10n.verify),
+                    isLoading: auth.isLoading,
+                    onPressed: _verify,
+                  ),
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  Center(
+                    child: _resendCooldown > 0
+                        ? Text(
+                            ErrorMessages.resendCooldown(
+                              l10n.isArabic,
+                              _resendCooldown,
+                            ),
+                            style: AppTypography.bodySm(
+                              isArabic: l10n.isArabic,
+                            ).copyWith(color: AppColors.textSecondary),
+                          )
+                        : TextButton(
+                            onPressed: auth.isLoading ? null : _resend,
+                            child: Text(
+                              l10n.resendCode,
+                              style:
+                                  AppTypography.bodySm(
+                                    isArabic: l10n.isArabic,
+                                  ).copyWith(
+                                    color: AppColors.crimson,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
                   ),
                 ],
-                const SizedBox(height: AppSpacing.spaceLg),
-                OtpPinInput(
-                  controller: _codeController,
-                  hasError: auth.errorMessage != null,
-                ),
-                const SizedBox(height: AppSpacing.spaceMd),
-                if (auth.errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      bottom: AppSpacing.spaceSm,
-                    ),
-                    child: ThemedErrorBanner(
-                      message: auth.errorMessage!,
-                      onRetry: _verify,
-                    ),
-                  ),
-                PrimaryButton(
-                  text: AppTypography.uppercaseLabel(l10n.verify),
-                  isLoading: auth.isLoading,
-                  onPressed: _verify,
-                ),
-                const SizedBox(height: AppSpacing.spaceMd),
-                Center(
-                  child: _resendCooldown > 0
-                      ? Text(
-                          ErrorMessages.resendCooldown(
-                            l10n.isArabic,
-                            _resendCooldown,
-                          ),
-                          style: AppTypography.bodySm(
-                            isArabic: l10n.isArabic,
-                          ).copyWith(color: AppColors.textSecondary),
-                        )
-                      : TextButton(
-                          onPressed: auth.isLoading ? null : _resend,
-                          child: Text(
-                            l10n.resendCode,
-                            style: AppTypography.bodySm(isArabic: l10n.isArabic)
-                                .copyWith(
-                                  color: AppColors.crimson,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
