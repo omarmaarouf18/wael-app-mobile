@@ -21,8 +21,8 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 /// - remove YouTube's own passive overlays (the title bar when paused or at
 ///   the start, the logo in a corner, end-screen suggestions): they are drawn
 ///   inside YouTube's cross-origin iframe, which we cannot style. They are
-///   made inert, and the app masks the likely places (see
-///   `ProtectedVideoSurface`);
+///   made inert, and the app masks the title area (see
+///   `ProtectedVideoSurface`; the logo is left visible);
 /// - stop a determined person with a rooted device, a second camera, or the
 ///   unlisted URL: protection target is ordinary students (owner decision).
 YoutubePlayerParams protectedPlayerParams() => const YoutubePlayerParams(
