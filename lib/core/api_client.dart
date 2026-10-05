@@ -174,8 +174,12 @@ class ApiClient {
       if (refreshTokens != null) {
         final ok = await _refreshOnce();
         if (ok) return retry();
+        // The refresh failed: exactly one caller of this round reports
+        // the logout, the rest just surface the 401.
+        if (_claimLogout()) await forceLogout?.call();
+      } else {
+        await forceLogout?.call();
       }
-      await forceLogout?.call();
     }
     return _decode(res);
   }
@@ -190,23 +194,35 @@ class ApiClient {
     }
   }
 
+  /// True once a caller claimed the logout for the current failed refresh
+  /// round. Reset whenever a new refresh starts, so every failed refresh
+  /// logs out at most once no matter how many callers waited on it.
+  bool _logoutClaimed = false;
+
+  /// Runs [forceLogout] at most once per failed refresh: the first caller
+  /// of a failed round claims it, later callers of the same round skip it.
+  /// Single-threaded claim check, so exactly one caller wins.
+  bool _claimLogout() {
+    if (_logoutClaimed) return false;
+    _logoutClaimed = true;
+    return true;
+  }
+
+  /// Shares one in-flight refresh between concurrent 401s. Waiters receive
+  /// the real result (a throwing refresh reads as false), never a blanket
+  /// `true`, so they do not retry on a dead refresh and re-drive logout.
   Future<bool> _refreshOnce() {
     final inFlight = _refreshInFlight;
-    if (inFlight != null) {
-      return inFlight.then((_) => true, onError: (_) => false);
-    }
-    final future = refreshTokens!.call();
-    _refreshInFlight = future;
-    return future.then(
-      (ok) {
-        _refreshInFlight = null;
-        return ok;
-      },
-      onError: (_) {
-        _refreshInFlight = null;
-        return false;
-      },
+    if (inFlight != null) return inFlight;
+    _logoutClaimed = false;
+    final future = refreshTokens!.call().then<bool>(
+      (ok) => ok,
+      onError: (_) => false,
     );
+    _refreshInFlight = future;
+    return future.whenComplete(() {
+      if (identical(_refreshInFlight, future)) _refreshInFlight = null;
+    });
   }
 
   Map<String, dynamic> _decode(http.Response res) {

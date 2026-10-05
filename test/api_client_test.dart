@@ -109,6 +109,67 @@ void main() {
     expect(logouts, 1);
   });
 
+  test('concurrent 401s share one failed refresh and log out once', () async {
+    final mock = MockClient((_) async {
+      return http.Response(jsonEncode({'error': 'expired'}), 401);
+    });
+    var refreshCalls = 0;
+    var logouts = 0;
+    final api = clientFor(
+      mock,
+      refresh: () async {
+        refreshCalls++;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return false;
+      },
+      logout: () async => logouts++,
+    );
+    final outcomes = await Future.wait(
+      List.generate(5, (_) async {
+        try {
+          await api.get('/api/v1/auth/me');
+          return 'ok';
+        } on ApiException catch (e) {
+          return 'error:${e.statusCode}';
+        }
+      }),
+    );
+    expect(refreshCalls, 1);
+    expect(outcomes, everyElement('error:401'));
+    expect(logouts, 1);
+  });
+
+  test('concurrent 401s share one refresh and retry once each', () async {
+    var refreshCalls = 0;
+    var token = 'old-access';
+    var calls = 0;
+    final mock = MockClient((req) async {
+      calls++;
+      if (calls <= 5) {
+        return http.Response(jsonEncode({'error': 'expired'}), 401);
+      }
+      expect(req.headers['Authorization'], 'Bearer new-access');
+      return http.Response(jsonEncode({'ok': true}), 200);
+    });
+    final api = ApiClient(
+      baseUrl: 'https://localhost:8080',
+      client: mock,
+      accessTokenReader: () async => token,
+      refreshTokens: () async {
+        refreshCalls++;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        token = 'new-access';
+        return true;
+      },
+    );
+    final results = await Future.wait(
+      List.generate(5, (_) => api.get('/api/v1/auth/me')),
+    );
+    expect(refreshCalls, 1);
+    expect(results, everyElement({'ok': true}));
+    expect(calls, 10);
+  });
+
   test('429 surfaces rate-limit message', () async {
     final mock = MockClient((_) async {
       return http.Response(
