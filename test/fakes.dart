@@ -12,8 +12,9 @@ class FakeAuthRepository implements AuthRepository {
   String refreshMode;
   String logoutMode = 'ok';
 
-  /// ok | 401 | 401-once | 403 | 500 | 503 | network | session_replaced | hang
-  /// (`hang` never answers, for timeout tests).
+  /// ok | 401 | 401-once | 403 | 408 | 429 | 400 | 404 | 500 | 503 |
+  /// network | session_replaced | hang (`hang` never answers, for timeout
+  /// tests). `429-retry` fails with 429 plus `Retry-After: 7`.
   String meMode = 'ok';
   int meCalls = 0;
 
@@ -145,6 +146,16 @@ class FakeAuthRepository implements AuthRepository {
     if (refreshMode == '503') {
       throw ApiException(statusCode: 503, message: 'service unavailable');
     }
+    if (refreshMode == '408') {
+      throw ApiException(statusCode: 408, message: 'request timeout');
+    }
+    if (refreshMode == '429') {
+      throw ApiException(
+        statusCode: 429,
+        message: 'too many requests',
+        retryAfterSeconds: 9,
+      );
+    }
     if (refreshMode == 'network') {
       throw const SocketException('network unreachable');
     }
@@ -191,6 +202,20 @@ class FakeAuthRepository implements AuthRepository {
       throw ApiException(statusCode: 401, message: 'unauthorized');
     } else if (meMode == '403') {
       throw ApiException(statusCode: 403, message: 'forbidden');
+    } else if (meMode == '408') {
+      throw ApiException(statusCode: 408, message: 'request timeout');
+    } else if (meMode == '429') {
+      throw ApiException(statusCode: 429, message: 'too many requests');
+    } else if (meMode == '429-retry') {
+      throw ApiException(
+        statusCode: 429,
+        message: 'too many requests',
+        retryAfterSeconds: 7,
+      );
+    } else if (meMode == '400') {
+      throw ApiException(statusCode: 400, message: 'bad request');
+    } else if (meMode == '404') {
+      throw ApiException(statusCode: 404, message: 'not found');
     } else if (meMode == '500') {
       throw ApiException(statusCode: 500, message: 'internal server error');
     } else if (meMode == '503') {

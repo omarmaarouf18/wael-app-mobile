@@ -206,6 +206,10 @@ class AuthProvider extends ChangeNotifier {
       }
       if (e.statusCode == 401 || e.statusCode == 403) {
         await _logoutLocal();
+      } else if (_isTransientStatus(e.statusCode)) {
+        // Transient refresh failure (network/timeout/5xx/408/429): keep
+        // the stored tokens and remember Retry-After for the retry button.
+        _retryAfterSeconds = e.retryAfterSeconds;
       }
       return false;
     } catch (_) {
@@ -215,15 +219,26 @@ class AuthProvider extends ChangeNotifier {
 
   /// Splash gate: restores the session when a stored token still validates.
   ///
+  /// `/me` semantics (checked against
+  /// `services/auth-service/internal/handlers/auth.go` `Me`):
+  /// the backend returns 401 for a missing/invalid token and for an
+  /// account that is gone (`u == nil`), 503 on store errors, and never
+  /// 403 or 404. So account-gone surfaces as 401, not 404.
+  ///
   /// - No stored access token: unauthenticated.
   /// - `/me` 200: authenticated.
   /// - `/me` 401: runs the refresh once ([_doRefresh], the same callback
   ///   [ApiClient] uses). Success: `/me` again, stay logged in. Refresh
-  ///   rejected (401/other 4xx): the tokens are already cleared, go to
-  ///   login. Transient refresh failure: keep the tokens, enter offline.
+  ///   rejected (401/403): the tokens are already cleared, go to login.
+  ///   Transient refresh failure: keep the tokens, enter offline.
   /// - `session_replaced`: message, then login (unchanged).
-  /// - Network error, timeout or 5xx: keep the tokens and enter the app
-  ///   offline (cached profile, banner, revalidate on resume/retry).
+  /// - 403 from `/me`: ends the session (logout, tokens cleared).
+  /// - 408, 429, network error, timeout or 5xx: keep the tokens and enter
+  ///   the app offline (cached profile, banner, revalidate on
+  ///   resume/retry). 429/408 honour `Retry-After` for the retry button.
+  /// - Any other 4xx from `/me` (400, 404, 405, 409, ...): the backend
+  ///   never returns these today; a gateway/WAF quirk must not log a
+  ///   student out, so keep the tokens and enter offline.
   Future<void> tryRestore() async {
     final access = await _tokens.readAccessToken();
     if (access == null || access.isEmpty) {
@@ -242,11 +257,12 @@ class AuthProvider extends ChangeNotifier {
         await _restoreAfterRefresh();
         return;
       }
-      if (_isTransientStatus(e.statusCode)) {
-        _enterOffline();
+      if (e.statusCode == 403) {
+        await _logoutLocal();
         return;
       }
-      await _logoutLocal();
+      _enterOffline(e.retryAfterSeconds);
+      return;
     } catch (_) {
       _enterOffline();
     }
@@ -256,6 +272,7 @@ class AuthProvider extends ChangeNotifier {
   /// Retry entry point for the offline banner and app-resume revalidation.
   Future<void> retryRestore() async {
     _offline = false;
+    _retryAfterSeconds = null;
     notifyListeners();
     await tryRestore();
   }
@@ -269,15 +286,23 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// True while the app runs on kept tokens because the last restore could
-  /// not reach the server (network error, timeout or 5xx). The UI shows an
-  /// offline banner with a retry action.
+  /// not reach the server (network error, timeout, 5xx, 408 or 429). The
+  /// UI shows an offline banner with a retry action.
   bool _offline = false;
   bool get isOffline => _offline;
 
-  /// HTTP statuses that mean "the server did not answer": no response at
-  /// all (-1: network error, timeout) or a 5xx. Anything else 4xx answered
-  /// and disagrees with the tokens, so they are dropped.
-  static bool _isTransientStatus(int status) => status <= 0 || status >= 500;
+  /// `Retry-After` seconds from the last transient 429/408 restore failure,
+  /// if the server sent one. The offline banner honours it for the retry
+  /// button. Cleared on the next successful restore, retry or logout.
+  int? _retryAfterSeconds;
+  int? get retryAfterSeconds => _retryAfterSeconds;
+
+  /// HTTP statuses that mean "keep the tokens and enter offline": no
+  /// response at all (-1: network error, timeout), a 5xx, or 408/429.
+  /// A 429/408 from `/auth/me` (shared NAT / carrier-grade NAT hitting the
+  /// gateway rate limit) must never log the student out.
+  static bool _isTransientStatus(int status) =>
+      status <= 0 || status >= 500 || status == 408 || status == 429;
 
   Future<void> _restoreWith(String access) async {
     final account = await _repo.me(accessToken: access);
@@ -285,16 +310,18 @@ class AuthProvider extends ChangeNotifier {
     _currentUser = _withAccount(_currentUser, account);
     _status = AuthStatus.authenticated;
     _offline = false;
+    _retryAfterSeconds = null;
     _isLoading = false;
   }
 
   Future<void> _restoreAfterRefresh() async {
     final ok = await _doRefresh();
     if (!ok) {
-      // Rejected (401/4xx/missing token): _doRefresh already cleared the
+      // Rejected (401/403/missing token): _doRefresh already cleared the
       // tokens (or showed the replaced message). Anything else is a
-      // transient refresh failure: the tokens are still stored, so the
-      // student stays in the app offline instead of being logged out.
+      // transient refresh failure: the tokens are still stored (and
+      // _doRefresh kept Retry-After), so the student stays in the app
+      // offline instead of being logged out.
       final access = await _tokens.readAccessToken();
       if (access == null || access.isEmpty) return;
       _enterOffline();
@@ -312,20 +339,27 @@ class AuthProvider extends ChangeNotifier {
         await handleSessionReplaced(e.message);
         return;
       }
-      if (_isTransientStatus(e.statusCode)) {
-        _enterOffline();
+      // Fresh tokens rejected (401) or forbidden (403): the session is
+      // over. 408/429/5xx/network and any other unexpected 4xx keep the
+      // tokens offline (see tryRestore docs).
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        await _logoutLocal();
         return;
       }
-      await _logoutLocal();
+      _enterOffline(e.retryAfterSeconds);
+      return;
     } catch (_) {
       _enterOffline();
     }
   }
 
-  void _enterOffline() {
+  void _enterOffline([int? retryAfterSeconds]) {
     _offline = true;
     _status = AuthStatus.authenticated;
     _isLoading = false;
+    if (retryAfterSeconds != null) {
+      _retryAfterSeconds = retryAfterSeconds;
+    }
   }
 
   Future<bool> login(
@@ -535,6 +569,8 @@ class AuthProvider extends ChangeNotifier {
     _lastDevOtp = null;
     _pendingVerificationEmail = null;
     _pendingVerificationId = null;
+    _retryAfterSeconds = null;
+    _offline = false;
     _status = AuthStatus.unauthenticated;
     _isLoading = false;
     notifyListeners();

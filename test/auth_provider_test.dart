@@ -196,6 +196,71 @@ void main() {
       expect(auth.isAuthenticated, isFalse);
       expect(await store.readAccessToken(), isNull);
     });
+
+    test('/me 429 enters offline and keeps tokens', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository()..meMode = '429', store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+      expect(await store.readRefreshToken(), 'refresh-1');
+    });
+
+    test('/me 408 enters offline and keeps tokens', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository()..meMode = '408', store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+      expect(await store.readRefreshToken(), 'refresh-1');
+    });
+
+    test(
+      '/me 429 with Retry-After stores the wait for the retry button',
+      () async {
+        final store = MemoryTokenStore();
+        await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+        final auth = providerWith(
+          FakeAuthRepository()..meMode = '429-retry',
+          store,
+        );
+        await auth.tryRestore();
+        expect(auth.isAuthenticated, isTrue);
+        expect(auth.isOffline, isTrue);
+        expect(auth.retryAfterSeconds, 7);
+        expect(await store.readAccessToken(), 'access-1');
+      },
+    );
+
+    test('unexpected 4xx from /me keeps tokens offline (no logout)', () async {
+      for (final mode in ['400', '404']) {
+        final store = MemoryTokenStore();
+        await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+        final auth = providerWith(FakeAuthRepository()..meMode = mode, store);
+        await auth.tryRestore();
+        expect(auth.isAuthenticated, isTrue, reason: 'mode $mode');
+        expect(auth.isOffline, isTrue, reason: 'mode $mode');
+        expect(await store.readAccessToken(), 'access-1', reason: 'mode $mode');
+      }
+    });
+
+    test('second /me 401 after a successful refresh logs out', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final repo = FakeAuthRepository()
+        ..meMode = '401'
+        ..refreshMode = 'ok';
+      final auth = providerWith(repo, store);
+      await auth.tryRestore();
+      // First /me 401 triggers a successful refresh, then the second /me
+      // still 401 (fresh tokens rejected): the session is over.
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+    });
   });
 
   test('error messages never show raw exception text', () async {

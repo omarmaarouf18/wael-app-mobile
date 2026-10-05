@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -79,6 +80,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       (n) => n.unreadCount > 0,
     );
     final offline = context.select<AuthProvider, bool>((a) => a.isOffline);
+    final retryAfter = context.select<AuthProvider, int?>(
+      (a) => a.retryAfterSeconds,
+    );
 
     final screens = [
       HomeScreen(onExploreCourses: () => _onTabSelected(1)),
@@ -108,6 +112,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
           if (offline)
             _OfflineBanner(
               onRetry: () => context.read<AuthProvider>().retryRestore(),
+              retryAfterSeconds: retryAfter,
             ),
           Expanded(
             child: IndexedStack(index: _currentIndex, children: screens),
@@ -129,15 +134,22 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 }
 
 /// Offline strip: the session runs on kept tokens because the server could
-/// not be reached at restore. Retry revalidates the session.
+/// not be reached at restore. Retry revalidates the session. When the
+/// restore failed with 429/408 and the server sent `Retry-After`, the
+/// banner honours it by showing the wait before the retry action.
 class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner({required this.onRetry});
+  const _OfflineBanner({required this.onRetry, this.retryAfterSeconds});
 
   final VoidCallback onRetry;
+  final int? retryAfterSeconds;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final wait = retryAfterSeconds;
+    final message = (wait != null && wait > 0)
+        ? '${l10n.offlineBanner} ${ErrorMessages.tooManyAttempts(l10n.isArabic, wait)}'
+        : l10n.offlineBanner;
     return Semantics(
       liveRegion: true,
       child: Container(
@@ -157,7 +169,7 @@ class _OfflineBanner extends StatelessWidget {
             const SizedBox(width: AppSpacing.spaceSm),
             Expanded(
               child: Text(
-                l10n.offlineBanner,
+                message,
                 style: AppTypography.bodySm(
                   isArabic: l10n.isArabic,
                 ).copyWith(color: AppColors.textPrimary),
