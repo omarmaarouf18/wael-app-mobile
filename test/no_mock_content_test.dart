@@ -89,14 +89,20 @@ void main() {
   test('every committed asset is referenced by lib/ (or listed below)', () {
     // Committed but unreferenced on purpose; see docs/asset-provenance.md.
     // store_icon_512.png is the Play Store listing icon, not used by the app.
+    // Bundled fonts are referenced by pubspec `fonts:`, not lib/; their
+    // OFL licence files ride along in the same directory (not bundled).
     const knownUnreferenced = {'el_metr_landscape.jpg', 'store_icon_512.png'};
     final all = lib.map((f) => f.readAsStringSync()).join('\n');
+    final pubspec = File('pubspec.yaml').readAsStringSync();
     final orphans = <String>[];
     for (final e in Directory('assets').listSync(recursive: true)) {
       if (e is! File) continue;
       final name = e.uri.pathSegments.last;
       if (knownUnreferenced.contains(name)) continue;
-      if (!all.contains(name)) orphans.add(e.path);
+      if (name.startsWith('OFL-') && name.endsWith('.txt')) continue;
+      if (!all.contains(name) && !pubspec.contains(name)) {
+        orphans.add(e.path);
+      }
     }
     expect(orphans, isEmpty);
   });

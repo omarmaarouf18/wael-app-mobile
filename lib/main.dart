@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:nested/nested.dart' show SingleChildWidget;
 import 'package:provider/provider.dart';
 
@@ -43,6 +44,10 @@ import 'debug/diagnostics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Fonts are bundled as assets (see pubspec `fonts:`); never fetch them at
+  // runtime: the first launch offline shows no fallback font and nothing is
+  // sent to Google.
+  GoogleFonts.config.allowRuntimeFetching = false;
   // Saved language (or the device language for fresh installs) loads before
   // the first frame, so the app never flashes the wrong language.
   final tokenStore = SecureTokenStore();
