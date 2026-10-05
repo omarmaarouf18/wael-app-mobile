@@ -254,6 +254,9 @@ class AppLocalizations {
   String get continueSubject => isArabic ? 'متابعة المادة' : 'Continue';
 
   // Empty & Error States
+  String get offlineBanner => isArabic
+      ? 'غير متصل — تظهر البيانات المحفوظة.'
+      : 'Offline — showing saved data.';
   String get noCoursesFound => isArabic
       ? 'لم يتم العثور على دورات مطابقة للبحث.'
       : 'No courses match your query.';

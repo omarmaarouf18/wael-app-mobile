@@ -214,6 +214,16 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Splash gate: restores the session when a stored token still validates.
+  ///
+  /// - No stored access token: unauthenticated.
+  /// - `/me` 200: authenticated.
+  /// - `/me` 401: runs the refresh once ([_doRefresh], the same callback
+  ///   [ApiClient] uses). Success: `/me` again, stay logged in. Refresh
+  ///   rejected (401/other 4xx): the tokens are already cleared, go to
+  ///   login. Transient refresh failure: keep the tokens, enter offline.
+  /// - `session_replaced`: message, then login (unchanged).
+  /// - Network error, timeout or 5xx: keep the tokens and enter the app
+  ///   offline (cached profile, banner, revalidate on resume/retry).
   Future<void> tryRestore() async {
     final access = await _tokens.readAccessToken();
     if (access == null || access.isEmpty) {
@@ -222,15 +232,92 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
     try {
-      final account = await _repo.me(accessToken: access);
-      _account = account;
-      _currentUser = _withAccount(_currentUser, account);
-      _status = AuthStatus.authenticated;
+      await _restoreWith(access);
+    } on ApiException catch (e) {
+      if (e.code == 'session_replaced') {
+        await handleSessionReplaced(e.message);
+        return;
+      }
+      if (e.statusCode == 401) {
+        await _restoreAfterRefresh();
+        return;
+      }
+      if (_isTransientStatus(e.statusCode)) {
+        _enterOffline();
+        return;
+      }
+      await _logoutLocal();
     } catch (_) {
-      await _tokens.clear();
-      _status = AuthStatus.unauthenticated;
+      _enterOffline();
     }
     notifyListeners();
+  }
+
+  /// Retry entry point for the offline banner and app-resume revalidation.
+  Future<void> retryRestore() async {
+    _offline = false;
+    notifyListeners();
+    await tryRestore();
+  }
+
+  /// True while the app runs on kept tokens because the last restore could
+  /// not reach the server (network error, timeout or 5xx). The UI shows an
+  /// offline banner with a retry action.
+  bool _offline = false;
+  bool get isOffline => _offline;
+
+  /// HTTP statuses that mean "the server did not answer": no response at
+  /// all (-1: network error, timeout) or a 5xx. Anything else 4xx answered
+  /// and disagrees with the tokens, so they are dropped.
+  static bool _isTransientStatus(int status) => status <= 0 || status >= 500;
+
+  Future<void> _restoreWith(String access) async {
+    final account = await _repo.me(accessToken: access);
+    _account = account;
+    _currentUser = _withAccount(_currentUser, account);
+    _status = AuthStatus.authenticated;
+    _offline = false;
+    _isLoading = false;
+  }
+
+  Future<void> _restoreAfterRefresh() async {
+    final ok = await _doRefresh();
+    if (!ok) {
+      // Rejected (401/4xx/missing token): _doRefresh already cleared the
+      // tokens (or showed the replaced message). Anything else is a
+      // transient refresh failure: the tokens are still stored, so the
+      // student stays in the app offline instead of being logged out.
+      final access = await _tokens.readAccessToken();
+      if (access == null || access.isEmpty) return;
+      _enterOffline();
+      return;
+    }
+    final access = await _tokens.readAccessToken();
+    if (access == null || access.isEmpty) {
+      await _logoutLocal();
+      return;
+    }
+    try {
+      await _restoreWith(access);
+    } on ApiException catch (e) {
+      if (e.code == 'session_replaced') {
+        await handleSessionReplaced(e.message);
+        return;
+      }
+      if (_isTransientStatus(e.statusCode)) {
+        _enterOffline();
+        return;
+      }
+      await _logoutLocal();
+    } catch (_) {
+      _enterOffline();
+    }
+  }
+
+  void _enterOffline() {
+    _offline = true;
+    _status = AuthStatus.authenticated;
+    _isLoading = false;
   }
 
   Future<bool> login(

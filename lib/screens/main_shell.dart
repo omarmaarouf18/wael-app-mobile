@@ -24,7 +24,7 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   late int _currentIndex;
   NotificationStream? _stream;
 
@@ -32,6 +32,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTab;
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _startLiveStream());
   }
 
@@ -50,8 +51,18 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _stream?.stop();
     super.dispose();
+  }
+
+  /// Revalidate the session when the app comes back while offline.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isOffline) auth.retryRestore();
+    }
   }
 
   void _onTabSelected(int index) {
@@ -67,6 +78,7 @@ class _MainShellState extends State<MainShell> {
     final hasUnread = context.select<NotificationsProvider, bool>(
       (n) => n.unreadCount > 0,
     );
+    final offline = context.select<AuthProvider, bool>((a) => a.isOffline);
 
     final screens = [
       HomeScreen(onExploreCourses: () => _onTabSelected(1)),
@@ -91,7 +103,17 @@ class _MainShellState extends State<MainShell> {
         ),
         const SizedBox(width: AppSpacing.spaceSm),
       ],
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: Column(
+        children: [
+          if (offline)
+            _OfflineBanner(
+              onRetry: () => context.read<AuthProvider>().retryRestore(),
+            ),
+          Expanded(
+            child: IndexedStack(index: _currentIndex, children: screens),
+          ),
+        ],
+      ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
@@ -101,6 +123,59 @@ class _MainShellState extends State<MainShell> {
           AppNavItem(icon: Icons.edit_note, label: l10n.navNotes),
           AppNavItem(icon: Icons.tune, label: l10n.navSettings),
         ],
+      ),
+    );
+  }
+}
+
+/// Offline strip: the session runs on kept tokens because the server could
+/// not be reached at restore. Retry revalidates the session.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        color: AppColors.warningBg,
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: AppSpacing.marginMobile,
+          vertical: AppSpacing.spaceSm,
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 16,
+              color: AppColors.warning,
+            ),
+            const SizedBox(width: AppSpacing.spaceSm),
+            Expanded(
+              child: Text(
+                l10n.offlineBanner,
+                style: AppTypography.bodySm(
+                  isArabic: l10n.isArabic,
+                ).copyWith(color: AppColors.textPrimary),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.spaceSm),
+            GestureDetector(
+              onTap: onRetry,
+              child: Text(
+                l10n.retry,
+                style: AppTypography.bodySm(isArabic: l10n.isArabic).copyWith(
+                  color: AppColors.crimson,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

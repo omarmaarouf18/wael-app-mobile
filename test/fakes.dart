@@ -11,6 +11,10 @@ class FakeAuthRepository implements AuthRepository {
   String refreshMode;
   String logoutMode = 'ok';
 
+  /// ok | 401 | 401-once | 403 | 500 | 503 | network | session_replaced
+  String meMode = 'ok';
+  int meCalls = 0;
+
   /// Identity `me()` returns; empty means the backend sent none (today).
   String meFullName = '';
   String mePhone = '';
@@ -173,6 +177,28 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthAccount> me({required String accessToken}) async {
+    meCalls++;
+    if (meMode == '401-once') {
+      if (meCalls == 1) {
+        throw ApiException(statusCode: 401, message: 'token expired');
+      }
+    } else if (meMode == '401') {
+      throw ApiException(statusCode: 401, message: 'unauthorized');
+    } else if (meMode == '403') {
+      throw ApiException(statusCode: 403, message: 'forbidden');
+    } else if (meMode == '500') {
+      throw ApiException(statusCode: 500, message: 'internal server error');
+    } else if (meMode == '503') {
+      throw ApiException(statusCode: 503, message: 'service unavailable');
+    } else if (meMode == 'network') {
+      throw const SocketException('network unreachable');
+    } else if (meMode == 'session_replaced') {
+      throw ApiException(
+        statusCode: 401,
+        message: "Sorry, this account's usage limit has been exceeded",
+        code: 'session_replaced',
+      );
+    }
     return AuthAccount(
       id: 'id-1',
       email: 'u@e.com',

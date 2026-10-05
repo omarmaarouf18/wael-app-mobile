@@ -82,6 +82,122 @@ void main() {
     expect(auth.isAuthenticated, isTrue);
   });
 
+  group('tryRestore branches', () {
+    test('expired access + valid refresh stays logged in', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final repo = FakeAuthRepository()
+        ..meMode = '401-once'
+        ..refreshMode = 'ok';
+      final auth = providerWith(repo, store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isFalse);
+      expect(repo.meCalls, 2);
+      expect(await store.readAccessToken(), 'access-2');
+      expect(await store.readRefreshToken(), 'refresh-2');
+    });
+
+    test('launching offline keeps tokens and enters the app', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository()..meMode = 'network',
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+      expect(await store.readRefreshToken(), 'refresh-1');
+    });
+
+    test('server error enters offline, retry recovers', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final repo = FakeAuthRepository()..meMode = '500';
+      final auth = providerWith(repo, store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isTrue);
+
+      repo.meMode = 'ok';
+      await auth.retryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isFalse);
+      expect(auth.currentUser.email, 'u@e.com');
+    });
+
+    test('refresh rejected with 401 logs out and clears tokens', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository()
+          ..meMode = '401'
+          ..refreshMode = '401',
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+      expect(await store.readRefreshToken(), isNull);
+    });
+
+    test('refresh rejected with 403 logs out and clears tokens', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository()
+          ..meMode = '401'
+          ..refreshMode = '403',
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+    });
+
+    test('failed refresh on a dead server keeps tokens offline', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository()
+          ..meMode = '401'
+          ..refreshMode = 'network',
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.isOffline, isTrue);
+      expect(await store.readAccessToken(), 'access-1');
+    });
+
+    test('session_replaced from /me shows the message and logs out', () async {
+      // handleSessionReplaced touches the navigator key, which needs the
+      // test binding in a plain unit test.
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(
+        FakeAuthRepository()..meMode = 'session_replaced',
+        store,
+      );
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isFalse);
+      expect(auth.errorMessage, contains('usage limit'));
+      expect(await store.readAccessToken(), isNull);
+    });
+
+    test('other 4xx from /me drops the tokens', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      final auth = providerWith(FakeAuthRepository()..meMode = '403', store);
+      await auth.tryRestore();
+      expect(auth.isAuthenticated, isFalse);
+      expect(await store.readAccessToken(), isNull);
+    });
+  });
+
   test('error messages never show raw exception text', () async {
     final store = MemoryTokenStore();
     final auth = providerWith(
