@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
+import '../core/haptics.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/notifications_provider.dart';
@@ -123,7 +124,18 @@ class NotificationsScreen extends StatelessWidget {
                   return ThemedCard(
                     onTap: () {
                       notifProvider.markAsRead(item.id);
-                      if (item.targetRoute != null) {
+                      AppHaptics.light();
+                      // A notification that refers to a subject opens that
+                      // subject's detail. Without a subject id (the backend
+                      // sends none today) only the notifications list opens:
+                      // a target pointing back at the list itself stays put.
+                      final subjectId = item.subjectId;
+                      if (subjectId != null) {
+                        Navigator.of(
+                          context,
+                        ).pushNamed('/course-details', arguments: subjectId);
+                      } else if (item.targetRoute != null &&
+                          item.targetRoute != '/notifications') {
                         Navigator.of(context).pushNamed(item.targetRoute!);
                       }
                     },

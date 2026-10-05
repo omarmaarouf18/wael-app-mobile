@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/services.dart' show SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/catalog_cache.dart';
@@ -302,6 +303,29 @@ void main() {
       // The detail was refreshed, so the server's pending state is what shows.
       expect(repo.detailCalls, 2);
       expect(p.detailOf('s1').detail!.hasPendingRequest, isTrue);
+    });
+
+    test('a sent request gives light haptic feedback', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final vibrated = <String>[];
+      final binding = TestDefaultBinaryMessengerBinding.instance;
+      binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          vibrated.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final p = AcademyCatalogProvider(repoWith());
+      await p.requestAccess('s1');
+      expect(p.accessOf('s1').status, AccessRequestStatus.sent);
+      expect(vibrated, contains('HapticFeedback.vibrate'));
     });
 
     test('an owned subject creates no request', () async {

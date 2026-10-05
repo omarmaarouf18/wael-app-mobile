@@ -36,6 +36,18 @@ class NotificationModel {
       ? timestampAr!
       : timestamp;
 
+  /// Academy subject this notification refers to (request approved/rejected,
+  /// access granted/revoked), when the payload carries one. The backend does
+  /// not send it today (see Backend follow-ups); the screen then stays on
+  /// the notifications list instead of deep-linking.
+  String? get subjectId {
+    final args = arguments;
+    if (args == null) return null;
+    final id = args['subject_id'];
+    if (id is String && id.isNotEmpty) return id;
+    return null;
+  }
+
   NotificationModel copyWith({
     String? id,
     String? title,

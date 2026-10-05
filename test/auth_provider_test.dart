@@ -1,9 +1,32 @@
+import 'package:flutter/services.dart' show SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/repositories/auth_repository.dart';
 
 import 'fakes.dart';
+
+/// Records platform haptic calls made while [run] executes.
+Future<List<String>> recordHaptics(Future<void> Function() run) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final vibrated = <String>[];
+  final binding = TestDefaultBinaryMessengerBinding.instance;
+  binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      vibrated.add(call.method);
+      return null;
+    },
+  );
+  addTearDown(
+    () => binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  await run();
+  return vibrated;
+}
 
 AuthProvider providerWith(FakeAuthRepository repo, MemoryTokenStore store) {
   return AuthProvider(repository: repo, tokenStore: store);
@@ -261,6 +284,27 @@ void main() {
       expect(auth.isAuthenticated, isFalse);
       expect(await store.readAccessToken(), isNull);
     });
+  });
+
+  test('successful login gives light haptic feedback', () async {
+    final store = MemoryTokenStore();
+    final auth = providerWith(FakeAuthRepository(), store);
+    final vibrated = await recordHaptics(
+      () => auth.login('u@e.com', 'password123'),
+    );
+    expect(auth.isAuthenticated, isTrue);
+    expect(vibrated, contains('HapticFeedback.vibrate'));
+  });
+
+  test('failed login gives no haptic feedback', () async {
+    final store = MemoryTokenStore();
+    final auth = providerWith(
+      FakeAuthRepository(mode: 'wrong-password'),
+      store,
+    );
+    final vibrated = await recordHaptics(() => auth.login('u@e.com', 'wrong'));
+    expect(auth.isAuthenticated, isFalse);
+    expect(vibrated, isEmpty);
   });
 
   test('error messages never show raw exception text', () async {

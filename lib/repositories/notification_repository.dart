@@ -15,6 +15,9 @@ abstract class NotificationRepository {
 
 NotificationModel _fromJson(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString();
+  // The backend sends no subject id today; parsed defensively so subject
+  // notifications deep-link once it does (see Backend follow-ups).
+  final subjectId = json['subject_id']?.toString();
   return NotificationModel(
     id: (json['id'] ?? '').toString(),
     title: title,
@@ -26,6 +29,9 @@ NotificationModel _fromJson(Map<String, dynamic> json) {
     isRead: json['read'] == true,
     type: (json['type'] ?? 'system').toString(),
     targetRoute: (json['target_route'] ?? '/notifications').toString(),
+    arguments: subjectId != null && subjectId.isNotEmpty
+        ? {'subject_id': subjectId}
+        : null,
   );
 }
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' show MockClient;
@@ -152,6 +153,55 @@ void main() {
         await tester.pumpAndSettle();
         expect(provider.unreadCount, 1);
         expect(find.text('route:/settings'), findsOneWidget);
+      });
+
+      testWidgets('tapping a subject notification opens its detail', (
+        tester,
+      ) async {
+        const subjectItem = NotificationModel(
+          id: 'n-subject',
+          title: 'Approved',
+          body: 'Your request was approved.',
+          timestamp: 'now',
+          type: 'course',
+          targetRoute: '/notifications',
+          arguments: {'subject_id': 'subject-1'},
+        );
+        final provider = NotificationsProvider(
+          repository: _ListRepository(const [subjectItem]),
+        );
+        await pump(tester, provider);
+        await tester.tap(find.text('Approved'));
+        await tester.pumpAndSettle();
+        expect(provider.unreadCount, 0);
+        expect(find.text('route:/course-details:subject-1'), findsOneWidget);
+      });
+
+      testWidgets('notification tap gives light haptic feedback', (
+        tester,
+      ) async {
+        final vibrated = <String>[];
+        final binding = TestDefaultBinaryMessengerBinding.instance;
+        binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            vibrated.add(call.method);
+            return null;
+          },
+        );
+        addTearDown(
+          () => binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        final provider = withItems();
+        await pump(tester, provider);
+        await tester.tap(
+          find.text(isArabic ? 'تم التحقق من السداد' : 'Payment verified'),
+        );
+        await tester.pumpAndSettle();
+        expect(vibrated, contains('HapticFeedback.vibrate'));
       });
 
       testWidgets(

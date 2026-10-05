@@ -47,6 +47,39 @@ void main() {
     expect(items.last.isRead, isTrue);
   });
 
+  test('list keeps a subject_id for deep-linking when present', () async {
+    final mock = MockClient((_) async {
+      return http.Response(
+        jsonEncode({
+          'notifications': [
+            {
+              'id': 'n1',
+              'title': 'Approved',
+              'body': 'b',
+              'read': false,
+              'type': 'course',
+              'target_route': '/notifications',
+              'subject_id': 'subject-1',
+            },
+            {
+              'id': 'n2',
+              'title': 'Plain',
+              'body': 'b',
+              'read': false,
+              'type': 'system',
+            },
+          ],
+        }),
+        200,
+      );
+    });
+    final repo = HttpNotificationRepository(apiFor(mock));
+    final items = await repo.list();
+    expect(items.first.subjectId, 'subject-1');
+    // Absent today: no deep link, the list stays open.
+    expect(items.last.subjectId, isNull);
+  });
+
   test('markRead posts the id', () async {
     String? posted;
     final mock = MockClient((req) async {

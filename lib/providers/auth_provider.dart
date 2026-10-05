@@ -6,6 +6,7 @@ import '../core/api_client.dart';
 import '../core/app_config.dart';
 import '../core/device_id.dart';
 import '../core/error_messages.dart';
+import '../core/haptics.dart';
 import '../core/secure_store.dart';
 import '../models/user_profile.dart';
 import '../repositories/auth_repository.dart';
@@ -387,6 +388,7 @@ class AuthProvider extends ChangeNotifier {
       );
       final account = await _repo.me(accessToken: tokens.access);
       await _storeSession(account, tokens);
+      AppHaptics.light();
       return true;
     } on ApiException catch (e) {
       if (e.statusCode == 403) {

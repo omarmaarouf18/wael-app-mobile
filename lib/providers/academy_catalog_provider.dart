@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/api_client.dart';
 import '../core/catalog_cache.dart';
+import '../core/haptics.dart';
 import '../models/academy_catalog.dart';
 import '../repositories/academy_repository.dart';
 
@@ -436,6 +437,7 @@ class AcademyCatalogProvider extends ChangeNotifier {
         status: AccessRequestStatus.sent,
         supportUrl: res.supportUrl,
       );
+      AppHaptics.light();
       notifyListeners();
     } catch (e) {
       if (generation != _generation) return;
