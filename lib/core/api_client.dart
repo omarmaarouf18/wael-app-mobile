@@ -14,6 +14,10 @@ import '../debug/diagnostics_tracker.dart';
 ///   fails (or none is configured) it runs [forceLogout].
 /// - 429 responses surface as [ApiException] with the backend message so the
 ///   UI can show a clear rate-limit/lockout notice.
+/// - Every request has a timeout ([timeout], [playTimeout] for `/play`):
+///   expiry surfaces as `ApiException(statusCode: -1, code: 'timeout')`,
+///   which the UI reads as a retryable network error. SSE keeps its own
+///   reconnect logic and is not timed out here.
 /// - Self-signed gateway certificates are accepted in debug builds only
 ///   ([allowSelfSigned]); release builds always verify.
 class ApiClient {
@@ -26,7 +30,13 @@ class ApiClient {
     this.localeReader,
     this.onSessionReplaced,
     this.allowSelfSigned = false,
+    this.timeout = defaultTimeout,
+    this.playTimeout = defaultPlayTimeout,
   }) : _client = client ?? _defaultClient(allowSelfSigned);
+
+  /// Default per-request budget; the video play call gets longer.
+  static const defaultTimeout = Duration(seconds: 15);
+  static const defaultPlayTimeout = Duration(seconds: 30);
 
   final String baseUrl;
   final http.Client _client;
@@ -36,6 +46,22 @@ class ApiClient {
   final String? Function()? localeReader;
   final Future<void> Function(String? message)? onSessionReplaced;
   final bool allowSelfSigned;
+
+  /// Per-request budgets (overridable in tests so they stay fast).
+  final Duration timeout;
+  final Duration playTimeout;
+
+  /// `/play` (video start) gets the longer budget; everything else the
+  /// default. Only the academy play endpoint ends in `/play`.
+  Duration _timeoutFor(String path) =>
+      path.endsWith('/play') ? playTimeout : timeout;
+
+  /// A timed-out request reads as a retryable client-side failure.
+  ApiException _timedOut() => ApiException(
+    statusCode: -1,
+    message: 'Request timed out',
+    code: 'timeout',
+  );
 
   Future<bool>? _refreshInFlight;
 
@@ -76,12 +102,13 @@ class ApiClient {
     int statusCode = -1;
     try {
       final token = await _token();
-      final res = await _client.get(
-        Uri.parse('$baseUrl$path'),
-        headers: _headers(token),
-      );
+      final res = await _client
+          .get(Uri.parse('$baseUrl$path'), headers: _headers(token))
+          .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
       return await _handle(res, () => get(path));
+    } on TimeoutException {
+      throw _timedOut();
     } catch (e) {
       if (e is ApiException) statusCode = e.statusCode;
       rethrow;
@@ -96,12 +123,13 @@ class ApiClient {
     final sw = Stopwatch()..start();
     int statusCode = -1;
     try {
-      final res = await _client.get(
-        Uri.parse('$baseUrl$path'),
-        headers: _headers(token),
-      );
+      final res = await _client
+          .get(Uri.parse('$baseUrl$path'), headers: _headers(token))
+          .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
       return _decode(res);
+    } on TimeoutException {
+      throw _timedOut();
     } catch (e) {
       if (e is ApiException) statusCode = e.statusCode;
       rethrow;
@@ -120,13 +148,17 @@ class ApiClient {
     final sw = Stopwatch()..start();
     int statusCode = -1;
     try {
-      final res = await _client.post(
-        Uri.parse('$baseUrl$path'),
-        headers: _headers(token),
-        body: body == null ? null : jsonEncode(body),
-      );
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl$path'),
+            headers: _headers(token),
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
       return _decode(res);
+    } on TimeoutException {
+      throw _timedOut();
     } catch (e) {
       if (e is ApiException) statusCode = e.statusCode;
       rethrow;
@@ -144,13 +176,17 @@ class ApiClient {
     int statusCode = -1;
     try {
       final token = await _token();
-      final res = await _client.post(
-        Uri.parse('$baseUrl$path'),
-        headers: _headers(token),
-        body: body == null ? null : jsonEncode(body),
-      );
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl$path'),
+            headers: _headers(token),
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
       return await _handle(res, () => post(path, body: body));
+    } on TimeoutException {
+      throw _timedOut();
     } catch (e) {
       if (e is ApiException) statusCode = e.statusCode;
       rethrow;

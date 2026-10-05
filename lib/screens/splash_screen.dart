@@ -1,3 +1,5 @@
+import 'dart:async' show TimeoutException;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
@@ -7,8 +9,16 @@ import '../widgets/app_shell.dart';
 
 /// Start gate: restores the stored session, then routes to home or login.
 /// Static (no animations) so widget tests can settle.
+///
+/// The restore never hangs the splash: past [restoreBudget] the app enters
+/// offline on the kept tokens (same branch as an unreachable server).
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({
+    super.key,
+    this.restoreBudget = const Duration(seconds: 20),
+  });
+
+  final Duration restoreBudget;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -23,7 +33,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _boot() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    await auth.tryRestore();
+    try {
+      await auth.tryRestore().timeout(widget.restoreBudget);
+    } on TimeoutException {
+      await auth.enterOffline();
+    }
     if (!mounted) return;
     if (auth.isAuthenticated) {
       Navigator.of(context).pushReplacementNamed('/main');

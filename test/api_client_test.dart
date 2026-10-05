@@ -1,8 +1,10 @@
+import 'dart:async' show Completer;
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' show MockClient;
 import 'package:wael_app/core/api_client.dart';
+import 'package:wael_app/core/error_messages.dart';
 
 ApiClient clientFor(
   MockClient mock, {
@@ -191,5 +193,70 @@ void main() {
       expect(e.isRateLimited, isTrue);
       expect(e.message, contains('too many attempts'));
     }
+  });
+
+  group('request timeouts', () {
+    MockClient hangingClient() =>
+        MockClient((_) => Completer<http.Response>().future);
+
+    test('a hanging request fails as ApiException(-1, timeout)', () async {
+      final api = ApiClient(
+        baseUrl: 'https://localhost:8080',
+        client: hangingClient(),
+        timeout: const Duration(milliseconds: 100),
+      );
+      try {
+        await api.get('/api/v1/auth/me');
+        fail('expected ApiException');
+      } on ApiException catch (e) {
+        expect(e.statusCode, -1);
+        expect(e.code, 'timeout');
+        expect(
+          ErrorMessages.forApiError(e, isArabic: false),
+          ErrorMessages.networkError(false),
+        );
+        expect(
+          ErrorMessages.forApiError(e, isArabic: true),
+          ErrorMessages.networkError(true),
+        );
+      }
+    });
+
+    test('/play uses the longer play budget, not the default', () async {
+      final api = ApiClient(
+        baseUrl: 'https://localhost:8080',
+        client: hangingClient(),
+        // If the default applied to /play, this test would take 5 seconds.
+        timeout: const Duration(seconds: 5),
+        playTimeout: const Duration(milliseconds: 100),
+      );
+      final sw = Stopwatch()..start();
+      try {
+        await api.post('/api/v1/academy/videos/v1/play');
+        fail('expected ApiException');
+      } on ApiException catch (e) {
+        expect(e.code, 'timeout');
+      }
+      sw.stop();
+      expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
+    });
+
+    test('other paths use the default budget, not the play one', () async {
+      final api = ApiClient(
+        baseUrl: 'https://localhost:8080',
+        client: hangingClient(),
+        timeout: const Duration(milliseconds: 100),
+        playTimeout: const Duration(seconds: 5),
+      );
+      final sw = Stopwatch()..start();
+      try {
+        await api.get('/api/v1/academy/subjects');
+        fail('expected ApiException');
+      } on ApiException catch (e) {
+        expect(e.code, 'timeout');
+      }
+      sw.stop();
+      expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
+    });
   });
 }

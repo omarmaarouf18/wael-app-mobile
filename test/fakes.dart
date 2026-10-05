@@ -1,3 +1,4 @@
+import 'dart:async' show Completer;
 import 'dart:io' show SocketException;
 import 'package:wael_app/core/api_client.dart' show ApiException;
 import 'package:wael_app/repositories/auth_repository.dart';
@@ -11,7 +12,8 @@ class FakeAuthRepository implements AuthRepository {
   String refreshMode;
   String logoutMode = 'ok';
 
-  /// ok | 401 | 401-once | 403 | 500 | 503 | network | session_replaced
+  /// ok | 401 | 401-once | 403 | 500 | 503 | network | session_replaced | hang
+  /// (`hang` never answers, for timeout tests).
   String meMode = 'ok';
   int meCalls = 0;
 
@@ -178,6 +180,9 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<AuthAccount> me({required String accessToken}) async {
     meCalls++;
+    if (meMode == 'hang') {
+      await Completer<void>().future;
+    }
     if (meMode == '401-once') {
       if (meCalls == 1) {
         throw ApiException(statusCode: 401, message: 'token expired');

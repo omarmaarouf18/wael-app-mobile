@@ -6,6 +6,7 @@ import 'package:wael_app/widgets/app_shell.dart';
 
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
+import 'fakes.dart';
 
 void main() {
   for (final (name, locale, direction) in kLocales) {
@@ -47,6 +48,23 @@ void main() {
           locale,
           const SplashScreen(),
           auth: makeAuth(tokens: tokens),
+        );
+        expect(find.text('route:/main'), findsOneWidget);
+      });
+
+      testWidgets('a hanging restore takes the offline branch to /main', (
+        tester,
+      ) async {
+        final tokens = MemoryTokenStore();
+        await tokens.writeTokens(access: 'access-1', refresh: 'refresh-1');
+        await pumpScreen(
+          tester,
+          locale,
+          const SplashScreen(restoreBudget: Duration(milliseconds: 100)),
+          auth: makeAuth(
+            repository: FakeAuthRepository()..meMode = 'hang',
+            tokens: tokens,
+          ),
         );
         expect(find.text('route:/main'), findsOneWidget);
       });

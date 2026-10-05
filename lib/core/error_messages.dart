@@ -149,6 +149,11 @@ class ErrorMessages {
   /// Resolves an [ApiException] into a sanitized, user-facing error message.
   /// Never displays raw exception text or internal stack traces.
   static String forApiError(ApiException e, {bool isArabic = false}) {
+    // A client-side timeout never reached the server: retryable network
+    // error, never a credentials or server message.
+    if (e.code == 'timeout') {
+      return networkError(isArabic);
+    }
     if (e.code == 'session_replaced') {
       return sessionReplaced(isArabic);
     }

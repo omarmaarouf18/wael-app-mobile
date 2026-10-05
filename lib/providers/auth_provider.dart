@@ -260,6 +260,14 @@ class AuthProvider extends ChangeNotifier {
     await tryRestore();
   }
 
+  /// Splash fallback: `tryRestore` hung past the splash budget. Keeps the
+  /// stored tokens and enters the app offline; the orphaned restore may
+  /// still finish later and settle the session. The splash never hangs.
+  Future<void> enterOffline() async {
+    _enterOffline();
+    notifyListeners();
+  }
+
   /// True while the app runs on kept tokens because the last restore could
   /// not reach the server (network error, timeout or 5xx). The UI shows an
   /// offline banner with a retry action.
