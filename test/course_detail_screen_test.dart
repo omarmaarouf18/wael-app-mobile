@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import 'package:wael_app/content/director_profile.dart';
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/error_messages.dart';
+import 'package:wael_app/core/external_links.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
@@ -556,8 +558,9 @@ void main() {
         expect(find.text(l10n.contactSupportToActivate), findsOneWidget);
         expect(find.text(l10n.sendingAccessRequest), findsNothing);
         expect(find.text(l10n.accessActive), findsNothing);
-        // Nothing to press to ask again: no button on this state.
-        expect(find.byType(PrimaryButton), findsNothing);
+        // The WhatsApp chat is the primary action; copy stays secondary.
+        expect(find.text(l10n.openWhatsApp), findsOneWidget);
+        expect(copyButton(), findsOneWidget);
         expect(find.byType(ThemedErrorBanner), findsNothing);
       });
 
@@ -758,6 +761,129 @@ void main() {
       });
     }
   }
+
+  /// Records `Clipboard.setData` texts; the platform clipboard is mocked
+  /// like the existing copy test does.
+  Future<List<String>> captureClipboard(WidgetTester tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return copied;
+  }
+
+  group('support WhatsApp', () {
+    Future<(AcademyCatalogProvider, FakeAcademyRepository)> pumpWithLauncher(
+      WidgetTester tester,
+      LaunchUrl launcher, {
+      bool launcherSucceeds = true,
+      Locale locale = const Locale('en'),
+    }) async {
+      final repository = fake();
+      repository.detailJson['d1'] = detailBody(
+        price: 1800,
+        videos: [videoBody('v1', 1)],
+        files: const [],
+      );
+      final catalog = AcademyCatalogProvider(repository);
+      await pumpScreen(
+        tester,
+        locale,
+        CourseDetailScreen(courseId: 'd1', launchUrl: launcher),
+        auth: await signedInAuth(),
+        extraProviders: [
+          ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
+          ChangeNotifierProvider(
+            create: (_) => HomeProvider(director: testDirector),
+          ),
+        ],
+        size: const Size(390, 2400),
+      );
+      return (catalog, repository);
+    }
+
+    testWidgets('opens the chat with the encoded prefilled message', (
+      tester,
+    ) async {
+      final launched = <Uri>[];
+      LaunchMode? usedMode;
+      await pumpWithLauncher(tester, (
+        url, {
+        mode = LaunchMode.platformDefault,
+      }) async {
+        launched.add(url);
+        usedMode = mode;
+        return true;
+      });
+      final l10n = l10nFor(const Locale('en'));
+      expect(find.text(l10n.requestPending), findsOneWidget);
+      expect(find.text(l10n.openWhatsApp), findsOneWidget);
+
+      await tester.tap(find.text(l10n.openWhatsApp));
+      await tester.pumpAndSettle();
+
+      expect(launched, hasLength(1));
+      expect(usedMode, LaunchMode.externalApplication);
+      final uri = launched.single;
+      expect(uri.scheme, 'https');
+      expect(uri.host, 'wa.me');
+      expect(
+        uri.queryParameters['text'],
+        l10n.whatsappRequestText('Civil Law', 'u@e.com'),
+      );
+    });
+
+    testWidgets('a failed launch falls back to copying the link', (
+      tester,
+    ) async {
+      final copied = await captureClipboard(tester);
+      var launcherCalls = 0;
+      await pumpWithLauncher(tester, (
+        url, {
+        mode = LaunchMode.platformDefault,
+      }) async {
+        launcherCalls++;
+        return false;
+      });
+      final l10n = l10nFor(const Locale('en'));
+      final openButton = find.text(l10n.openWhatsApp);
+      await tester.ensureVisible(openButton);
+      await tester.tap(openButton);
+      await tester.pump();
+
+      expect(launcherCalls, 1);
+      expect(copied, ['https://wa.me/201000000000']);
+      expect(find.text(l10n.supportLinkCopied), findsOneWidget);
+    });
+
+    testWidgets('copy stays a secondary action', (tester) async {
+      final copied = await captureClipboard(tester);
+      await pumpWithLauncher(
+        tester,
+        (url, {mode = LaunchMode.platformDefault}) async => true,
+      );
+      final l10n = l10nFor(const Locale('en'));
+      final copyButton = find.text(l10n.copySupportLink);
+      await tester.ensureVisible(copyButton);
+      await tester.tap(copyButton);
+      await tester.pump();
+
+      expect(copied, ['https://wa.me/201000000000']);
+      expect(find.text(l10n.supportLinkCopied), findsOneWidget);
+    });
+  });
 }
 
 String upper(String s) => s.toUpperCase();

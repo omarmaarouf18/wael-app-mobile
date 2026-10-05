@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../../core/constants.dart';
 import '../../core/error_messages.dart';
+import '../../core/external_links.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/academy_catalog.dart';
 import '../../providers/academy_catalog_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../widgets/director_strip.dart';
 import '../../widgets/owned_subject_tile.dart';
+import '../../widgets/primary_button.dart';
 import '../../widgets/secondary_button.dart';
 import '../../widgets/subject_hero_banner.dart';
 import '../../widgets/themed_error_banner.dart';
@@ -20,9 +24,16 @@ import 'subject_content_section.dart';
 /// access (owned, request pending, sending or failed), "add to notes" and the
 /// content.
 class CourseDetailBody extends StatelessWidget {
-  const CourseDetailBody({super.key, required this.detail});
+  const CourseDetailBody({
+    super.key,
+    required this.detail,
+    this.launchUrl = defaultLaunchUrl,
+  });
 
   final AcademySubjectDetail detail;
+
+  /// Opens the support WhatsApp chat. Injected in widget tests.
+  final LaunchUrl launchUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +95,7 @@ class CourseDetailBody extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.spaceLg),
-                _Access(detail: detail),
+                _Access(detail: detail, launchUrl: launchUrl),
                 const SizedBox(height: AppSpacing.spaceXl),
                 SubjectContentSection(detail: detail),
                 const SizedBox(height: AppSpacing.space2xl),
@@ -102,9 +113,10 @@ class CourseDetailBody extends StatelessWidget {
 /// so there is no button to ask for access: the student sees the request being
 /// sent, then pending, or the reason it could not be sent.
 class _Access extends StatelessWidget {
-  const _Access({required this.detail});
+  const _Access({required this.detail, required this.launchUrl});
 
   final AcademySubjectDetail detail;
+  final LaunchUrl launchUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +163,11 @@ class _Access extends StatelessWidget {
     final access = catalog.accessOf(detail.id);
 
     if (detail.hasPendingRequest || access.status == AccessRequestStatus.sent) {
-      return _PendingRequest(supportUrl: access.supportUrl);
+      return _PendingRequest(
+        supportUrl: access.supportUrl,
+        subjectTitle: detail.title.resolve(isArabic),
+        launchUrl: launchUrl,
+      );
     }
     if (access.status == AccessRequestStatus.failed) {
       return ThemedErrorBanner(
@@ -197,19 +213,44 @@ class _Access extends StatelessWidget {
   }
 }
 
-/// A request is pending: nothing to press, the admin decides. [supportUrl] is
-/// the WhatsApp link from this session's request response; the detail does not
-/// carry it, so after a restart the panel shows the message alone.
+/// A request is pending: the admin decides. The primary action opens the
+/// support WhatsApp chat ([supportUrl] is the link from this session's
+/// request response; the detail does not carry it, so after a restart the
+/// panel shows the copy action only when the provider still holds the URL).
+/// When opening fails, the copy-to-clipboard behaviour is the fallback.
 class _PendingRequest extends StatelessWidget {
-  const _PendingRequest({this.supportUrl});
+  const _PendingRequest({
+    this.supportUrl,
+    required this.subjectTitle,
+    this.launchUrl = defaultLaunchUrl,
+  });
 
   final String? supportUrl;
+  final String subjectTitle;
+  final LaunchUrl launchUrl;
+
+  Future<void> _copyLink(BuildContext context, String url) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = AppLocalizations.of(context).supportLinkCopied;
+    await Clipboard.setData(ClipboardData(text: url));
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isArabic = l10n.isArabic;
     final url = supportUrl;
+    final email = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).currentUser.email;
+    final openUri = whatsappUrl(
+      supportUrl: url,
+      messageText: l10n.whatsappRequestText(subjectTitle, email),
+    );
 
     return ThemedPanel(
       tone: PanelTone.raised,
@@ -244,6 +285,31 @@ class _PendingRequest extends StatelessWidget {
           ),
           if (url != null) ...[
             const SizedBox(height: AppSpacing.spaceMd),
+            if (openUri != null)
+              PrimaryButton(
+                text: l10n.openWhatsApp,
+                height: 44,
+                leadingIcon: const Icon(
+                  Icons.chat_outlined,
+                  size: 16,
+                  color: AppColors.textPrimary,
+                ),
+                onPressed: () async {
+                  bool opened = false;
+                  try {
+                    opened = await launchUrl(
+                      openUri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } catch (_) {
+                    opened = false;
+                  }
+                  if (!opened && context.mounted) {
+                    await _copyLink(context, url);
+                  }
+                },
+              ),
+            if (openUri != null) const SizedBox(height: AppSpacing.spaceSm),
             SecondaryButton(
               text: l10n.copySupportLink,
               height: 44,
@@ -252,14 +318,7 @@ class _PendingRequest extends StatelessWidget {
                 size: 16,
                 color: AppColors.textPrimary,
               ),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final message = l10n.supportLinkCopied;
-                await Clipboard.setData(ClipboardData(text: url));
-                messenger
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(SnackBar(content: Text(message)));
-              },
+              onPressed: () => _copyLink(context, url),
             ),
           ],
         ],

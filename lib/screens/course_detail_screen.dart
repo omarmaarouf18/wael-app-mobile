@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
+import '../core/external_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
@@ -17,7 +18,14 @@ import 'course_detail/course_detail_body.dart';
 class CourseDetailScreen extends StatefulWidget {
   final String courseId;
 
-  const CourseDetailScreen({super.key, required this.courseId});
+  /// Opens the support WhatsApp chat. Injected in widget tests.
+  final LaunchUrl launchUrl;
+
+  const CourseDetailScreen({
+    super.key,
+    required this.courseId,
+    this.launchUrl = defaultLaunchUrl,
+  });
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -43,7 +51,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final Widget body;
     if (state.detail != null && state.status != LoadStatus.error) {
       // Ready, or refreshing: keep showing what we have.
-      body = CourseDetailBody(detail: state.detail!);
+      body = CourseDetailBody(
+        detail: state.detail!,
+        launchUrl: widget.launchUrl,
+      );
     } else if (state.status == LoadStatus.error) {
       body = Center(
         child: Padding(

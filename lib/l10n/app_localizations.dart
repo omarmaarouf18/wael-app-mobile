@@ -211,6 +211,12 @@ class AppLocalizations {
       isArabic ? 'نسخ رابط الدعم' : 'Copy support link';
   String get supportLinkCopied =>
       isArabic ? 'تم نسخ رابط الدعم' : 'Support link copied';
+  String get openWhatsApp => isArabic ? 'تواصل على واتساب' : 'Chat on WhatsApp';
+
+  /// Prefilled WhatsApp message for an access request: subject + student.
+  String whatsappRequestText(String subject, String email) => isArabic
+      ? 'مرحبًا، أرغب في تفعيل مادة "$subject" (البريد: $email).'
+      : 'Hello, I would like to activate the subject "$subject" (email: $email).';
   String itemsCount(int n) => isArabic ? '$n محتوى' : '$n Items';
   String videoNumber(int n) => isArabic ? 'الفيديو $n' : 'Video $n';
   String get videoLocked => isArabic ? 'مقفل' : 'Locked';
