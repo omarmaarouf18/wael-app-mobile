@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/academy_catalog_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../repositories/notification_repository.dart';
@@ -57,12 +58,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Revalidate the session when the app comes back while offline.
+  /// Revalidate the session and the catalog when the app comes back while
+  /// offline: the global banner clears on app resume (or the next successful
+  /// request).
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isOffline) auth.retryRestore();
+      try {
+        final catalog = Provider.of<AcademyCatalogProvider>(
+          context,
+          listen: false,
+        );
+        if (catalog.isStale) catalog.reload();
+      } catch (_) {
+        // Catalog provider absent in some widget tests; auth retry is enough.
+      }
     }
   }
 
@@ -83,6 +95,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final retryAfter = context.select<AuthProvider, int?>(
       (a) => a.retryAfterSeconds,
     );
+    // Global connectivity banner: auth restore offline or catalog showing
+    // cached data after a failed reload. Clears on the next successful
+    // request (retry below) or app resume.
+    final catalogStale = context.select<AcademyCatalogProvider, bool>(
+      (c) => c.isStale,
+    );
+    final showOffline = offline || catalogStale;
 
     final screens = [
       HomeScreen(onExploreCourses: () => _onTabSelected(1)),
@@ -109,9 +128,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       ],
       body: Column(
         children: [
-          if (offline)
+          if (showOffline)
             _OfflineBanner(
-              onRetry: () => context.read<AuthProvider>().retryRestore(),
+              onRetry: () {
+                context.read<AuthProvider>().retryRestore();
+                try {
+                  context.read<AcademyCatalogProvider>().reload();
+                } catch (_) {}
+              },
               retryAfterSeconds: retryAfter,
             ),
           Expanded(

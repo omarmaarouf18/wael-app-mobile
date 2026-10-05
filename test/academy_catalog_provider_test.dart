@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/api_client.dart';
+import 'package:wael_app/core/catalog_cache.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
@@ -147,8 +148,11 @@ void main() {
       await p.reload();
       repo.subjectsError = ApiException(statusCode: 500, message: 'x');
       await p.reload();
-      expect(p.status, LoadStatus.error);
-      expect(p.hasError, isTrue);
+      // Transient failure with in-memory data: cached data stays with the
+      // offline banner (stale), never a half-loaded error view.
+      expect(p.status, LoadStatus.ready);
+      expect(p.isStale, isTrue);
+      expect(p.subjectsOf('bachelor-y1'), hasLength(2));
     });
   });
 
@@ -578,6 +582,76 @@ void main() {
       await loading;
       expect(p.status, LoadStatus.idle);
       expect(p.studyTypes, isEmpty);
+    });
+  });
+
+  group('offline cache', () {
+    test('successful reload writes the cache', () async {
+      final cache = MemoryCatalogCache();
+      final p = AcademyCatalogProvider(fake(), cache: cache);
+      await p.reload();
+      expect(p.status, LoadStatus.ready);
+      expect(p.isStale, isFalse);
+      final snapshot = await cache.read();
+      expect(snapshot, isNotNull);
+      expect(snapshot!.subjectsJson['bachelor-y1'], hasLength(2));
+    });
+
+    test('offline launch shows cached catalog + banner', () async {
+      final cache = MemoryCatalogCache();
+      final warm = AcademyCatalogProvider(fake(), cache: cache);
+      await warm.reload();
+      expect(warm.status, LoadStatus.ready);
+
+      // Cold start with no network: the cache is shown with the banner.
+      final repo = fake()
+        ..levelsError = const SocketException('network unreachable');
+      final cold = AcademyCatalogProvider(repo, cache: cache);
+      await cold.reload();
+      expect(cold.status, LoadStatus.ready);
+      expect(cold.isStale, isTrue);
+      expect(cold.subjectsOf('bachelor-y1'), hasLength(2));
+      expect(cold.ownedSubjects, hasLength(1));
+    });
+
+    test('banner clears after the next successful request', () async {
+      final cache = MemoryCatalogCache();
+      final repo = fake();
+      final p = AcademyCatalogProvider(repo, cache: cache);
+      await p.reload();
+      expect(p.isStale, isFalse);
+
+      repo.levelsError = const SocketException('network unreachable');
+      await p.reload();
+      expect(p.status, LoadStatus.ready);
+      expect(p.isStale, isTrue);
+
+      repo.levelsError = null;
+      await p.reload();
+      expect(p.status, LoadStatus.ready);
+      expect(p.isStale, isFalse);
+    });
+
+    test('refresh failure with in-memory data keeps it stale', () async {
+      final repo = fake();
+      final p = AcademyCatalogProvider(repo);
+      await p.reload();
+      expect(p.isStale, isFalse);
+      // Simulate a timeout on refresh: data stays, banner appears.
+      repo.levelsError = const SocketException('network unreachable');
+      await p.reload();
+      expect(p.status, LoadStatus.ready);
+      expect(p.isStale, isTrue);
+      expect(p.subjectsOf('bachelor-y1'), isNotEmpty);
+    });
+
+    test('no cache and offline is an error with retry', () async {
+      final repo = fake()
+        ..levelsError = const SocketException('network unreachable');
+      final p = AcademyCatalogProvider(repo, cache: MemoryCatalogCache());
+      await p.reload();
+      expect(p.status, LoadStatus.error);
+      expect(p.isStale, isFalse);
     });
   });
 }

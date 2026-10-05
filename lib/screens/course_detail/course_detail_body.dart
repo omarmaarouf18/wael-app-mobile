@@ -43,7 +43,9 @@ class CourseDetailBody extends StatelessWidget {
     final description = detail.description.resolve(isArabic);
 
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

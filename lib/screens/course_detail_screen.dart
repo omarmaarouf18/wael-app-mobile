@@ -7,7 +7,8 @@ import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
+import '../widgets/themed_panel.dart';
+import '../widgets/themed_skeleton.dart';
 import 'course_detail/course_detail_body.dart';
 
 /// Subject detail, read from `GET /academy/subjects/{id}`; opening a locked
@@ -48,29 +49,62 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final catalog = Provider.of<AcademyCatalogProvider>(context);
     final state = catalog.detailOf(widget.courseId);
 
+    Future<void> onRefresh() =>
+        catalog.openSubject(widget.courseId, force: true);
+
     final Widget body;
     if (state.detail != null && state.status != LoadStatus.error) {
-      // Ready, or refreshing: keep showing what we have.
-      body = CourseDetailBody(
-        detail: state.detail!,
-        launchUrl: widget.launchUrl,
+      // Ready, or refreshing: keep showing what we have. The body scrolls
+      // itself with always-scrollable physics so pull-to-refresh works.
+      body = RefreshIndicator(
+        color: AppColors.crimson,
+        backgroundColor: AppColors.surfaceElevated,
+        onRefresh: onRefresh,
+        child: CourseDetailBody(
+          detail: state.detail!,
+          launchUrl: widget.launchUrl,
+        ),
       );
     } else if (state.status == LoadStatus.error) {
-      body = Center(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-          child: ThemedErrorBanner(
-            message: ErrorMessages.forCatalog(
-              state.error!,
-              isArabic: l10n.isArabic,
+      body = RefreshIndicator(
+        color: AppColors.crimson,
+        backgroundColor: AppColors.surfaceElevated,
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+              child: ThemedErrorBanner(
+                message: ErrorMessages.forCatalog(
+                  state.error!,
+                  isArabic: l10n.isArabic,
+                ),
+                onRetry: () =>
+                    catalog.openSubject(widget.courseId, force: true),
+              ),
             ),
-            onRetry: () => catalog.openSubject(widget.courseId, force: true),
           ),
         ),
       );
     } else {
-      // Idle (first frame) and loading look the same.
-      body = const ThemedLoadingIndicator();
+      // Idle (first frame) and loading show skeleton placeholders.
+      body = RefreshIndicator(
+        color: AppColors.crimson,
+        backgroundColor: AppColors.surfaceElevated,
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Padding(
+            padding: EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+            child: ThemedPanel(child: ThemedSkeletonList()),
+          ),
+        ),
+      );
     }
 
     return AppShell(

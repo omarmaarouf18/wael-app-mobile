@@ -265,8 +265,8 @@ class AppLocalizations {
 
   // Empty & Error States
   String get offlineBanner => isArabic
-      ? 'غير متصل — تظهر البيانات المحفوظة.'
-      : 'Offline — showing saved data.';
+      ? 'أنت غير متصل – بيانات آخر تحديث'
+      : 'You are offline – showing last saved data.';
   String get noCoursesFound => isArabic
       ? 'لم يتم العثور على دورات مطابقة للبحث.'
       : 'No courses match your query.';

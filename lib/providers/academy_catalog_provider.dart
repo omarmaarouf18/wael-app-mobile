@@ -1,6 +1,9 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart';
 
 import '../core/api_client.dart';
+import '../core/catalog_cache.dart';
 import '../models/academy_catalog.dart';
 import '../repositories/academy_repository.dart';
 
@@ -57,9 +60,22 @@ class AccessRequestState {
 /// one retry. The server is the only source of what a student owns: nothing
 /// here ever sets `owned` or a video id.
 class AcademyCatalogProvider extends ChangeNotifier {
-  AcademyCatalogProvider(this._repository);
+  AcademyCatalogProvider(this._repository, {CatalogCache? cache})
+    // ignore: prefer_initializing_formals, public `cache:` maps to `_cache`
+    : _cache = cache;
 
   final AcademyRepository _repository;
+  final CatalogCache? _cache;
+
+  /// True while the shown catalog comes from the on-device cache because the
+  /// last reload could not reach the server. The UI shows the offline banner
+  /// with a retry; the next successful reload clears it.
+  bool _isStale = false;
+  bool get isStale => _isStale;
+
+  /// When the shown data was last fetched from the server (or cache write).
+  DateTime? _lastUpdated;
+  DateTime? get lastUpdated => _lastUpdated;
 
   /// Server cap per page (`limit` is clamped to 100).
   static const _pageSize = 100;
@@ -182,9 +198,16 @@ class AcademyCatalogProvider extends ChangeNotifier {
   }
 
   /// (Re)loads levels and the subjects of every level.
+  ///
+  /// Success replaces the on-device cache. On a network error, timeout or
+  /// transient server failure, the last cached catalog (levels, subjects and
+  /// their `owned`/`access_expires_at` entitlements) is shown with the
+  /// offline banner ([isStale]) instead of an error; anything else, or no
+  /// cache, is an error with retry.
   Future<void> reload() async {
     if (_status == LoadStatus.loading) return;
     final generation = _generation;
+    final hadData = _levels != null;
     _status = LoadStatus.loading;
     _error = null;
     notifyListeners();
@@ -200,13 +223,94 @@ class AcademyCatalogProvider extends ChangeNotifier {
           levels.levels[i].key: lists[i],
       };
       _status = LoadStatus.ready;
+      _isStale = false;
+      _lastUpdated = DateTime.now().toUtc();
       _settleSelection();
+      unawaited(_writeCache(levels, _subjectsByLevel));
     } catch (e) {
       if (generation != _generation) return;
+      // Keep in-memory data when a refresh fails transiently.
+      if (hadData && _isOfflineError(e)) {
+        _status = LoadStatus.ready;
+        _isStale = true;
+        notifyListeners();
+        return;
+      }
+      // Cold start offline: fall back to the on-device cache.
+      if (!hadData && _isOfflineError(e)) {
+        final cached = await _cache?.read();
+        if (cached != null && generation == _generation) {
+          final restored = _restoreSnapshot(cached);
+          if (restored) {
+            _status = LoadStatus.ready;
+            _isStale = true;
+            _error = null;
+            _settleSelection();
+            notifyListeners();
+            return;
+          }
+        }
+      }
       _error = e;
       _status = LoadStatus.error;
     }
     notifyListeners();
+  }
+
+  /// Network error, timeout or transient server failure: the cached data may
+  /// be shown instead of an error. Auth failures (401/403/404) and other 4xx
+  /// are answered errors, never a reason to serve stale data.
+  static bool _isOfflineError(Object e) {
+    if (e is ApiException) {
+      if (e.code == 'timeout') return true;
+      final s = e.statusCode;
+      return s <= 0 || s >= 500 || s == 408 || s == 429;
+    }
+    // SocketException, TimeoutException, client errors: offline.
+    return true;
+  }
+
+  Future<void> _writeCache(
+    AcademyLevels levels,
+    Map<String, List<AcademySubject>> subjects,
+  ) async {
+    final cache = _cache;
+    if (cache == null) return;
+    try {
+      await cache.write(
+        CatalogSnapshot(
+          levelsJson: levels.toJson(),
+          subjectsJson: {
+            for (final e in subjects.entries)
+              e.key: [for (final s in e.value) s.toJson()],
+          },
+          savedAt: DateTime.now().toUtc(),
+        ),
+      );
+      _lastUpdated ??= DateTime.now().toUtc();
+    } catch (_) {
+      // A failed cache write must never fail the reload.
+    }
+  }
+
+  /// Populates [_levels] and [_subjectsByLevel] from a cache snapshot.
+  /// Returns false when the snapshot does not parse.
+  bool _restoreSnapshot(CatalogSnapshot snapshot) {
+    try {
+      final levels = AcademyLevels.fromJson(snapshot.levelsJson);
+      final subjects = <String, List<AcademySubject>>{};
+      snapshot.subjectsJson.forEach((key, items) {
+        subjects[key] = [
+          for (final item in items) AcademySubject.fromJson(item),
+        ];
+      });
+      _levels = levels;
+      _subjectsByLevel = subjects;
+      _lastUpdated = snapshot.savedAt;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<List<AcademySubject>> _allSubjects(String levelKey) async {
@@ -355,11 +459,15 @@ class AcademyCatalogProvider extends ChangeNotifier {
   bool get isPristine => _status == LoadStatus.idle && _details.isEmpty;
 
   /// Drops everything (logout): ownership and detail are per student.
-  /// Pass `notify: false` when called while a build is in progress.
+  /// Pass `notify: false` when called while a build is in progress. The
+  /// on-device cache is cleared too so the next student never sees this
+  /// one's entitlements.
   void reset({bool notify = true}) {
     _generation++;
     _status = LoadStatus.idle;
     _error = null;
+    _isStale = false;
+    _lastUpdated = null;
     _levels = null;
     _subjectsByLevel = const {};
     _studyTypeKey = null;
@@ -367,6 +475,8 @@ class AcademyCatalogProvider extends ChangeNotifier {
     _searchQuery = '';
     _details.clear();
     _access.clear();
+    final cache = _cache;
+    if (cache != null) unawaited(cache.clear());
     if (notify) notifyListeners();
   }
 }

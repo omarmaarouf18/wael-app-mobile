@@ -26,7 +26,7 @@ import 'package:wael_app/widgets/selectable_chip.dart';
 import 'package:wael_app/widgets/subject_hero_banner.dart';
 import 'package:wael_app/widgets/themed_empty_state.dart';
 import 'package:wael_app/widgets/themed_error_banner.dart';
-import 'package:wael_app/widgets/themed_loading_indicator.dart';
+import 'package:wael_app/widgets/themed_skeleton.dart';
 
 import 'academy_fakes.dart';
 import 'director_fixture.dart';
@@ -173,11 +173,11 @@ void main() {
         final gate = Completer<void>();
         final repo = fake()..detailGate = gate.future;
         await pump(tester, lockedBody, repo: repo, settle: false);
-        expect(find.byType(ThemedLoadingIndicator), findsOneWidget);
+        expect(find.byType(ThemedSkeletonList), findsOneWidget);
         expect(find.byType(ThemedErrorBanner), findsNothing);
         gate.complete();
         await tester.pumpAndSettle();
-        expect(find.byType(ThemedLoadingIndicator), findsNothing);
+        expect(find.byType(ThemedSkeletonList), findsNothing);
         expect(find.byType(CatalogVideoTile), findsNWidgets(2));
       });
 

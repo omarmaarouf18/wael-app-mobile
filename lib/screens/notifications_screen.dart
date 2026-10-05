@@ -53,137 +53,157 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ),
       ],
-      body: items.isEmpty
-          ? (notifProvider.hasError
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.all(
-                        AppSpacing.marginMobile,
+      body: RefreshIndicator(
+        color: AppColors.crimson,
+        backgroundColor: AppColors.surfaceElevated,
+        onRefresh: notifProvider.loadRemote,
+        child: items.isEmpty
+            ? (notifProvider.hasError
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
                       ),
-                      child: ThemedErrorBanner(
-                        message: ErrorMessages.notificationLoadFailed(
-                          l10n.isArabic,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.all(
+                            AppSpacing.marginMobile,
+                          ),
+                          child: ThemedErrorBanner(
+                            message: ErrorMessages.notificationLoadFailed(
+                              l10n.isArabic,
+                            ),
+                            onRetry: notifProvider.loadRemote,
+                          ),
                         ),
-                        onRetry: notifProvider.loadRemote,
                       ),
+                    )
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      child: ThemedEmptyState(
+                        icon: Icons.notifications_off_outlined,
+                        message: l10n.noNotifications,
+                      ),
+                    ))
+            : ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.marginMobile,
+                  vertical: AppSpacing.spaceMd,
+                ),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                itemCount: items.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.spaceSm),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+
+                  IconData iconData;
+                  Color iconColor;
+                  switch (item.type) {
+                    case 'payment':
+                      iconData = Icons.verified;
+                      iconColor = AppColors.statusApproved;
+                      break;
+                    case 'event':
+                      iconData = Icons.event;
+                      iconColor = AppColors.crimson;
+                      break;
+                    case 'course':
+                      iconData = Icons.auto_stories;
+                      iconColor = AppColors.textPrimary;
+                      break;
+                    default:
+                      iconData = Icons.info_outline;
+                      iconColor = AppColors.textSecondary;
+                  }
+
+                  return ThemedCard(
+                    onTap: () {
+                      notifProvider.markAsRead(item.id);
+                      if (item.targetRoute != null) {
+                        Navigator.of(context).pushNamed(item.targetRoute!);
+                      }
+                    },
+                    backgroundColor: item.isRead
+                        ? AppColors.surfaceLayer1
+                        : AppColors.surfaceElevated,
+                    borderColor: item.isRead
+                        ? AppColors.subtleHairline
+                        : AppColors.crimson.withValues(alpha: 0.35),
+                    padding: const EdgeInsetsDirectional.all(
+                      AppSpacing.spaceMd,
                     ),
-                  )
-                : ThemedEmptyState(
-                    icon: Icons.notifications_off_outlined,
-                    message: l10n.noNotifications,
-                  ))
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.marginMobile,
-                vertical: AppSpacing.spaceMd,
-              ),
-              physics: const BouncingScrollPhysics(),
-              itemCount: items.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: AppSpacing.spaceSm),
-              itemBuilder: (context, index) {
-                final item = items[index];
-
-                IconData iconData;
-                Color iconColor;
-                switch (item.type) {
-                  case 'payment':
-                    iconData = Icons.verified;
-                    iconColor = AppColors.statusApproved;
-                    break;
-                  case 'event':
-                    iconData = Icons.event;
-                    iconColor = AppColors.crimson;
-                    break;
-                  case 'course':
-                    iconData = Icons.auto_stories;
-                    iconColor = AppColors.textPrimary;
-                    break;
-                  default:
-                    iconData = Icons.info_outline;
-                    iconColor = AppColors.textSecondary;
-                }
-
-                return ThemedCard(
-                  onTap: () {
-                    notifProvider.markAsRead(item.id);
-                    if (item.targetRoute != null) {
-                      Navigator.of(context).pushNamed(item.targetRoute!);
-                    }
-                  },
-                  backgroundColor: item.isRead
-                      ? AppColors.surfaceLayer1
-                      : AppColors.surfaceElevated,
-                  borderColor: item.isRead
-                      ? AppColors.subtleHairline
-                      : AppColors.crimson.withValues(alpha: 0.35),
-                  padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Unread pip
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(top: 6),
-                        child: StatusDot(
-                          color: item.isRead
-                              ? AppColors.subtleHairline
-                              : AppColors.crimson,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Unread pip
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(top: 6),
+                          child: StatusDot(
+                            color: item.isRead
+                                ? AppColors.subtleHairline
+                                : AppColors.crimson,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.spaceMd),
+                        const SizedBox(width: AppSpacing.spaceMd),
 
-                      // Icon
-                      IconTile(icon: iconData, iconColor: iconColor),
-                      const SizedBox(width: AppSpacing.spaceMd),
+                        // Icon
+                        IconTile(icon: iconData, iconColor: iconColor),
+                        const SizedBox(width: AppSpacing.spaceMd),
 
-                      // Content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    item.localizedTitle(l10n.isArabic),
-                                    style:
-                                        AppTypography.bodySm(
-                                          isArabic: l10n.isArabic,
-                                        ).copyWith(
-                                          fontWeight: item.isRead
-                                              ? FontWeight.w600
-                                              : FontWeight.w700,
-                                          color: item.isRead
-                                              ? AppColors.textSecondary
-                                              : AppColors.textPrimary,
-                                        ),
+                        // Content
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.localizedTitle(l10n.isArabic),
+                                      style:
+                                          AppTypography.bodySm(
+                                            isArabic: l10n.isArabic,
+                                          ).copyWith(
+                                            fontWeight: item.isRead
+                                                ? FontWeight.w600
+                                                : FontWeight.w700,
+                                            color: item.isRead
+                                                ? AppColors.textSecondary
+                                                : AppColors.textPrimary,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  item.localizedTimestamp(l10n.isArabic),
-                                  style: AppTypography.caption(
-                                    isArabic: l10n.isArabic,
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    item.localizedTimestamp(l10n.isArabic),
+                                    style: AppTypography.caption(
+                                      isArabic: l10n.isArabic,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.localizedBody(l10n.isArabic),
-                              style: AppTypography.bodyXs(
-                                isArabic: l10n.isArabic,
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                item.localizedBody(l10n.isArabic),
+                                style: AppTypography.bodyXs(
+                                  isArabic: l10n.isArabic,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
     );
   }
 }

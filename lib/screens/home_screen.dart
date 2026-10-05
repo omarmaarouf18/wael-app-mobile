@@ -13,8 +13,8 @@ import '../widgets/owned_subject_tile.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_skeleton.dart';
 
 /// Home tab: hero, the academy director (only when the owner has filled in
 /// `lib/content/director_profile.dart`), and the subjects the student owns.
@@ -126,8 +126,8 @@ class _MyCourses extends StatelessWidget {
         onRetry: catalog.reload,
       );
     } else if (!catalog.isReady) {
-      // Idle (first frame) and loading look the same.
-      content = const ThemedPanel(child: ThemedLoadingIndicator());
+      // Idle (first frame) and loading show skeleton placeholders.
+      content = const ThemedPanel(child: ThemedSkeletonList());
     } else {
       final owned = catalog.ownedSubjects;
       content = owned.isEmpty

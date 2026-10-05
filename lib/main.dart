@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
 
+import 'core/catalog_cache.dart';
 import 'core/constants.dart';
 import 'core/error_messages.dart';
 import 'core/secure_store.dart';
@@ -114,6 +115,7 @@ class WaelApp extends StatelessWidget {
             ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
               create: (ctx) => AcademyCatalogProvider(
                 HttpAcademyRepository(ctx.read<AuthProvider>().authedApi),
+                cache: SecureCatalogCache(),
               ),
               // Catalog data (owned flags, details) is per student: drop it
               // when the session ends.

@@ -71,6 +71,8 @@ class LocalizedText {
     return LocalizedText(ar: _string(m, 'ar'), en: _string(m, 'en'));
   }
 
+  Map<String, dynamic> toJson() => {'ar': ar, 'en': en};
+
   String resolve(bool isArabic) {
     if (isArabic) return ar.isNotEmpty ? ar : en;
     return en.isNotEmpty ? en : ar;
@@ -100,6 +102,13 @@ class AcademyLevel {
       position: _int(m, 'position'),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'study_type': studyType,
+    'title': title.toJson(),
+    'position': position,
+  };
 }
 
 /// A study type with its levels: `StudyTypeDTO`.
@@ -122,6 +131,12 @@ class AcademyStudyType {
       levels: _list(m, 'levels').map(AcademyLevel.fromJson).toList(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'title': title.toJson(),
+    'levels': [for (final l in levels) l.toJson()],
+  };
 }
 
 /// `GET /academy/levels`: `LevelsResponseDTO`. `study_types` is omitted by the
@@ -141,6 +156,11 @@ class AcademyLevels {
           : const [],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'levels': [for (final l in levels) l.toJson()],
+    'study_types': [for (final t in studyTypes) t.toJson()],
+  };
 }
 
 /// `SubjectCountsDTO`.
@@ -161,6 +181,12 @@ class SubjectCounts {
       notes: _int(m, 'notes'),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'videos': videos,
+    'books': books,
+    'notes': notes,
+  };
 }
 
 /// A subject as listed by `GET /academy/subjects`: `SubjectListItemDTO`.
@@ -217,6 +243,22 @@ class AcademySubject {
           ? m['currency'] as String
           : null,
       accessExpiresAt = _parseExpiry(m['access_expires_at']);
+
+  /// Serializes the list shape the server sends (used for the offline cache;
+  /// entitlements ride along as `owned` + `access_expires_at`).
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'level_key': levelKey,
+    'term': term,
+    'title': title.toJson(),
+    'description': description.toJson(),
+    'owned': owned,
+    'counts': counts.toJson(),
+    if (price != null) 'price': price,
+    if (currency != null) 'currency': currency,
+    'access_expires_at':
+        accessExpiresAt?.toUtc().toIso8601String() ?? '0001-01-01T00:00:00Z',
+  };
 }
 
 /// `SubjectListResponseDTO`.

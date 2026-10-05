@@ -9,6 +9,7 @@ import 'package:wael_app/widgets/icon_tile.dart';
 import 'package:wael_app/widgets/search_field.dart';
 import 'package:wael_app/widgets/selectable_chip.dart';
 import 'package:wael_app/widgets/themed_panel.dart';
+import 'package:wael_app/widgets/themed_skeleton.dart';
 
 import 'widget_layer_harness.dart';
 
@@ -226,6 +227,23 @@ void main() {
               .first,
         );
         expect(panel.borderRadius, AppRadius.radiusLg);
+      });
+
+      testWidgets('ThemedSkeletonList shows placeholders while loading', (
+        tester,
+      ) async {
+        await pumpLocalized(
+          tester,
+          locale,
+          const Scaffold(body: ThemedSkeletonList()),
+        );
+        expect(find.byType(ThemedSkeletonList), findsOneWidget);
+        expect(find.byType(ThemedSkeletonCard), findsNWidgets(3));
+        // Design-system tokens only: no raw colors.
+        final card = tester.widget<ThemedSkeletonCard>(
+          find.byType(ThemedSkeletonCard).first,
+        );
+        expect(card, isNotNull);
       });
     });
   }

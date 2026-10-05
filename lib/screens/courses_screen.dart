@@ -14,8 +14,8 @@ import '../widgets/search_field.dart';
 import '../widgets/selectable_chip.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
-import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_skeleton.dart';
 
 /// Icon for a study type key; unknown keys get the generic school icon.
 IconData studyTypeIcon(String key) => switch (key) {
@@ -119,11 +119,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
       ];
     }
     if (!catalog.isReady) {
-      // Idle (first frame) and loading look the same.
+      // Idle (first frame) and loading show skeleton placeholders.
       return const [
         Padding(
           padding: EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-          child: ThemedPanel(child: ThemedLoadingIndicator()),
+          child: ThemedPanel(child: ThemedSkeletonList()),
         ),
       ];
     }
