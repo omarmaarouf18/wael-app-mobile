@@ -59,7 +59,12 @@ Linux desktop (`-d linux`) is the lowest-friction target on this machine:
 ### Video player (Android)
 Lesson videos play in a protected embedded player (`youtube_player_iframe`): Android
 `FLAG_SECURE` (no screenshots or recording), a moving name-and-phone watermark, no
-YouTube links or controls, and a server check on open and on every resume. What it
+YouTube links or controls, and a server check on open and on every resume. The
+YouTube logo is left visible (it cannot be tapped); a mask over the top edge hides
+YouTube's title bar while the video is not playing and for 4 seconds after every
+start, resume, replay and seek, and it is taller in full screen (owner decision
+2026-10-05). Whether that fully covers the title bar on a real phone is still the
+owner's device check. What it
 hides, what it cannot, the backend contract and the manual device checks are in
 `docs/frontend/VIDEO_PLAYER.md`. Release builds declare `INTERNET` in the main
 manifest.
@@ -84,10 +89,36 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
 
 - Tokens live in `flutter_secure_storage` (never plain files or
   shared preferences).
-- The client injects the JWT, refreshes once on 401, then logs out.
+- The client injects the JWT and refreshes once on a 401 (concurrent requests wait for
+  that one refresh and share its result; a failed refresh logs out once).
+- Restoring the session at start-up (`AuthProvider.tryRestore`) keeps the student logged
+  in: a 401 from `/me` runs the refresh once; only a rejected refresh (401/403), a 403
+  from `/me`, or `session_replaced` ends the session. A network error, timeout, 5xx, 408
+  or 429 keeps the tokens and opens the app offline with a banner and a retry button
+  (`Retry-After` is honoured on 408/429).
 - HTTP 429 (gateway rate limit / auth lockout) shows the backend message.
 - Backend dev OTPs render in debug builds only (`kDebugMode`), never in
   release builds.
+
+## App behavior
+
+- **Language**: the app starts in the device language (Arabic for `ar`, English for `en`,
+  Arabic for any other); a language the student chose is saved in secure storage, wins on
+  later launches and is loaded before the first frame (`lib/providers/locale_provider.dart`).
+- **Timeouts**: 15 seconds per request, 30 seconds for the video `/play` call; a timeout is
+  a network error. The splash screen waits at most 20 seconds for the session restore and
+  then continues offline with the stored tokens.
+- **Offline cache**: the catalog (levels, subjects, owned subjects and entitlements) is
+  kept as small JSON in secure storage (`lib/core/catalog_cache.dart`), replaced on every
+  refresh and cleared on logout. When the network fails the last copy is shown with the
+  offline banner and a retry action; a global banner shows while the session or the
+  catalog is offline and clears on the next success or when the app resumes. Lists show
+  skeleton placeholders while loading, and subject detail, notifications and the e-book
+  tab support pull-to-refresh (a no-op on the e-book tab until SPEC Phase 5).
+- **Fonts**: Cairo, Syne and Plus Jakarta Sans are bundled assets (`assets/fonts/`);
+  `GoogleFonts.config.allowRuntimeFetching` is `false`, so no font is downloaded.
+- **Support links**: a pending request opens its `https://wa.me` support chat with
+  `url_launcher` (only `wa.me` links are ever opened; copy is the fallback).
 
 ## Quality gates
 
