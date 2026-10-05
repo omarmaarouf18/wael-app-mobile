@@ -173,10 +173,11 @@ class AppLocalizations {
 
   // Lesson Screen
 
-  // E-Books & Notes
-  String get materialsEmpty => isArabic
-      ? 'ستظهر المذكرات والمواد الدراسية هنا.'
-      : 'Study materials and notes will appear here.';
+  // E-Books & Notes (coming soon until Phase 5; no payment wording)
+  String get comingSoon => isArabic ? 'قريباً' : 'Coming soon';
+  String get ebookComingSoon => isArabic
+      ? 'المذكرات والمواد الدراسية ستظهر هنا قريباً.'
+      : 'Study notes and materials will appear here soon.';
 
   // Settings Screen
   String get languageAndSubtitles =>

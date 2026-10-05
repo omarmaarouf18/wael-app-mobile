@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/app_badge.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_empty_state.dart';
 
-/// Study materials and notes tab.
+/// Study materials and notes tab (kept until Phase 5).
 ///
-/// There is no library API behind this tab yet, so it shows an honest empty
-/// state and nothing else. A subject's own books and notes are on the subject
-/// screen (`GET /academy/subjects/{id}` files). Pull-to-refresh is wired
-/// (a no-op until Phase 5) so the gesture exists everywhere the plan asks.
+/// The tab label and the screen title share one name ([navNotes]). There is
+/// no library API behind this tab yet, so it shows a clear "coming soon"
+/// state explaining that study materials will appear here. No payment
+/// wording. A subject's own books and notes are on the subject screen
+/// (`GET /academy/subjects/{id}` files). Pull-to-refresh is wired (a no-op
+/// until Phase 5) so the gesture exists everywhere the plan asks.
 class EbookScreen extends StatelessWidget {
   const EbookScreen({super.key});
 
@@ -31,9 +34,16 @@ class EbookScreen extends StatelessWidget {
           child: SizedBox(
             height:
                 MediaQuery.sizeOf(context).height - AppSpacing.headerHeight * 3,
-            child: ThemedEmptyState(
-              icon: Icons.menu_book_outlined,
-              message: l10n.materialsEmpty,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppBadge(label: l10n.comingSoon, accent: true, pill: true),
+                ThemedEmptyState(
+                  icon: Icons.menu_book_outlined,
+                  title: l10n.navNotes,
+                  message: l10n.ebookComingSoon,
+                ),
+              ],
             ),
           ),
         ),
