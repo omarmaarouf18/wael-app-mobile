@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 
 import 'core/constants.dart';
+import 'core/secure_store.dart';
 import 'l10n/app_localizations.dart';
 
 // Providers
@@ -38,7 +39,12 @@ import 'debug/diagnostics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const WaelApp());
+  // Saved language (or the device language for fresh installs) loads before
+  // the first frame, so the app never flashes the wrong language.
+  final tokenStore = SecureTokenStore();
+  final localeProvider = LocaleProvider(store: tokenStore);
+  await localeProvider.load();
+  runApp(WaelApp(localeProvider: localeProvider, tokenStore: tokenStore));
 }
 
 /// Named routes. Debug-only routes (`/debug`, `/components`) are registered
@@ -66,11 +72,25 @@ Map<String, WidgetBuilder> buildAppRoutes({
 }
 
 class WaelApp extends StatelessWidget {
-  const WaelApp({super.key, this.providersOverride});
+  const WaelApp({
+    super.key,
+    this.providersOverride,
+    this.localeProvider,
+    this.tokenStore,
+  });
 
   /// Injected providers for widget tests (fake auth repository, memory
   /// token store). Production passes nothing and gets the real bindings.
   final List<SingleChildWidget>? providersOverride;
+
+  /// Preloaded before the first frame in `main()` (production) so the saved
+  /// or device language is already in place. Tests pass nothing and get a
+  /// default provider.
+  final LocaleProvider? localeProvider;
+
+  /// Shared with [localeProvider] in production so the language choice and
+  /// the session use one store. Tests pass nothing.
+  final TokenStore? tokenStore;
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +98,12 @@ class WaelApp extends StatelessWidget {
       providers:
           providersOverride ??
           [
-            ChangeNotifierProvider(create: (_) => LocaleProvider()),
+            ChangeNotifierProvider.value(
+              value: localeProvider ?? LocaleProvider(),
+            ),
             ChangeNotifierProvider(
               create: (ctx) => AuthProvider(
+                tokenStore: tokenStore,
                 localeReader: () =>
                     ctx.read<LocaleProvider>().locale.languageCode,
               ),

@@ -5,12 +5,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Token persistence contract. Production binding is [SecureTokenStore]
 /// (platform keychain/keystore). Tests inject [MemoryTokenStore].
+///
+/// The saved app language also lives here (`readLocale`/`writeLocale`):
+/// no new dependency, and sign-out ([clear]) never resets the language.
 abstract class TokenStore {
   Future<String?> readAccessToken();
   Future<String?> readRefreshToken();
   Future<void> writeTokens({required String access, required String refresh});
   Future<String?> readDeviceId();
   Future<void> writeDeviceId(String deviceId);
+  Future<String?> readLocale();
+  Future<void> writeLocale(String languageCode);
   Future<void> clear();
 }
 
@@ -24,6 +29,7 @@ class SecureTokenStore implements TokenStore {
   static const _accessKey = 'wael_access_token';
   static const _refreshKey = 'wael_refresh_token';
   static const _deviceIdKey = 'wael_device_id';
+  static const _localeKey = 'wael_locale';
 
   final FlutterSecureStorage _storage;
   final Map<String, String> _fallback = {};
@@ -73,6 +79,18 @@ class SecureTokenStore implements TokenStore {
   }
 
   @override
+  Future<String?> readLocale() =>
+      _guard(() => _storage.read(key: _localeKey), _fallback[_localeKey]);
+
+  @override
+  Future<void> writeLocale(String languageCode) {
+    _fallback[_localeKey] = languageCode;
+    return _guard(() async {
+      await _storage.write(key: _localeKey, value: languageCode);
+    }, null);
+  }
+
+  @override
   Future<void> clear() {
     _fallback.remove(_accessKey);
     _fallback.remove(_refreshKey);
@@ -88,6 +106,7 @@ class MemoryTokenStore implements TokenStore {
   String? _access;
   String? _refresh;
   String? _deviceId;
+  String? _locale;
 
   @override
   Future<String?> readAccessToken() async => _access;
@@ -110,6 +129,14 @@ class MemoryTokenStore implements TokenStore {
   @override
   Future<void> writeDeviceId(String deviceId) async {
     _deviceId = deviceId;
+  }
+
+  @override
+  Future<String?> readLocale() async => _locale;
+
+  @override
+  Future<void> writeLocale(String languageCode) async {
+    _locale = languageCode;
   }
 
   @override
