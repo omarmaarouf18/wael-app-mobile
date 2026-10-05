@@ -14,8 +14,9 @@ import '../widgets/themed_section_header.dart';
 
 /// Settings tab. Everything here is real: the profile header is the signed-in
 /// account (`GET /auth/me`: name, email, phone), the language switch changes
-/// the app language, and sign out ends the session. There are no toggles,
-/// because no setting is stored anywhere yet.
+/// the app language (the choice is saved on the device and wins over the
+/// device language), and sign out ends the session after a confirmation.
+/// There are no other toggles.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
