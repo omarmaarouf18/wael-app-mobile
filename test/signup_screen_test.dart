@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
+import 'package:wael_app/core/app_config_cache.dart';
 import 'package:wael_app/core/error_messages.dart';
+import 'package:wael_app/models/app_config.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/screens/signup_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/primary_button.dart';
@@ -289,6 +293,40 @@ void main() {
         await tester.tap(find.text(l10n.retry));
         await tester.pumpAndSettle();
         expect(repo.signupCalls, 2);
+      });
+
+      testWidgets('terms link opens the server terms URL', (tester) async {
+        final launched = <Uri>[];
+        final appConfig = AppConfigProvider(cache: MemoryAppConfigCache())
+          ..setForTesting(
+            const AppConfigData(
+              termsUrl: 'https://legal.elmetracademy.app/terms',
+            ),
+          );
+        await pumpScreen(
+          tester,
+          locale,
+          SignupScreen(
+            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
+              launched.add(uri);
+              return true;
+            },
+          ),
+          appConfig: appConfig,
+          size: _tall,
+        );
+        await tester.tap(find.text(l10n.readTerms));
+        await tester.pump();
+        expect(launched.map((u) => u.toString()), [
+          'https://legal.elmetracademy.app/terms',
+        ]);
+      });
+
+      testWidgets('terms link hides until the server configures it', (
+        tester,
+      ) async {
+        await pump(tester);
+        expect(find.text(l10n.readTerms), findsNothing);
       });
     });
   }

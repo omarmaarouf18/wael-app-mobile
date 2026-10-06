@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
 
+import 'core/api_client.dart';
+import 'core/app_config.dart';
+import 'core/app_config_cache.dart';
 import 'core/catalog_cache.dart';
 import 'core/constants.dart';
 import 'core/error_messages.dart';
@@ -17,6 +20,7 @@ import 'widgets/themed_error_banner.dart';
 
 // Providers
 import 'providers/locale_provider.dart';
+import 'providers/app_config_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'providers/home_provider.dart';
@@ -131,6 +135,19 @@ class WaelApp extends StatelessWidget {
                 localeReader: () =>
                     ctx.read<LocaleProvider>().locale.languageCode,
               ),
+            ),
+            // Public app configuration (support link, terms/privacy URLs,
+            // update metadata). Loads once, fails soft, never blocks.
+            ChangeNotifierProvider(
+              create: (_) => AppConfigProvider(
+                repository: HttpAcademyRepository(
+                  ApiClient(
+                    baseUrl: AppConfig.baseUrl,
+                    allowSelfSigned: AppConfig.allowSelfSigned,
+                  ),
+                ),
+                cache: SecureAppConfigCache(),
+              )..load(),
             ),
             ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
               create: (ctx) => AcademyCatalogProvider(

@@ -5,6 +5,7 @@ import 'package:wael_app/main.dart';
 import 'package:wael_app/widgets/app_bottom_nav.dart';
 import 'package:wael_app/widgets/framed_poster_card.dart';
 import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
@@ -27,6 +28,7 @@ Widget testApp() {
       ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
       ChangeNotifierProvider(create: (_) => HomeProvider()),
       ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+      ChangeNotifierProvider(create: (_) => AppConfigProvider()),
     ],
   );
 }

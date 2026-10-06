@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../core/error_messages.dart';
+import '../core/external_links.dart';
 import '../core/field_validators.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/password_rules.dart';
@@ -12,7 +15,10 @@ import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_text_field.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+  const SignupScreen({super.key, this.launchUrl});
+
+  /// Opens the terms link under the consent checkbox. Tests inject a mock.
+  final LaunchUrl? launchUrl;
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -299,6 +305,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ],
                     ),
+                    // Read the terms the checkbox agrees to (same server
+                    // URL as the settings tile; hidden until configured).
+                    _TermsLink(launchUrl: widget.launchUrl),
                     const SizedBox(height: AppSpacing.spaceLg),
 
                     // Server / validation error
@@ -360,6 +369,46 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Link under the consent checkbox to the terms page (CONTENT-GAPS row 26).
+/// Hidden until the server configures the URL. Tests inject [launchUrl].
+class _TermsLink extends StatelessWidget {
+  const _TermsLink({this.launchUrl});
+
+  final LaunchUrl? launchUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final termsUrl = context.watch<AppConfigProvider>().termsUrl;
+    if (termsUrl.isEmpty) return const SizedBox.shrink();
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton(
+        onPressed: () async {
+          final uri = Uri.tryParse(termsUrl);
+          if (uri == null || uri.scheme != 'https') return;
+          await (launchUrl ?? defaultLaunchUrl)(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+        },
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: AppSpacing.spaceXs,
+          ),
+        ),
+        child: Text(
+          l10n.readTerms,
+          style: AppTypography.bodySm(
+            isArabic: l10n.isArabic,
+          ).copyWith(color: AppColors.textPrimary),
         ),
       ),
     );

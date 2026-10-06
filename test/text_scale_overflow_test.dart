@@ -8,6 +8,7 @@ import 'package:wael_app/l10n/app_localizations.dart';
 import 'package:wael_app/models/notification_model.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -48,6 +49,7 @@ Future<void> pumpScaled(
       providers: <SingleChildWidget>[
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider.value(value: auth ?? makeAuth()),
+        ChangeNotifierProvider.value(value: AppConfigProvider()),
         ChangeNotifierProvider.value(
           value: notifications ?? NotificationsProvider(),
         ),

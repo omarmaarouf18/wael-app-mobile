@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -23,6 +25,7 @@ Future<void> pumpGolden(
   Widget screen, {
   AuthProvider? auth,
   AcademyCatalogProvider? catalog,
+  AppConfigProvider? appConfig,
 }) async {
   const size = Size(390, 844);
   tester.view.physicalSize = size;
@@ -39,6 +42,16 @@ Future<void> pumpGolden(
           value: catalog ?? AcademyCatalogProvider(fake()),
         ),
         ChangeNotifierProvider.value(value: HomeProvider()),
+        ChangeNotifierProvider.value(
+          value:
+              appConfig ??
+              (AppConfigProvider()..setForTesting(
+                const AppConfigData(
+                  termsUrl: 'https://legal.elmetracademy.app/terms',
+                  privacyUrl: 'https://legal.elmetracademy.app/privacy',
+                ),
+              )),
+        ),
       ],
       child: localizedApp(const Locale('en'), screen),
     ),

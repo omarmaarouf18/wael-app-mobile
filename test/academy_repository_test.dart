@@ -1,3 +1,4 @@
+import 'dart:async' show Completer;
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -787,6 +788,75 @@ void main() {
       );
       expect(fake.refreshCalls, 0);
       expect(fake.logoutCalls, 0);
+    });
+  });
+
+  group('appConfig', () {
+    const body = {
+      'support_whatsapp_url': 'https://wa.me/201000000000',
+      'terms_url': 'https://legal.elmetracademy.app/terms',
+      'privacy_url': 'https://legal.elmetracademy.app/privacy',
+      'min_version': '1.2.0',
+      'latest_version': '1.4.0',
+      'update_url': 'https://example.com/app',
+    };
+
+    test('parses the public config', () async {
+      final config = await _Fake((_) => _json(body)).repo.appConfig();
+      expect(config.supportWhatsappUrl, 'https://wa.me/201000000000');
+      expect(config.termsUrl, 'https://legal.elmetracademy.app/terms');
+      expect(config.privacyUrl, 'https://legal.elmetracademy.app/privacy');
+      expect(config.minVersion, '1.2.0');
+      expect(config.latestVersion, '1.4.0');
+      expect(config.updateUrl, 'https://example.com/app');
+    });
+
+    test('500 surfaces without refresh or logout', () async {
+      final fake = _Fake(
+        (_) => _json({'error': 'service temporarily unavailable'}, 500),
+      );
+      await expectLater(
+        fake.repo.appConfig(),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 500)),
+      );
+      expect(fake.refreshCalls, 0);
+      expect(fake.logoutCalls, 0);
+    });
+
+    test('a hanging call fails as ApiException(-1, timeout)', () async {
+      final api = ApiClient(
+        baseUrl: 'https://gateway.test',
+        client: MockClient((_) => Completer<http.Response>().future),
+        timeout: const Duration(milliseconds: 100),
+      );
+      final repo = HttpAcademyRepository(api);
+      try {
+        await repo.appConfig();
+        fail('expected ApiException');
+      } on ApiException catch (e) {
+        expect(e.statusCode, -1);
+        expect(e.code, 'timeout');
+      }
+    });
+
+    test('malformed JSON answers empty config, never throws', () async {
+      final fake = _Fake((_) => http.Response('not json{{{', 200));
+      // The client decodes leniently; the model drops what it cannot read.
+      final config = await fake.repo.appConfig();
+      expect(config.termsUrl, isEmpty);
+    });
+
+    test('non-https URLs are dropped', () async {
+      final config = await _Fake(
+        (_) => _json({
+          'support_whatsapp_url': 'http://wa.me/201000000000',
+          'terms_url': 'ftp://example.com/terms',
+          'privacy_url': 'https://legal.elmetracademy.app/privacy',
+        }),
+      ).repo.appConfig();
+      expect(config.supportWhatsappUrl, isEmpty);
+      expect(config.termsUrl, isEmpty);
+      expect(config.privacyUrl, 'https://legal.elmetracademy.app/privacy');
     });
   });
 }

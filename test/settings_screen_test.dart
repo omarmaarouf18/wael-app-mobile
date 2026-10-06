@@ -76,15 +76,19 @@ void main() {
         );
       });
 
-      testWidgets('shows only the kept tiles: language and sign out', (
+      testWidgets('shows the kept sections: language, about, sign out', (
         tester,
       ) async {
         await pump(tester);
-        // One section (language), one tile, one button (sign out).
-        expect(find.byType(ThemedSectionHeader), findsOneWidget);
+        // Two sections (language, about), the sign-out button, and the
+        // version row. Terms/privacy tiles hide until configured.
+        expect(find.byType(ThemedSectionHeader), findsNWidgets(2));
         expect(find.text(upper(l10n.languageAndPreferences)), findsOneWidget);
-        expect(find.byType(IconTile), findsOneWidget);
         expect(find.text(l10n.languageAndSubtitles), findsOneWidget);
+        expect(find.text(upper(l10n.aboutApp)), findsOneWidget);
+        expect(find.text(l10n.appVersion), findsOneWidget);
+        expect(find.text(l10n.termsTitle), findsNothing);
+        expect(find.text(l10n.privacyTitle), findsNothing);
         expect(find.byType(OutlinedButton), findsOneWidget);
         expect(find.text(upper(l10n.signOut)), findsOneWidget);
 
@@ -140,7 +144,7 @@ void main() {
         expect(
           startsBefore(
             tester,
-            find.byType(IconTile),
+            find.byType(IconTile).first,
             find.text(l10n.languageAndSubtitles),
             direction,
           ),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
+import '../core/external_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
@@ -15,16 +18,22 @@ import '../widgets/themed_section_header.dart';
 /// Settings tab. Everything here is real: the profile header is the signed-in
 /// account (`GET /auth/me`: name, email, phone), the language switch changes
 /// the app language (the choice is saved on the device and wins over the
-/// device language), and sign out ends the session after a confirmation.
+/// device language), the about section opens the server-provided terms and
+/// privacy pages, and sign out ends the session after a confirmation.
 /// There are no other toggles.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.launchUrl});
+
+  /// Opens external links (terms, privacy). Tests inject a mock.
+  final LaunchUrl? launchUrl;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final auth = Provider.of<AuthProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
+    final appConfig = Provider.of<AppConfigProvider>(context);
+    final launch = launchUrl ?? defaultLaunchUrl;
     final user = auth.currentUser;
     final name = user.fullName.trim();
     final phone = user.phone.trim();
@@ -113,7 +122,46 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 3. SIGN OUT BUTTON (with confirmation)
+            // 3. ABOUT (server-provided pages + installed version)
+            ThemedSectionHeader(title: l10n.aboutApp),
+            ThemedCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (appConfig.termsUrl.isNotEmpty)
+                    _buildNavigationTile(
+                      icon: Icons.description_outlined,
+                      title: l10n.termsTitle,
+                      onTap: () =>
+                          _openExternal(context, launch, appConfig.termsUrl),
+                    ),
+                  if (appConfig.privacyUrl.isNotEmpty)
+                    _buildNavigationTile(
+                      icon: Icons.privacy_tip_outlined,
+                      title: l10n.privacyTitle,
+                      onTap: () =>
+                          _openExternal(context, launch, appConfig.privacyUrl),
+                    ),
+                  FutureBuilder<String>(
+                    future: appConfig.currentVersion(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.data ?? '';
+                      return _buildNavigationTile(
+                        icon: Icons.info_outline,
+                        title: l10n.appVersion,
+                        trailingText: version.isNotEmpty ? version : null,
+                        chevron: false,
+                        onTap: () {},
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spaceXl),
+
+            // 4. SIGN OUT BUTTON (with confirmation)
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -170,6 +218,7 @@ class SettingsScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     String? trailingText,
+    bool chevron = true,
     required VoidCallback onTap,
   }) {
     return Material(
@@ -215,11 +264,12 @@ class SettingsScreen extends StatelessWidget {
                     Text(trailingText, style: AppTypography.bodyXs()),
                     const SizedBox(width: 4),
                   ],
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: AppColors.textTertiary,
-                  ),
+                  if (chevron)
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: AppColors.textTertiary,
+                    ),
                 ],
               ),
             ],
@@ -227,5 +277,17 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Opens an `https` page from the server config in the browser. Anything
+  /// else is never opened.
+  Future<void> _openExternal(
+    BuildContext context,
+    LaunchUrl launch,
+    String url,
+  ) async {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
+    await launch(uri, mode: LaunchMode.externalApplication);
   }
 }

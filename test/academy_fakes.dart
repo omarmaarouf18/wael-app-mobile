@@ -1,5 +1,6 @@
 import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/models/academy_catalog.dart';
+import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/repositories/academy_repository.dart';
 
 AcademyLevel level(String key, String type, int pos) => AcademyLevel(
@@ -159,6 +160,22 @@ class FakeAcademyRepository implements AcademyRepository {
       createdAt: DateTime.utc(2026, 10, 2),
       supportUrl: accessSupportUrl,
     );
+  }
+
+  /// `appConfig` answers [appConfigData] (or throws [appConfigError]).
+  AppConfigData appConfigData = const AppConfigData(
+    supportWhatsappUrl: 'https://wa.me/201000000000',
+    termsUrl: 'https://legal.elmetracademy.app/terms',
+    privacyUrl: 'https://legal.elmetracademy.app/privacy',
+  );
+  Object? appConfigError;
+  int appConfigCalls = 0;
+
+  @override
+  Future<AppConfigData> appConfig() async {
+    appConfigCalls++;
+    if (appConfigError != null) throw appConfigError!;
+    return appConfigData;
   }
 }
 

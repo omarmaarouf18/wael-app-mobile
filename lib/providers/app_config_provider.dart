@@ -1,0 +1,127 @@
+import 'package:flutter/foundation.dart' show ChangeNotifier, visibleForTesting;
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../core/app_config_cache.dart';
+import '../models/app_config.dart';
+import '../repositories/academy_repository.dart';
+
+/// Public app configuration (SPEC F-UX2 A7): the support WhatsApp link, the
+/// terms/privacy page URLs and the optional update metadata.
+///
+/// The route is public and the fetch fails soft: offline, error or malformed
+/// answers keep the last cached values, hide the update prompt and never
+/// block the app. A cached copy younger than [cacheTtl] is reused.
+class AppConfigProvider extends ChangeNotifier {
+  AppConfigProvider({
+    AcademyRepository? repository,
+    AppConfigCache? cache,
+    Future<String> Function()? versionReader,
+    DateTime Function()? clock,
+  }) : _repo = repository,
+       _cache = cache ?? MemoryAppConfigCache(),
+       _versionReader =
+           versionReader ??
+           (() async => (await PackageInfo.fromPlatform()).version),
+       _clock = clock ?? DateTime.now;
+
+  final AcademyRepository? _repo;
+  final AppConfigCache _cache;
+  final Future<String> Function() _versionReader;
+  final DateTime Function() _clock;
+
+  /// Freshness window for the cached copy (the server allows 5 min).
+  static const cacheTtl = Duration(minutes: 5);
+
+  AppConfigData _config = const AppConfigData();
+  DateTime? _loadedAt;
+  bool _loading = false;
+
+  AppConfigData get config => _config;
+  String get termsUrl => _config.termsUrl;
+  String get privacyUrl => _config.privacyUrl;
+  String get supportWhatsappUrl => _config.supportWhatsappUrl;
+
+  /// Loads the config unless a fresh copy is already in hand. Concurrent
+  /// callers share one fetch.
+  Future<void> load({bool force = false}) async {
+    if (_loading) return;
+    if (!force && _loadedAt != null) {
+      if (_clock().difference(_loadedAt!) < cacheTtl) return;
+    }
+    _loading = true;
+    try {
+      final cached = await _cache.read();
+      if (cached != null && !force) {
+        _config = cached.config;
+        _loadedAt = cached.savedAt;
+        if (_clock().difference(cached.savedAt) < cacheTtl) {
+          notifyListeners();
+          return;
+        }
+      }
+      final repo = _repo;
+      if (repo == null) {
+        if (cached == null) notifyListeners();
+        return;
+      }
+      final fresh = await repo.appConfig();
+      _config = fresh;
+      _loadedAt = _clock();
+      await _cache.write(AppConfigSnapshot(config: fresh, savedAt: _loadedAt!));
+    } catch (_) {
+      // Fail soft: keep the last values (possibly empty), no prompt.
+    } finally {
+      _loading = false;
+    }
+    notifyListeners();
+  }
+
+  /// The installed version, '' when the platform lookup fails. Read once.
+  Future<String> currentVersion() async {
+    final cached = _version;
+    if (cached != null) return cached;
+    try {
+      _version = await _versionReader();
+    } catch (_) {
+      _version = '';
+    }
+    return _version!;
+  }
+
+  String? _version;
+
+  /// Update state for [currentVersion]: required when below min_version,
+  /// available when below latest_version, none otherwise (or when the
+  /// versions are unknown).
+  UpdateState updateState(String currentVersion) {
+    if (currentVersion.isEmpty) return UpdateState.none;
+    if (_config.minVersion.isNotEmpty &&
+        compareAppVersions(currentVersion, _config.minVersion) < 0) {
+      return UpdateState.required;
+    }
+    if (_config.latestVersion.isNotEmpty &&
+        compareAppVersions(currentVersion, _config.latestVersion) < 0) {
+      return UpdateState.available;
+    }
+    return UpdateState.none;
+  }
+
+  @visibleForTesting
+  void setForTesting(AppConfigData config) {
+    _config = config;
+    _loadedAt = _clock();
+    notifyListeners();
+  }
+}
+
+/// Whether the installed build should prompt for an update.
+enum UpdateState {
+  /// Current or newer than everything the server names: no prompt.
+  none,
+
+  /// Below latest_version: an "update available" tile.
+  available,
+
+  /// Below min_version: a blocking update screen at launch.
+  required,
+}

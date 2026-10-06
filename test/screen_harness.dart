@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
@@ -42,6 +43,7 @@ Future<void> pumpScreen(
   AuthProvider? auth,
   NotificationsProvider? notifications,
   PlaybackSpeedProvider? speed,
+  AppConfigProvider? appConfig,
   List<SingleChildWidget> extraProviders = const [],
   bool settle = true,
   Size size = const Size(390, 844),
@@ -60,6 +62,7 @@ Future<void> pumpScreen(
           value: notifications ?? NotificationsProvider(),
         ),
         ChangeNotifierProvider.value(value: speed ?? PlaybackSpeedProvider()),
+        ChangeNotifierProvider.value(value: appConfig ?? AppConfigProvider()),
         ...extraProviders,
       ],
       child: localizedApp(

@@ -1,5 +1,6 @@
 import '../core/api_client.dart';
 import '../models/academy_catalog.dart';
+import '../models/app_config.dart';
 
 /// Read access to the academy catalog (academy-service student routes,
 /// served by the gateway under `/api/v1/academy/`).
@@ -32,6 +33,11 @@ abstract class AcademyRepository {
   /// subject's access date has passed; the server does not say which), 429
   /// (write rate limit) or 503.
   Future<AccessRequest> requestAccess(String subjectId);
+
+  /// `GET /academy/app-config`: public app configuration (support link,
+  /// terms/privacy URLs, optional update metadata). Public route, no
+  /// student JWT needed; callers cache it and fail soft.
+  Future<AppConfigData> appConfig();
 }
 
 /// [AcademyRepository] over the authed gateway client. A 401 runs the usual
@@ -94,5 +100,11 @@ class HttpAcademyRepository implements AcademyRepository {
       '$_base/subjects/${Uri.encodeComponent(subjectId)}/access-request',
     );
     return AccessRequest.fromJson(res);
+  }
+
+  @override
+  Future<AppConfigData> appConfig() async {
+    final res = await _api.get('$_base/app-config');
+    return AppConfigData.fromJson(res);
   }
 }

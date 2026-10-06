@@ -207,6 +207,14 @@ class AppLocalizations {
   String get allRightsReserved =>
       isArabic ? 'جميع الحقوق محفوظة © 2026' : 'All rights reserved © 2026';
 
+  // Settings: about this app (terms, privacy, version).
+  String get aboutApp => isArabic ? 'عن التطبيق' : 'About';
+  String get termsTitle => isArabic ? 'الشروط والأحكام' : 'Terms & Conditions';
+  String get privacyTitle => isArabic ? 'سياسة الخصوصية' : 'Privacy Policy';
+  String get appVersion => isArabic ? 'إصدار التطبيق' : 'App version';
+  String get readTerms =>
+      isArabic ? 'اقرأ الشروط والأحكام' : 'Read the Terms & Conditions';
+
   // Catalog (home, courses, subject detail)
   String get noOwnedCourses => isArabic
       ? 'لا توجد مواد مفعّلة لديك بعد.'
