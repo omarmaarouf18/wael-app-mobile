@@ -36,12 +36,16 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     super.dispose();
   }
 
-  bool get _valid =>
-      _passwordController.text.isNotEmpty &&
-      _confirmController.text.trim() == 'حذف';
+  bool _isValid(bool isArabic) {
+    if (_passwordController.text.isEmpty) return false;
+    final trimmed = _confirmController.text.trim();
+    if (trimmed == 'حذف') return true;
+    if (!isArabic && trimmed.toLowerCase() == 'delete') return true;
+    return false;
+  }
 
-  Future<void> _request() async {
-    if (!_valid || _busy) return;
+  Future<void> _request(bool isArabic) async {
+    if (!_isValid(isArabic) || _busy) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -70,6 +74,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     final l10n = AppLocalizations.of(context);
     final subjects = context.watch<AcademyCatalogProvider>().ownedSubjects;
     final date = _deletionDate;
+    final valid = _isValid(l10n.isArabic);
     return AppShell(
       showBack: true,
       title: l10n.deleteAccount,
@@ -80,13 +85,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 passwordController: _passwordController,
                 confirmController: _confirmController,
                 busy: _busy,
-                valid: _valid,
+                valid: valid,
                 error: _error,
                 subjectNames: [
                   for (final s in subjects) s.title.resolve(l10n.isArabic),
                 ],
                 onChanged: () => setState(() {}),
-                onSubmit: _request,
+                onSubmit: () => _request(l10n.isArabic),
               )
             : _ScheduledDone(date: date, onBackToLogin: _backToLogin),
       ),

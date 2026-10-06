@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:wael_app/core/catalog_cache.dart';
 import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/account_provider.dart';
 import 'package:wael_app/providers/app_config_provider.dart';
@@ -116,9 +117,11 @@ Future<void> pumpScreen(
 AuthProvider makeAuth({
   FakeAuthRepository? repository,
   MemoryTokenStore? tokens,
+  CatalogCache? catalogCache,
 }) => AuthProvider(
   repository: repository ?? FakeAuthRepository(),
   tokenStore: tokens ?? MemoryTokenStore(),
+  catalogCache: catalogCache ?? MemoryCatalogCache(),
 );
 
 /// Left/right position helper: true when [a] is laid out before [b] in the

@@ -113,6 +113,62 @@ void main() {
         expect(repo.lastDeletionPassword, 'Password123!');
       });
 
+      if (locale.languageCode == 'en') {
+        testWidgets(
+          'English UI allows typing DELETE case-insensitive and trimmed',
+          (tester) async {
+            final repo = FakeAccountRepository();
+            await openDelete(tester, locale, repo);
+            final fields = find.byType(TextFormField);
+            final button = find.widgetWithText(
+              FilledButton,
+              l10n.deleteAccount,
+            );
+            await tester.enterText(fields.at(0), 'Password123!');
+
+            for (final validConfirm in [
+              'DELETE',
+              'delete',
+              'DeLeTe',
+              '  DELETE  ',
+            ]) {
+              await tester.enterText(fields.at(1), validConfirm);
+              await tester.pump();
+              expect(
+                tester.widget<FilledButton>(button).onPressed,
+                isNotNull,
+                reason: 'Should be enabled for $validConfirm',
+              );
+            }
+
+            await tester.enterText(fields.at(1), 'delete');
+            await tester.pump();
+            await tester.tap(button);
+            await tester.pumpAndSettle();
+            expect(repo.deletionCalls, 1);
+            expect(repo.lastDeletionPassword, 'Password123!');
+          },
+        );
+      } else {
+        testWidgets('Arabic UI rejects typing DELETE and requires حذف', (
+          tester,
+        ) async {
+          final repo = FakeAccountRepository();
+          await openDelete(tester, locale, repo);
+          final fields = find.byType(TextFormField);
+          final button = find.widgetWithText(FilledButton, l10n.deleteAccount);
+          await tester.enterText(fields.at(0), 'Password123!');
+
+          await tester.enterText(fields.at(1), 'DELETE');
+          await tester.pump();
+          expect(tester.widget<FilledButton>(button).onPressed, isNull);
+
+          await tester.enterText(fields.at(1), 'حذف');
+          await tester.pump();
+          expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+        });
+      }
+
       testWidgets('wrong password stays with a message', (tester) async {
         final repo = FakeAccountRepository()
           ..deletionError = ApiException(

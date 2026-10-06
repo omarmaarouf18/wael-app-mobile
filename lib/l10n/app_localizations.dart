@@ -261,7 +261,7 @@ class AppLocalizations {
       ? 'بعد التأكيد تبدأ فترة سماح ٣٠ يومًا. لإلغاء الحذف يكفي تسجيل الدخول مرة أخرى خلالها.'
       : 'After confirming, a 30-day grace period starts. Signing in again during that time cancels the deletion.';
   String get deleteConfirmHint =>
-      isArabic ? 'اكتب كلمة "حذف" للتأكيد' : 'Type "حذف" to confirm';
+      isArabic ? 'اكتب كلمة "حذف" للتأكيد' : 'Type "DELETE" to confirm';
   String deletionScheduled(String date) => isArabic
       ? 'تم طلب حذف الحساب. سيتم الحذف بتاريخ $date ما لم تسجل الدخول قبلها.'
       : 'Deletion requested. Your account will be deleted on $date unless you sign in before then.';
