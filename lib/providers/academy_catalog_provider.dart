@@ -374,6 +374,39 @@ class AcademyCatalogProvider extends ChangeNotifier {
   SubjectDetailState detailOf(String id) =>
       _details[id] ?? const SubjectDetailState();
 
+  /// Videos of the cached detail of [subjectId], ordered by `position`.
+  /// Empty when the detail was never loaded: the player screen loads it on
+  /// open and rebuilds when it arrives.
+  List<AcademyVideo> subjectVideos(String subjectId) {
+    final videos = <AcademyVideo>[
+      ...(detailOf(subjectId).detail?.videos ?? const []),
+    ]..sort((a, b) => a.position.compareTo(b.position));
+    return videos;
+  }
+
+  /// The lesson after [videoId] in [subjectId], when it exists and the
+  /// server marked it playable for this student. A locked next lesson is
+  /// not offered (null): its play call would fail the locked path anyway.
+  AcademyVideo? nextPlayableVideo({
+    required String subjectId,
+    required String videoId,
+  }) {
+    final videos = subjectVideos(subjectId);
+    final index = videos.indexWhere((v) => v.id == videoId);
+    if (index < 0 || index + 1 >= videos.length) return null;
+    final next = videos[index + 1];
+    return next.playable ? next : null;
+  }
+
+  /// True when [videoId] is the last lesson of the cached detail of
+  /// [subjectId]. False for an unknown list: the player then offers replay
+  /// only, never the end card.
+  bool isLastVideo({required String subjectId, required String videoId}) {
+    final videos = subjectVideos(subjectId);
+    if (videos.isEmpty) return false;
+    return videos.last.id == videoId;
+  }
+
   /// Loads one subject's detail. Cached after success; [force] (retry or
   /// refresh) refetches. Concurrent calls for the same id share one request.
   Future<void> loadDetail(String id, {bool force = false}) async {

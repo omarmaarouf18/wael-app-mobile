@@ -194,8 +194,8 @@ class WaelApp extends StatelessWidget {
                 );
               }
               if (settings.name == '/video-player') {
-                // The arguments carry the academy's video id only, never the
-                // YouTube id.
+                // The arguments carry the academy's video and subject ids
+                // only, never the YouTube id.
                 final args = settings.arguments;
                 if (args is VideoPlayerArgs) {
                   return MaterialPageRoute<PlayerExit>(

@@ -27,6 +27,8 @@ import 'themed_loading_indicator.dart';
 ///    embed) and toggles the controls on tap,
 /// 4. an opaque "ended" cover with a replay button, so YouTube's end-screen
 ///    suggestions never show (above the gesture layer so replay is tappable),
+///    plus an optional [endedFooter] under the replay button (the next-lesson
+///    countdown or the last-lesson end card),
 /// 5. the app's own [PlayerControls],
 /// 6. the [MovingWatermark], last, so nothing can cover it.
 ///
@@ -49,6 +51,7 @@ class ProtectedVideoSurface extends StatefulWidget {
     this.titleMaskHold = const Duration(seconds: 4),
     this.playbackRate = 1.0,
     this.onSelectRate,
+    this.endedFooter,
   });
 
   /// The title mask is this fraction of the player height (about 56 logical
@@ -79,6 +82,11 @@ class ProtectedVideoSurface extends StatefulWidget {
   /// the menu (the embed's own settings stay hidden regardless).
   final double playbackRate;
   final ValueChanged<double>? onSelectRate;
+
+  /// Optional content under the replay button on the ended cover (the
+  /// next-lesson countdown or the last-lesson end card). The watermark
+  /// stays above it: it is still the last child of the surface.
+  final Widget? endedFooter;
 
   /// How long the title mask stays up after the video starts playing.
   final Duration titleMaskHold;
@@ -183,12 +191,26 @@ class _ProtectedVideoSurfaceState extends State<ProtectedVideoSurface> {
               child: ColoredBox(
                 color: AppColors.scrimBlack,
                 child: Center(
-                  child: IconButton(
-                    tooltip: l10n.replayLabel,
-                    iconSize: 56,
-                    icon: const Icon(Icons.replay),
-                    color: AppColors.textPrimary,
-                    onPressed: widget.onReplay,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsetsDirectional.all(
+                      AppSpacing.spaceMd,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: l10n.replayLabel,
+                          iconSize: 56,
+                          icon: const Icon(Icons.replay),
+                          color: AppColors.textPrimary,
+                          onPressed: widget.onReplay,
+                        ),
+                        if (widget.endedFooter != null) ...[
+                          const SizedBox(height: AppSpacing.spaceSm),
+                          widget.endedFooter!,
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -6,6 +6,7 @@ import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
 import 'package:wael_app/models/notification_model.dart';
+import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
@@ -18,6 +19,8 @@ import 'package:wael_app/screens/home_screen.dart';
 import 'package:wael_app/screens/login_screen.dart';
 import 'package:wael_app/screens/notifications_screen.dart';
 import 'package:wael_app/screens/settings_screen.dart';
+import 'package:wael_app/widgets/player_next_cards.dart';
+import 'package:wael_app/widgets/protected_video_surface.dart';
 
 import 'academy_fakes.dart';
 import 'screen_harness.dart';
@@ -174,6 +177,71 @@ void main() {
         await pumpScaled(tester, locale, const EbookScreen());
         expect(tester.takeException(), isNull);
       });
+
+      testWidgets('player next-lesson button has no overflow', (tester) async {
+        await pumpScaled(
+          tester,
+          locale,
+          NextLessonButton(title: _longLessonTitle, onTap: () {}),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('player next-lesson countdown has no overflow', (
+        tester,
+      ) async {
+        await pumpScaled(
+          tester,
+          locale,
+          NextCountdownCard(
+            title: _longLessonTitle,
+            secondsLeft: 5,
+            onCancel: () {},
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('player subject-end card has no overflow', (tester) async {
+        await pumpScaled(tester, locale, SubjectEndCard(onBack: () {}));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('player ended cover with footer has no overflow', (
+        tester,
+      ) async {
+        await pumpScaled(
+          tester,
+          locale,
+          ProtectedVideoSurface(
+            video: const SizedBox.expand(),
+            snapshot: const PlayerSnapshot(
+              phase: PlayerPhase.ended,
+              duration: Duration(minutes: 3),
+            ),
+            watermarkText: 'Wael El Saeed 01234567890',
+            controlsVisible: false,
+            isFullscreen: false,
+            onTap: () {},
+            onPlayPause: () {},
+            onSeek: (_) {},
+            onToggleFullscreen: () {},
+            onReplay: () {},
+            endedFooter: NextCountdownCard(
+              title: _longLessonTitle,
+              secondsLeft: 5,
+              onCancel: () {},
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
     });
   }
 }
+
+/// A lesson title long enough to wrap at 2.0x scaling, in both languages.
+const _longLessonTitle =
+    'الدرس الثاني: شرح مفصل لأحكام القانون المدني مع الأمثلة والتطبيقات '
+    'العملية — Lesson two: a detailed walkthrough of civil law rules with '
+    'examples and practice';

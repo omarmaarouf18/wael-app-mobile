@@ -19,8 +19,12 @@ class FakePlayerEngine implements PlayerEngine {
 
   /// The rate the screen last asked for (1 until the speed menu is used).
   double get playbackRate => rates.isEmpty ? 1.0 : rates.last;
+  // Synchronous delivery on purpose: async broadcast dispatch, cancel and
+  // close stall under FakeAsync (a cancel-then-close chain never settles and
+  // pushes later snapshots a pump behind), which made multi-engine swap
+  // tests flaky. The real engine stays asynchronous.
   final StreamController<PlayerSnapshot> _controller =
-      StreamController<PlayerSnapshot>.broadcast();
+      StreamController<PlayerSnapshot>.broadcast(sync: true);
   bool disposed = false;
 
   void emit(PlayerSnapshot snapshot) => _controller.add(snapshot);
@@ -58,7 +62,10 @@ class FakePlayerEngine implements PlayerEngine {
   Future<void> dispose() async {
     disposed = true;
     calls.add('dispose');
-    await _controller.close();
+    // Never awaited on purpose: awaiting a broadcast close after a cancel
+    // never completes under FakeAsync and stalls later event delivery in
+    // widget tests. The real engine still closes its own stream.
+    unawaited(_controller.close());
   }
 }
 

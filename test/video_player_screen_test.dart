@@ -34,6 +34,7 @@ import 'widget_layer_harness.dart';
 const _ytId = 'dQw4w9WgXcQ';
 const _args = VideoPlayerArgs(
   videoId: 'v1',
+  subjectId: 'd1',
   title: 'Lesson one',
   description: 'About it',
 );
@@ -55,13 +56,39 @@ class _Rig {
     this.repo.playResults['v1'] = _playback();
     catalog = AcademyCatalogProvider(this.repo);
     deps = PlayerDependencies(
-      engineFactory: () => this.engine,
+      engineFactory: () {
+        if (!_firstEngineUsed) {
+          _firstEngineUsed = true;
+          return this.engine;
+        }
+        final next = FakePlayerEngine();
+        swappedEngines.add(next);
+        return next;
+      },
       secureScreen: this.secure,
     );
   }
 
   final FakeAcademyRepository repo;
+
+  /// The engine the player opens with. The factory hands this out first and
+  /// mints a fresh fake for every later swap, the way the app builds a new
+  /// embed per video: disposing the old engine must never close the new
+  /// one's stream.
   final FakePlayerEngine engine;
+  final List<FakePlayerEngine> swappedEngines = [];
+  bool _firstEngineUsed = false;
+
+  /// The engine showing the current lesson (the swapped-in one after an
+  /// advance, the opening one before it).
+  FakePlayerEngine get liveEngine =>
+      swappedEngines.isEmpty ? engine : swappedEngines.last;
+
+  /// Every YouTube id loaded, across the opening and swapped-in engines.
+  List<String> get allLoadedIds => [
+    ...engine.loadedIds,
+    for (final e in swappedEngines) ...e.loadedIds,
+  ];
   final FakeSecureScreen secure;
   final PlaybackSpeedProvider speed;
   late final AcademyCatalogProvider catalog;
@@ -811,6 +838,224 @@ void main() {
           final fallback = PlaybackSpeedProvider(store: store);
           await fallback.load();
           expect(fallback.rate, 1.0);
+        },
+      );
+    });
+
+    group('next lesson [$name]', () {
+      /// A subject with two playable lessons, both playable on the server.
+      FakeAcademyRepository twoLessons() {
+        final repo = fake();
+        repo.detailJson['d1'] = detailBody(
+          id: 'd1',
+          owned: true,
+          videos: [
+            videoBody('v1', 1, playable: true),
+            videoBody('v2', 2, playable: true),
+          ],
+        );
+        repo.playResults['v2'] = VideoPlayback(
+          videoId: 'v2',
+          youtubeVideoId: 'AAAAAAAAAAA',
+        );
+        return repo;
+      }
+
+      Future<_Rig> playingRig(
+        WidgetTester tester, {
+        required FakeAcademyRepository repo,
+      }) async {
+        final rig = _Rig(repo: repo);
+        await rig.pump(tester, locale);
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.playing,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+        return rig;
+      }
+
+      testWidgets('next button opens the right video', (tester) async {
+        final rig = await playingRig(tester, repo: twoLessons());
+        expect(find.text(l10n.nextLesson), findsOneWidget);
+
+        await tester.tap(find.text(l10n.nextLesson));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(rig.repo.playCalls, ['v1', 'v2']);
+        expect(rig.allLoadedIds, [_ytId, 'AAAAAAAAAAA']);
+        expect(rig.engine.disposed, isTrue);
+        // The new engine shows the new lesson; titles resolve per locale.
+        expect(find.text(isArabic ? 'درس 2' : 'Lesson 2'), findsWidgets);
+      });
+
+      testWidgets('ended starts a 5-second countdown that auto-advances', (
+        tester,
+      ) async {
+        final rig = await playingRig(tester, repo: twoLessons());
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.ended,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+        expect(find.text(l10n.nextLessonStartsIn(5)), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(rig.repo.playCalls, ['v1', 'v2']);
+        expect(rig.allLoadedIds, [_ytId, 'AAAAAAAAAAA']);
+        expect(rig.engine.disposed, isTrue);
+      });
+
+      testWidgets('cancelling the countdown stops the advance', (tester) async {
+        final rig = await playingRig(tester, repo: twoLessons());
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.ended,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+        expect(find.text(l10n.nextLessonStartsIn(5)), findsOneWidget);
+
+        await tester.tap(find.text(l10n.cancel));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(rig.repo.playCalls, ['v1']);
+        expect(rig.engine.loadedIds, [_ytId]);
+        // The static next button stays for a manual advance.
+        expect(find.text(l10n.nextLesson), findsOneWidget);
+        expect(find.text(l10n.nextLessonStartsIn(5)), findsNothing);
+      });
+
+      testWidgets('last lesson shows the end card with back', (tester) async {
+        final repo = fake();
+        repo.detailJson['d1'] = detailBody(
+          id: 'd1',
+          owned: true,
+          videos: [videoBody('v1', 1, playable: true)],
+        );
+        final rig = await playingRig(tester, repo: repo);
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.ended,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.subjectFinished), findsOneWidget);
+        expect(find.text(l10n.nextLesson), findsNothing);
+        expect(find.byTooltip(l10n.replayLabel), findsOneWidget);
+
+        await tester.tap(find.text(l10n.back));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(rig.popped, isTrue);
+        expect(rig.exit, isNull);
+        expect(find.byType(VideoPlayerScreen), findsNothing);
+      });
+
+      testWidgets('a locked next lesson is not offered', (tester) async {
+        final repo = fake();
+        repo.detailJson['d1'] = detailBody(
+          id: 'd1',
+          owned: true,
+          videos: [videoBody('v1', 1, playable: true), videoBody('v2', 2)],
+        );
+        final rig = await playingRig(tester, repo: repo);
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.ended,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.nextLesson), findsNothing);
+        expect(find.text(l10n.subjectFinished), findsNothing);
+        expect(find.byTooltip(l10n.replayLabel), findsOneWidget);
+      });
+
+      testWidgets('404 on the next video closes as locked', (tester) async {
+        final repo = twoLessons();
+        repo.playResults['v2'] = ApiException(statusCode: 404, message: 'x');
+        final rig = await playingRig(tester, repo: repo);
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.ended,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+        expect(find.text(l10n.nextLessonStartsIn(5)), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(rig.popped, isTrue);
+        expect(rig.exit, PlayerExit.locked);
+        expect(find.byType(VideoPlayerScreen), findsNothing);
+      });
+
+      testWidgets(
+        'next load keeps the ended cover and holds the title mask 4 s',
+        (tester) async {
+          final rig = await playingRig(tester, repo: twoLessons());
+          rig.engine.emit(
+            const PlayerSnapshot(
+              phase: PlayerPhase.ended,
+              duration: Duration(minutes: 3),
+            ),
+          );
+          await tester.pump();
+
+          // The countdown fires and the next video starts loading: the
+          // ended cover (replay) and the title mask stay up, and no new
+          // title leaks onto an uncovered surface.
+          await tester.pump(const Duration(seconds: 5));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(rig.repo.playCalls, ['v1', 'v2']);
+          // The swap retired the opening engine for a fresh one.
+          expect(rig.engine.disposed, isTrue);
+          expect(rig.liveEngine.loadedIds, ['AAAAAAAAAAA']);
+          expect(find.byTooltip(l10n.replayLabel), findsOneWidget);
+          expect(
+            find.byKey(ProtectedVideoSurface.titleMaskKey),
+            findsOneWidget,
+          );
+
+          // The new video starts playing: the cover lifts and the mask
+          // holds for 4 s over the new title, then drops.
+          rig.liveEngine.emit(
+            const PlayerSnapshot(
+              phase: PlayerPhase.playing,
+              duration: Duration(minutes: 4),
+            ),
+          );
+          await tester.pump();
+          expect(find.byTooltip(l10n.replayLabel), findsNothing);
+          expect(
+            find.byKey(ProtectedVideoSurface.titleMaskKey),
+            findsOneWidget,
+          );
+          await tester.pump(const Duration(seconds: 4));
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(find.byKey(ProtectedVideoSurface.titleMaskKey), findsNothing);
         },
       );
     });

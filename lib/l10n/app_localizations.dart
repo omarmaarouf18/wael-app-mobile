@@ -257,6 +257,12 @@ class AppLocalizations {
       isArabic ? 'إنهاء ملء الشاشة' : 'Exit full screen';
   String get replayLabel => isArabic ? 'إعادة التشغيل' : 'Replay';
   String get playbackSpeed => isArabic ? 'سرعة التشغيل' : 'Playback speed';
+  String get nextLesson => isArabic ? 'الدرس التالي' : 'Next lesson';
+  String nextLessonStartsIn(int seconds) => isArabic
+      ? 'يبدأ الدرس التالي بعد $seconds ثانية.'
+      : 'Next lesson starts in $seconds seconds.';
+  String get subjectFinished =>
+      isArabic ? 'انتهت دروس المادة' : 'No more lessons in this subject';
   String get playerStarting =>
       isArabic ? 'جارٍ تجهيز الفيديو...' : 'Preparing the video...';
   String get playerNoIdentity => isArabic

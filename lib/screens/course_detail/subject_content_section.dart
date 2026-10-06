@@ -60,6 +60,7 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
       '/video-player',
       arguments: VideoPlayerArgs(
         videoId: video.id,
+        subjectId: subjectId,
         title: video.title.resolve(isArabic),
         description: video.description.resolve(isArabic),
       ),
