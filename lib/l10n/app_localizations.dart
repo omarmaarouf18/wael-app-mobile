@@ -313,7 +313,7 @@ class AppLocalizations {
   String get termFirst => isArabic ? 'الفصل الدراسي الأول' : 'First Term';
   String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
 
-  String get accessActive => isArabic ? 'الاشتراك فعّال' : 'Access active';
+  String get accessActive => isArabic ? 'الوصول مفعّل' : 'Access active';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
   String get contactSupportToActivate => isArabic

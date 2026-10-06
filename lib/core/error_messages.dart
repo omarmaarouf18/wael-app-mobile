@@ -85,7 +85,7 @@ class ErrorMessages {
       : 'Unable to load notifications. Please try again later.';
 
   static String courseLocked(bool isArabic) => isArabic
-      ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل والاشتراك للوصول.'
+      ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل لتفعيل الوصول.'
       : 'This content is restricted. Complete enrolment to gain access.';
 
   static String catalogLoadFailed(bool isArabic) => isArabic

@@ -1,6 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
-/// Opens external links (support WhatsApp chat from purchase requests).
+/// Opens external links (support WhatsApp chat for help and access requests).
 ///
 /// Only `https://wa.me/…` links are ever opened: the model already keeps
 /// https-only URLs, and [whatsappUrl] additionally requires the `wa.me`

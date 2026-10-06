@@ -42,7 +42,7 @@ dependencies:
   http: ^1.6.0
   flutter_secure_storage: ^11.2.0
   nested: ^1.0.0
-  # Pinned exact: opens the support WhatsApp chat from purchase requests.
+  # Pinned exact: opens the support WhatsApp chat for help and access requests.
   # BSD-3-Clause (Flutter Authors).
   url_launcher: 6.3.2
   youtube_player_iframe: ^6.0.2
