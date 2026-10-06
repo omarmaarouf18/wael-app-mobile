@@ -258,5 +258,42 @@ void main() {
       sw.stop();
       expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
     });
+
+    test(
+      '401 retry has depth limit of 1: second 401 triggers forced logout without looping',
+      () async {
+        var calls = 0;
+        var refreshCalls = 0;
+        var logoutCalls = 0;
+        final mock = MockClient((req) async {
+          calls++;
+          return http.Response(
+            jsonEncode({'error': 'unauthorized', 'code': 'invalid_token'}),
+            401,
+          );
+        });
+        final api = ApiClient(
+          baseUrl: 'https://localhost:8080',
+          client: mock,
+          accessTokenReader: () async => 'token',
+          refreshTokens: () async {
+            refreshCalls++;
+            return true;
+          },
+          forceLogout: () async {
+            logoutCalls++;
+          },
+        );
+        try {
+          await api.get('/api/v1/auth/me');
+          fail('expected ApiException');
+        } on ApiException catch (e) {
+          expect(e.statusCode, 401);
+        }
+        expect(calls, 2);
+        expect(refreshCalls, 1);
+        expect(logoutCalls, 1);
+      },
+    );
   });
 }

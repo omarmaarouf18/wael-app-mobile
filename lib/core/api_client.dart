@@ -97,7 +97,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> get(String path) async {
+  Future<Map<String, dynamic>> get(String path, {bool isRetry = false}) async {
     final sw = Stopwatch()..start();
     int statusCode = -1;
     try {
@@ -106,7 +106,11 @@ class ApiClient {
           .get(Uri.parse('$baseUrl$path'), headers: _headers(token))
           .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
-      return await _handle(res, () => get(path));
+      return await _handle(
+        res,
+        () => get(path, isRetry: true),
+        isRetry: isRetry,
+      );
     } on TimeoutException {
       throw _timedOut();
     } catch (e) {
@@ -171,6 +175,7 @@ class ApiClient {
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? body,
+    bool isRetry = false,
   }) async {
     final sw = Stopwatch()..start();
     int statusCode = -1;
@@ -184,7 +189,11 @@ class ApiClient {
           )
           .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
-      return await _handle(res, () => post(path, body: body));
+      return await _handle(
+        res,
+        () => post(path, body: body, isRetry: true),
+        isRetry: isRetry,
+      );
     } on TimeoutException {
       throw _timedOut();
     } catch (e) {
@@ -200,6 +209,7 @@ class ApiClient {
   Future<Map<String, dynamic>> patch(
     String path, {
     Map<String, dynamic>? body,
+    bool isRetry = false,
   }) async {
     final sw = Stopwatch()..start();
     int statusCode = -1;
@@ -213,7 +223,11 @@ class ApiClient {
           )
           .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
-      return await _handle(res, () => patch(path, body: body));
+      return await _handle(
+        res,
+        () => patch(path, body: body, isRetry: true),
+        isRetry: isRetry,
+      );
     } on TimeoutException {
       throw _timedOut();
     } catch (e) {
@@ -227,7 +241,10 @@ class ApiClient {
 
   /// Authenticated DELETE with the refresh dance (ending a device session).
   /// A 204 answers the empty map.
-  Future<Map<String, dynamic>> delete(String path) async {
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    bool isRetry = false,
+  }) async {
     final sw = Stopwatch()..start();
     int statusCode = -1;
     try {
@@ -236,7 +253,11 @@ class ApiClient {
           .delete(Uri.parse('$baseUrl$path'), headers: _headers(token))
           .timeout(_timeoutFor(path));
       statusCode = res.statusCode;
-      return await _handle(res, () => delete(path));
+      return await _handle(
+        res,
+        () => delete(path, isRetry: true),
+        isRetry: isRetry,
+      );
     } on TimeoutException {
       throw _timedOut();
     } catch (e) {
@@ -250,8 +271,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> _handle(
     http.Response res,
-    Future<Map<String, dynamic>> Function() retry,
-  ) async {
+    Future<Map<String, dynamic>> Function() retry, {
+    bool isRetry = false,
+  }) async {
     if (res.statusCode == 401) {
       final body = _tryDecodeMap(res.body);
       if (body != null && body['code'] == 'session_replaced') {
@@ -259,7 +281,10 @@ class ApiClient {
         await onSessionReplaced?.call(msg);
         return _decode(res);
       }
-      if (refreshTokens != null) {
+      if (isRetry) {
+        // Retry depth limit reached: a second 401 goes to forced-logout.
+        if (_claimLogout()) await forceLogout?.call();
+      } else if (refreshTokens != null) {
         final ok = await _refreshOnce();
         if (ok) return retry();
         // The refresh failed: exactly one caller of this round reports
