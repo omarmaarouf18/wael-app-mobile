@@ -134,6 +134,17 @@ class AuthProvider extends ChangeNotifier {
   String? _logoutNotice;
   String? get logoutNotice => _logoutNotice;
 
+  /// Set when the last login cancelled a pending self-deletion. Read once
+  /// (then cleared) by the screen that shows it.
+  bool _deletionCancelled = false;
+
+  /// Returns true once when the last login cancelled a deletion.
+  bool takeDeletionCancelled() {
+    if (!_deletionCancelled) return false;
+    _deletionCancelled = false;
+    return true;
+  }
+
   void clearLogoutNotice() {
     _logoutNotice = null;
     notifyListeners();
@@ -407,6 +418,7 @@ class AuthProvider extends ChangeNotifier {
       );
       final account = await _repo.me(accessToken: tokens.access);
       await _storeSession(account, tokens);
+      _deletionCancelled = tokens.deletionCancelled;
       AppHaptics.light();
       return true;
     } on ApiException catch (e) {
@@ -584,6 +596,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _logoutLocal() async {
     await _tokens.clear();
     _account = null;
+    _deletionCancelled = false;
     // The next student must never inherit this one's name or phone (the
     // video watermark reads them).
     _currentUser = _blankUser;

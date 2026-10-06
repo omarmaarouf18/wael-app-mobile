@@ -252,6 +252,26 @@ class AppLocalizations {
   String get noOtherDevices => isArabic
       ? 'لا توجد أجهزة أخرى مسجلة الدخول.'
       : 'No other signed-in devices.';
+  String get deleteAccount => isArabic ? 'حذف الحساب' : 'Delete account';
+  String get deleteAccountWarning => isArabic
+      ? 'سيتم حذف حسابك نهائيًا. ستفقد الوصول إلى المواد المفعّلة، ولا يمكن التراجع بعد انتهاء فترة السماح.'
+      : 'Your account will be permanently deleted. You will lose access to activated subjects, and this cannot be undone after the grace period.';
+  String get deleteAccountLoseAccess => isArabic
+      ? 'هتفقد الوصول للمواد دي'
+      : 'You will lose access to these subjects';
+  String get deleteAccountGrace => isArabic
+      ? 'بعد التأكيد تبدأ فترة سماح ٣٠ يومًا. لإلغاء الحذف يكفي تسجيل الدخول مرة أخرى خلالها.'
+      : 'After confirming, a 30-day grace period starts. Signing in again during that time cancels the deletion.';
+  String get deleteConfirmHint => isArabic
+      ? 'اكتب كلمة "حذف" للتأكيد'
+      : 'Type "حذف" to confirm';
+  String deletionScheduled(String date) => isArabic
+      ? 'تم طلب حذف الحساب. سيتم الحذف بتاريخ $date ما لم تسجل الدخول قبلها.'
+      : 'Deletion requested. Your account will be deleted on $date unless you sign in before then.';
+  String get backToLogin => isArabic ? 'العودة لتسجيل الدخول' : 'Back to sign in';
+  String get deletionCancelledNotice => isArabic
+      ? 'تم إلغاء حذف حسابك'
+      : 'Your account deletion was cancelled.';
   String get emailCodeSent => isArabic
       ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
       : 'A code was sent to your new email. Enter it below.';

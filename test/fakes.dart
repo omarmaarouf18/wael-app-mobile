@@ -57,6 +57,13 @@ class FakeAuthRepository implements AuthRepository {
     if (mode == 'unverified') {
       throw ApiException(statusCode: 403, message: 'email not verified');
     }
+    if (mode == 'deletion-cancelled') {
+      return const AuthTokens(
+        access: 'access-1',
+        refresh: 'refresh-1',
+        deletionCancelled: true,
+      );
+    }
     return const AuthTokens(access: 'access-1', refresh: 'refresh-1');
   }
 

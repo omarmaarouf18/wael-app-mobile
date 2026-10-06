@@ -90,8 +90,9 @@ void main() {
         expect(find.text(l10n.appVersion), findsOneWidget);
         expect(find.text(l10n.termsTitle), findsNothing);
         expect(find.text(l10n.privacyTitle), findsNothing);
-        expect(find.byType(OutlinedButton), findsOneWidget);
+        expect(find.byType(OutlinedButton), findsNWidgets(2));
         expect(find.text(upper(l10n.signOut)), findsOneWidget);
+        expect(find.text(upper(l10n.deleteAccount)), findsOneWidget);
 
         // Everything that claimed a setting or a policy is gone.
         expect(find.byType(Switch), findsNothing);

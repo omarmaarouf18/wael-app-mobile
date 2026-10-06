@@ -35,11 +35,20 @@ class AuthTokens {
   final String access;
   final String refresh;
 
-  const AuthTokens({required this.access, required this.refresh});
+  /// True when this login cancelled a pending self-deletion (F-UX2 A5):
+  /// the app shows the cancellation message once.
+  final bool deletionCancelled;
+
+  const AuthTokens({
+    required this.access,
+    required this.refresh,
+    this.deletionCancelled = false,
+  });
 
   factory AuthTokens.fromJson(Map<String, dynamic> json) => AuthTokens(
     access: (json['access_token'] ?? '').toString(),
     refresh: (json['refresh_token'] ?? '').toString(),
+    deletionCancelled: json['deletion_cancelled'] == true,
   );
 }
 

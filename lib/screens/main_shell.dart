@@ -36,6 +36,23 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     _currentIndex = widget.initialTab;
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _startLiveStream());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _showDeletionCancelled(),
+    );
+  }
+
+  /// A login that cancelled a pending self-deletion says so once.
+  void _showDeletionCancelled() {
+    if (!mounted) return;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!auth.takeDeletionCancelled()) return;
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.surfaceElevated,
+        content: Text(l10n.deletionCancelledNotice),
+      ),
+    );
   }
 
   Future<void> _startLiveStream() async {

@@ -10,6 +10,7 @@ import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/app_shell.dart';
 import 'settings/profile_section.dart';
+import 'settings/delete_account_screen.dart';
 import 'settings/devices_screen.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/icon_tile.dart';
@@ -211,6 +212,40 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 label: Text(
                   AppTypography.uppercaseLabel(l10n.signOut),
+                  style: AppTypography.labelSm(isArabic: l10n.isArabic)
+                      .copyWith(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spaceLg),
+
+            // 7. DELETE ACCOUNT (danger style, last)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DeleteAccountScreen(),
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.surfaceLayer1,
+                  side: const BorderSide(color: AppColors.subtleHairline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: AppColors.danger,
+                ),
+                label: Text(
+                  AppTypography.uppercaseLabel(l10n.deleteAccount),
                   style: AppTypography.labelSm(isArabic: l10n.isArabic)
                       .copyWith(
                         color: AppColors.danger,
