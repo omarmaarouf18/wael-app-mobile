@@ -294,4 +294,141 @@ void main() {
       });
     });
   }
+
+  group('NotificationsScreen target_route allowlist', () {
+    test(
+      'isValidTargetRoute validates allowed routes and rejects disallowed / unknown',
+      () {
+        for (final route in [
+          '/course-details',
+          '/courses',
+          '/notifications',
+          '/settings',
+          '/ebooks',
+          '/device-management',
+        ]) {
+          expect(
+            NotificationsScreen.isValidTargetRoute(route),
+            isTrue,
+            reason: route,
+          );
+        }
+
+        for (final rejected in [
+          null,
+          '',
+          '/login',
+          '/splash',
+          '/otp',
+          '/update-gate',
+          '/admin',
+          '/unknown',
+          'javascript:void(0)',
+          'https://malicious.com',
+        ]) {
+          expect(
+            NotificationsScreen.isValidTargetRoute(rejected),
+            isFalse,
+            reason: rejected,
+          );
+        }
+      },
+    );
+
+    testWidgets('tapping allowed route marks as read and navigates', (
+      tester,
+    ) async {
+      final repo = _ListRepository([
+        const NotificationModel(
+          id: 'n_allowed',
+          title: 'Allowed',
+          titleAr: 'مسموح',
+          body: 'Go to settings',
+          bodyAr: 'الإعدادات',
+          timestamp: 'now',
+          timestampAr: 'الآن',
+          type: 'system',
+          targetRoute: '/settings',
+        ),
+      ]);
+      final provider = NotificationsProvider(repository: repo);
+      await pumpScreen(
+        tester,
+        const Locale('en'),
+        const NotificationsScreen(),
+        notifications: provider,
+      );
+
+      await tester.tap(find.text('Allowed'));
+      await tester.pumpAndSettle();
+
+      expect(provider.notifications.first.isRead, isTrue);
+      expect(find.text('route:/settings'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping disallowed route marks as read but does not navigate',
+      (tester) async {
+        final repo = _ListRepository([
+          const NotificationModel(
+            id: 'n_rejected',
+            title: 'Rejected Login',
+            titleAr: 'دخول مرفوض',
+            body: 'Go to login',
+            bodyAr: 'دخول',
+            timestamp: 'now',
+            timestampAr: 'الآن',
+            type: 'system',
+            targetRoute: '/login',
+          ),
+        ]);
+        final provider = NotificationsProvider(repository: repo);
+        await pumpScreen(
+          tester,
+          const Locale('en'),
+          const NotificationsScreen(),
+          notifications: provider,
+        );
+
+        await tester.tap(find.text('Rejected Login'));
+        await tester.pumpAndSettle();
+
+        expect(provider.notifications.first.isRead, isTrue);
+        expect(find.text('route:/login'), findsNothing);
+        expect(find.byType(NotificationsScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('tapping unknown route marks as read but does not navigate', (
+      tester,
+    ) async {
+      final repo = _ListRepository([
+        const NotificationModel(
+          id: 'n_unknown',
+          title: 'Unknown Route',
+          titleAr: 'مسار مجهول',
+          body: 'Unknown',
+          bodyAr: 'مجهول',
+          timestamp: 'now',
+          timestampAr: 'الآن',
+          type: 'system',
+          targetRoute: '/evil-scheme',
+        ),
+      ]);
+      final provider = NotificationsProvider(repository: repo);
+      await pumpScreen(
+        tester,
+        const Locale('en'),
+        const NotificationsScreen(),
+        notifications: provider,
+      );
+
+      await tester.tap(find.text('Unknown Route'));
+      await tester.pumpAndSettle();
+
+      expect(provider.notifications.first.isRead, isTrue);
+      expect(find.text('route:/evil-scheme'), findsNothing);
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+    });
+  });
 }

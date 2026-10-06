@@ -15,6 +15,30 @@ import '../widgets/themed_error_banner.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
+  /// Client-side allowlist for routes pushed via server-supplied notification
+  /// target_route fields. Sensitive or unexpected routes are rejected.
+  static const Set<String> allowedRoutes = {
+    '/course-details',
+    '/courses',
+    '/notifications',
+    '/settings',
+    '/ebooks',
+    '/device-management',
+  };
+
+  static const Set<String> disallowedRoutes = {
+    '/login',
+    '/splash',
+    '/otp',
+    '/update-gate',
+  };
+
+  static bool isValidTargetRoute(String? route) {
+    if (route == null) return false;
+    if (disallowedRoutes.contains(route)) return false;
+    return allowedRoutes.contains(route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -135,6 +159,7 @@ class NotificationsScreen extends StatelessWidget {
                           context,
                         ).pushNamed('/course-details', arguments: subjectId);
                       } else if (item.targetRoute != null &&
+                          isValidTargetRoute(item.targetRoute) &&
                           item.targetRoute != '/notifications') {
                         Navigator.of(context).pushNamed(item.targetRoute!);
                       }
