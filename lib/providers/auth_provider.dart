@@ -118,6 +118,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     _logoutNotice = null;
+    _sessionReplacedActive = false;
     notifyListeners();
   }
 
@@ -173,12 +174,18 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = (backendMessage != null && backendMessage.isNotEmpty)
         ? backendMessage
         : ErrorMessages.sessionReplaced(_isArabic);
+    _sessionReplacedActive = true;
     notifyListeners();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/login',
       (route) => false,
     );
   }
+
+  /// True after a session_replaced logout until the next login attempt: the
+  /// login screen offers the WhatsApp contact next to the message.
+  bool _sessionReplacedActive = false;
+  bool get sessionReplacedActive => _sessionReplacedActive;
 
   Future<void> _storeSession(AuthAccount account, AuthTokens tokens) async {
     await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);

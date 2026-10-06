@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/core/theme.dart';
+import 'package:wael_app/models/app_config.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/screens/login_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
@@ -325,6 +328,77 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('route:/signup'), findsOneWidget);
       });
+
+      testWidgets(
+        'session replaced shows WhatsApp support contact and clears on next login attempt',
+        (tester) async {
+          final configProvider = AppConfigProvider()
+            ..setForTesting(
+              const AppConfigData(
+                supportWhatsappUrl: 'https://wa.me/201000000000',
+              ),
+            );
+          final calls = <Uri>[];
+          final auth = makeAuth(
+            repository: FakeAuthRepository(mode: 'wrong-password'),
+          );
+          await pumpScreen(
+            tester,
+            locale,
+            LoginScreen(
+              launchUrl: (uri, {mode = LaunchMode.platformDefault}) async {
+                calls.add(uri);
+                return true;
+              },
+            ),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+
+          // Initially inactive: contact is hidden
+          expect(find.text(l10n.contactWhatsApp), findsNothing);
+
+          // Trigger session replaced
+          await auth.handleSessionReplaced();
+          await tester.pumpAndSettle();
+
+          // Now contact is shown
+          expect(find.text(l10n.contactWhatsApp), findsOneWidget);
+
+          // Tap contact
+          await tester.tap(find.text(l10n.contactWhatsApp));
+          await tester.pumpAndSettle();
+          expect(calls, hasLength(1));
+          expect(calls.first.host, 'wa.me');
+
+          // Next login attempt clears it
+          await submit(tester);
+          expect(find.text(l10n.contactWhatsApp), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'session replaced hides contact if supportWhatsappUrl is empty',
+        (tester) async {
+          final configProvider = AppConfigProvider()
+            ..setForTesting(const AppConfigData(supportWhatsappUrl: ''));
+          final auth = makeAuth();
+          await pumpScreen(
+            tester,
+            locale,
+            const LoginScreen(),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+
+          await auth.handleSessionReplaced();
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.contactWhatsApp), findsNothing);
+        },
+      );
     });
   }
 }

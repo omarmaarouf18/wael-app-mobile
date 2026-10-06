@@ -68,9 +68,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final subjects = context
-        .watch<AcademyCatalogProvider>()
-        .ownedSubjects;
+    final subjects = context.watch<AcademyCatalogProvider>().ownedSubjects;
     final date = _deletionDate;
     return AppShell(
       showBack: true,
@@ -85,8 +83,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 valid: _valid,
                 error: _error,
                 subjectNames: [
-                  for (final s in subjects)
-                    s.title.resolve(l10n.isArabic),
+                  for (final s in subjects) s.title.resolve(l10n.isArabic),
                 ],
                 onChanged: () => setState(() {}),
                 onSubmit: _request,

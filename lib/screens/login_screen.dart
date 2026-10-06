@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/constants.dart';
+import '../core/external_links.dart'
+    show LaunchUrl, defaultLaunchUrl, openSupportChat;
 import '../core/field_validators.dart';
 import '../core/theme.dart';
-import '../core/constants.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../widgets/app_shell.dart';
@@ -18,7 +21,11 @@ import '../widgets/themed_text_field.dart';
 /// is a later update, and there is no "remember me": the session is kept
 /// until the student signs out.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.launchUrl});
+
+  /// Opens the support chat next to the session-replaced message.
+  /// Tests inject a mock.
+  final LaunchUrl? launchUrl;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -206,6 +213,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
+                        // After a replaced session, offer the support chat
+                        // next to the message (UI/UX audit item 8).
+                        if (auth.sessionReplacedActive)
+                          _SupportContact(launchUrl: widget.launchUrl),
+
                         // Sign In CTA
                         PrimaryButton(
                           text: AppTypography.uppercaseLabel(l10n.signIn),
@@ -248,6 +260,64 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: AppSpacing.spaceXl),
                       ],
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupportContact extends StatelessWidget {
+  const _SupportContact({this.launchUrl});
+
+  final LaunchUrl? launchUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    AppConfigProvider? appConfig;
+    try {
+      appConfig = Provider.of<AppConfigProvider>(context);
+    } catch (_) {
+      appConfig = null;
+    }
+    final url = appConfig?.supportWhatsappUrl ?? '';
+    if (url.isEmpty) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: AppSpacing.spaceSm),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => openSupportChat(
+            supportUrl: url,
+            messageText: l10n.whatsappHelpText,
+            launch: launchUrl ?? defaultLaunchUrl,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.spaceSm,
+              vertical: AppSpacing.spaceXs,
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Icon(
+                  Icons.support_agent_outlined,
+                  size: AppIconSize.sm,
+                  color: AppColors.info,
+                ),
+                const SizedBox(width: AppSpacing.spaceXs),
+                Text(
+                  l10n.contactWhatsApp,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySm(isArabic: l10n.isArabic).copyWith(
+                    color: AppColors.info,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

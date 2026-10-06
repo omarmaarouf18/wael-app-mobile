@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
+import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/models/notification_model.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
@@ -39,6 +40,7 @@ Future<void> pumpScaled(
   NotificationsProvider? notifications,
   AcademyCatalogProvider? catalog,
   HomeProvider? home,
+  AppConfigProvider? appConfig,
   Size size = const Size(390, 844),
 }) async {
   tester.view.physicalSize = size;
@@ -51,7 +53,7 @@ Future<void> pumpScaled(
       providers: <SingleChildWidget>[
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider.value(value: authProvider),
-        ChangeNotifierProvider.value(value: AppConfigProvider()),
+        ChangeNotifierProvider.value(value: appConfig ?? AppConfigProvider()),
         ChangeNotifierProvider.value(
           value: AccountProvider(
             auth: authProvider,
@@ -132,6 +134,29 @@ void main() {
         expect(find.byType(LoginScreen), findsOneWidget);
       });
 
+      testWidgets('login with session replaced active has no overflow', (
+        tester,
+      ) async {
+        final auth = makeAuth();
+        await auth.handleSessionReplaced();
+        final config = AppConfigProvider()
+          ..setForTesting(
+            const AppConfigData(
+              supportWhatsappUrl: 'https://wa.me/201000000000',
+            ),
+          );
+        await pumpScaled(
+          tester,
+          locale,
+          const LoginScreen(),
+          auth: auth,
+          appConfig: config,
+          size: const Size(390, 1000),
+        );
+        expect(tester.takeException(), isNull);
+        expect(find.byType(LoginScreen), findsOneWidget);
+      });
+
       testWidgets('home has no overflow', (tester) async {
         await pumpScaled(
           tester,
@@ -180,6 +205,24 @@ void main() {
           locale,
           const SettingsScreen(),
           auth: await signedInAuth(),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('settings with Help section has no overflow', (tester) async {
+        final config = AppConfigProvider()
+          ..setForTesting(
+            const AppConfigData(
+              supportWhatsappUrl: 'https://wa.me/201000000000',
+            ),
+          );
+        await pumpScaled(
+          tester,
+          locale,
+          const SettingsScreen(),
+          auth: await signedInAuth(),
+          appConfig: config,
+          size: const Size(390, 1200),
         );
         expect(tester.takeException(), isNull);
       });

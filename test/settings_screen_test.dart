@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
+import 'package:wael_app/models/app_config.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/screens/settings_screen.dart';
@@ -215,6 +218,79 @@ void main() {
         await tester.pumpAndSettle();
         expect(auth.isAuthenticated, isTrue);
         expect(find.byType(SettingsScreen), findsOneWidget);
+      });
+
+      testWidgets('Help section is hidden when supportWhatsappUrl is empty', (
+        tester,
+      ) async {
+        await pump(tester);
+        expect(find.text(l10n.contactWhatsApp), findsNothing);
+      });
+
+      testWidgets(
+        'Help section is present with URL and opens WhatsApp externally',
+        (tester) async {
+          final calls = <(Uri, LaunchMode)>[];
+          final configProvider = AppConfigProvider()
+            ..setForTesting(
+              const AppConfigData(
+                supportWhatsappUrl: 'https://wa.me/201000000000',
+              ),
+            );
+          final auth = await signedInAuth();
+          await pumpScreen(
+            tester,
+            locale,
+            SettingsScreen(
+              launchUrl: (uri, {mode = LaunchMode.platformDefault}) async {
+                calls.add((uri, mode));
+                return true;
+              },
+            ),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+
+          expect(find.text(l10n.contactWhatsApp), findsOneWidget);
+          await tester.tap(find.text(l10n.contactWhatsApp));
+          await tester.pumpAndSettle();
+
+          expect(calls, hasLength(1));
+          expect(calls.first.$1.host, 'wa.me');
+          expect(calls.first.$2, LaunchMode.externalApplication);
+          expect(find.byType(SnackBar), findsNothing);
+        },
+      );
+
+      testWidgets('Help section shows snackbar when launching WhatsApp fails', (
+        tester,
+      ) async {
+        final configProvider = AppConfigProvider()
+          ..setForTesting(
+            const AppConfigData(
+              supportWhatsappUrl: 'https://wa.me/201000000000',
+            ),
+          );
+        final auth = await signedInAuth();
+        await pumpScreen(
+          tester,
+          locale,
+          SettingsScreen(
+            launchUrl: (uri, {mode = LaunchMode.platformDefault}) async =>
+                false,
+          ),
+          auth: auth,
+          appConfig: configProvider,
+          size: _tall,
+        );
+
+        expect(find.text(l10n.contactWhatsApp), findsOneWidget);
+        await tester.tap(find.text(l10n.contactWhatsApp));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.text(l10n.supportOpenFailed), findsOneWidget);
       });
 
       testWidgets('does not overflow on a small phone', (tester) async {

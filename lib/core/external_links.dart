@@ -24,3 +24,25 @@ Uri? whatsappUrl({required String? supportUrl, required String messageText}) {
   }
   return base.replace(queryParameters: {'text': messageText});
 }
+
+/// Opens the support WhatsApp chat in the external app, falling back to the
+/// browser when WhatsApp is missing. Returns false when there is nothing to
+/// open (non-wa.me URL) or both attempts fail.
+Future<bool> openSupportChat({
+  required String? supportUrl,
+  required String messageText,
+  LaunchUrl launch = defaultLaunchUrl,
+}) async {
+  final uri = whatsappUrl(supportUrl: supportUrl, messageText: messageText);
+  if (uri == null) return false;
+  try {
+    if (await launch(uri, mode: LaunchMode.externalApplication)) return true;
+  } catch (_) {
+    // External app launch failed or threw; fall back to browser.
+  }
+  try {
+    return await launch(uri, mode: LaunchMode.platformDefault);
+  } catch (_) {
+    return false;
+  }
+}

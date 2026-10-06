@@ -24,6 +24,51 @@ class ThemedErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final isScaled = textScale > 1.4;
+
+    final retryButton = onRetry != null
+        ? TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              // Retry is a link: a text token (WCAG AA), not red.
+              foregroundColor: AppColors.textPrimary,
+              minimumSize: const Size(48, 48),
+            ),
+            child: Text(
+              retryLabel ?? l10n.retry,
+              style: AppTypography.labelMd(
+                isArabic: l10n.isArabic,
+              ).copyWith(color: AppColors.textPrimary),
+            ),
+          )
+        : null;
+
+    final messageRow = Row(
+      crossAxisAlignment: isScaled
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.error_outline,
+          size: AppIconSize.md,
+          color: AppColors.danger,
+        ),
+        const SizedBox(width: AppSpacing.spaceMd),
+        Expanded(
+          child: Text(
+            message,
+            style: AppTypography.bodyMd(
+              isArabic: l10n.isArabic,
+            ).copyWith(color: AppColors.textPrimary),
+          ),
+        ),
+        if (!isScaled && retryButton != null) ...[
+          const SizedBox(width: AppSpacing.spaceSm),
+          retryButton,
+        ],
+      ],
+    );
 
     return Semantics(
       container: true,
@@ -41,41 +86,19 @@ class ThemedErrorBanner extends StatelessWidget {
           borderRadius: AppRadius.radiusLg,
           border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
         ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: AppIconSize.md,
-              color: AppColors.danger,
-            ),
-            const SizedBox(width: AppSpacing.spaceMd),
-            Expanded(
-              child: Text(
-                message,
-                style: AppTypography.bodyMd(
-                  isArabic: l10n.isArabic,
-                ).copyWith(color: AppColors.textPrimary),
-              ),
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(width: AppSpacing.spaceSm),
-              TextButton(
-                onPressed: onRetry,
-                style: TextButton.styleFrom(
-                  // Retry is a link: a text token (WCAG AA), not red.
-                  foregroundColor: AppColors.textPrimary,
-                  minimumSize: const Size(48, 48),
-                ),
-                child: Text(
-                  retryLabel ?? l10n.retry,
-                  style: AppTypography.labelMd(
-                    isArabic: l10n.isArabic,
-                  ).copyWith(color: AppColors.textPrimary),
-                ),
-              ),
-            ],
-          ],
-        ),
+        child: isScaled && retryButton != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  messageRow,
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: retryButton,
+                  ),
+                ],
+              )
+            : messageRow,
       ),
     );
   }

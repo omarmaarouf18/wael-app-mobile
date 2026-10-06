@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import 'package:wael_app/core/external_links.dart';
 
 void main() {
@@ -51,5 +52,102 @@ void main() {
         );
       }
     });
+  });
+
+  group('openSupportChat', () {
+    test(
+      'external ok: returns true when externalApplication succeeds',
+      () async {
+        final calls = <LaunchMode>[];
+        final ok = await openSupportChat(
+          supportUrl: 'https://wa.me/201000000000',
+          messageText: 'Help',
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            calls.add(mode);
+            return true;
+          },
+        );
+        expect(ok, isTrue);
+        expect(calls, [LaunchMode.externalApplication]);
+      },
+    );
+
+    test(
+      'falls back: uses platformDefault when externalApplication returns false',
+      () async {
+        final calls = <LaunchMode>[];
+        final ok = await openSupportChat(
+          supportUrl: 'https://wa.me/201000000000',
+          messageText: 'Help',
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            calls.add(mode);
+            if (mode == LaunchMode.externalApplication) return false;
+            return true;
+          },
+        );
+        expect(ok, isTrue);
+        expect(calls, [
+          LaunchMode.externalApplication,
+          LaunchMode.platformDefault,
+        ]);
+      },
+    );
+
+    test(
+      'falls back: uses platformDefault when externalApplication throws',
+      () async {
+        final calls = <LaunchMode>[];
+        final ok = await openSupportChat(
+          supportUrl: 'https://wa.me/201000000000',
+          messageText: 'Help',
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            calls.add(mode);
+            if (mode == LaunchMode.externalApplication) {
+              throw Exception('No WhatsApp');
+            }
+            return true;
+          },
+        );
+        expect(ok, isTrue);
+        expect(calls, [
+          LaunchMode.externalApplication,
+          LaunchMode.platformDefault,
+        ]);
+      },
+    );
+
+    test('non-wa.me URL returns false without calling launch', () async {
+      var called = false;
+      final ok = await openSupportChat(
+        supportUrl: 'https://example.com/not-whatsapp',
+        messageText: 'Help',
+        launch: (uri, {mode = LaunchMode.platformDefault}) async {
+          called = true;
+          return true;
+        },
+      );
+      expect(ok, isFalse);
+      expect(called, isFalse);
+    });
+
+    test(
+      'both fail: returns false when external and platformDefault fail',
+      () async {
+        final calls = <LaunchMode>[];
+        final ok = await openSupportChat(
+          supportUrl: 'https://wa.me/201000000000',
+          messageText: 'Help',
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            calls.add(mode);
+            return false;
+          },
+        );
+        expect(ok, isFalse);
+        expect(calls, [
+          LaunchMode.externalApplication,
+          LaunchMode.platformDefault,
+        ]);
+      },
+    );
   });
 }

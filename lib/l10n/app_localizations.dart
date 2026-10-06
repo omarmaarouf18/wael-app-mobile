@@ -230,8 +230,7 @@ class AppLocalizations {
       isArabic ? 'تم تغيير كلمة السر.' : 'Password changed.';
   String get myDevices => isArabic ? 'أجهزتي' : 'My devices';
   String get thisDevice => isArabic ? 'هذا الجهاز' : 'This device';
-  String get unknownDevice =>
-      isArabic ? 'جهاز غير معروف' : 'Unknown device';
+  String get unknownDevice => isArabic ? 'جهاز غير معروف' : 'Unknown device';
   String get signOutDevice =>
       isArabic ? 'تسجيل خروج من الجهاز ده' : 'Sign out of this device';
   String get signOutDeviceTitle =>
@@ -245,8 +244,7 @@ class AppLocalizations {
   String get deviceSignedOut =>
       isArabic ? 'تم تسجيل الخروج من الجهاز.' : 'The device was signed out.';
   String get justNow => isArabic ? 'الآن' : 'Just now';
-  String minutesAgo(int n) =>
-      isArabic ? 'منذ $n دقيقة' : '$n minutes ago';
+  String minutesAgo(int n) => isArabic ? 'منذ $n دقيقة' : '$n minutes ago';
   String hoursAgo(int n) => isArabic ? 'منذ $n ساعة' : '$n hours ago';
   String daysAgo(int n) => isArabic ? 'منذ $n يوم' : '$n days ago';
   String get noOtherDevices => isArabic
@@ -262,16 +260,23 @@ class AppLocalizations {
   String get deleteAccountGrace => isArabic
       ? 'بعد التأكيد تبدأ فترة سماح ٣٠ يومًا. لإلغاء الحذف يكفي تسجيل الدخول مرة أخرى خلالها.'
       : 'After confirming, a 30-day grace period starts. Signing in again during that time cancels the deletion.';
-  String get deleteConfirmHint => isArabic
-      ? 'اكتب كلمة "حذف" للتأكيد'
-      : 'Type "حذف" to confirm';
+  String get deleteConfirmHint =>
+      isArabic ? 'اكتب كلمة "حذف" للتأكيد' : 'Type "حذف" to confirm';
   String deletionScheduled(String date) => isArabic
       ? 'تم طلب حذف الحساب. سيتم الحذف بتاريخ $date ما لم تسجل الدخول قبلها.'
       : 'Deletion requested. Your account will be deleted on $date unless you sign in before then.';
-  String get backToLogin => isArabic ? 'العودة لتسجيل الدخول' : 'Back to sign in';
-  String get deletionCancelledNotice => isArabic
-      ? 'تم إلغاء حذف حسابك'
-      : 'Your account deletion was cancelled.';
+  String get backToLogin =>
+      isArabic ? 'العودة لتسجيل الدخول' : 'Back to sign in';
+  String get deletionCancelledNotice =>
+      isArabic ? 'تم إلغاء حذف حسابك' : 'Your account deletion was cancelled.';
+  String get helpTitle => isArabic ? 'المساعدة' : 'Help';
+  String get contactWhatsApp =>
+      isArabic ? 'تواصل معنا على واتساب' : 'Contact us on WhatsApp';
+  String get whatsappHelpText =>
+      isArabic ? 'مرحبًا، أحتاج إلى مساعدة.' : 'Hello, I need help.';
+  String get supportOpenFailed => isArabic
+      ? 'تعذر فتح واتساب، يرجى المحاولة لاحقًا.'
+      : 'Could not open WhatsApp, please try again later.';
   String get emailCodeSent => isArabic
       ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
       : 'A code was sent to your new email. Enter it below.';

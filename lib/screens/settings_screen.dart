@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart' show LaunchMode;
-import '../core/external_links.dart';
+import '../core/external_links.dart'
+    show LaunchUrl, defaultLaunchUrl, openSupportChat;
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/app_config_provider.dart';
@@ -113,9 +114,7 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.devices_outlined,
                 title: l10n.myDevices,
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const DevicesScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const DevicesScreen()),
                 ),
               ),
             ),
@@ -145,7 +144,35 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 5. ABOUT (server-provided pages + installed version)
+            // 5. HELP (server-provided WhatsApp chat)
+            if (appConfig.supportWhatsappUrl.isNotEmpty) ...[
+              ThemedSectionHeader(title: l10n.helpTitle),
+              ThemedCard(
+                padding: EdgeInsets.zero,
+                child: _buildNavigationTile(
+                  icon: Icons.support_agent_outlined,
+                  title: l10n.contactWhatsApp,
+                  onTap: () async {
+                    final ok = await openSupportChat(
+                      supportUrl: appConfig.supportWhatsappUrl,
+                      messageText: l10n.whatsappHelpText,
+                      launch: launch,
+                    );
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.surfaceElevated,
+                          content: Text(l10n.supportOpenFailed),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.spaceXl),
+            ],
+
+            // 6. ABOUT (server-provided pages + installed version)
             ThemedSectionHeader(title: l10n.aboutApp),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -184,7 +211,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 6. SIGN OUT BUTTON (with confirmation)
+            // 7. SIGN OUT BUTTON (with confirmation)
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -222,7 +249,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceLg),
 
-            // 7. DELETE ACCOUNT (danger style, last)
+            // 8. DELETE ACCOUNT (danger style, last)
             SizedBox(
               width: double.infinity,
               height: 48,
