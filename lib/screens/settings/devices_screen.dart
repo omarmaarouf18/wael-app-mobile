@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/account_provider.dart';
 import '../../repositories/account_repository.dart';
+import '../../widgets/app_badge.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/confirm_action_dialog.dart';
 import '../../widgets/icon_tile.dart';
@@ -212,7 +213,11 @@ class _DeviceRow extends StatelessWidget {
                     ),
                     if (session.current) ...[
                       const SizedBox(width: AppSpacing.spaceXs),
-                      _ThisDeviceChip(),
+                      AppBadge(
+                        label: l10n.thisDevice,
+                        accent: true,
+                        pill: true,
+                      ),
                     ],
                   ],
                 ),
@@ -234,30 +239,6 @@ class _DeviceRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ThisDeviceChip extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsetsDirectional.symmetric(
-        horizontal: AppSpacing.spaceSm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.crimsonTinted,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.crimson),
-      ),
-      child: Text(
-        l10n.thisDevice,
-        style: AppTypography.labelSm(
-          isArabic: l10n.isArabic,
-        ).copyWith(color: AppColors.danger),
       ),
     );
   }
