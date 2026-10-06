@@ -110,7 +110,7 @@ class NotificationsScreen extends StatelessWidget {
                       break;
                     case 'event':
                       iconData = Icons.event;
-                      iconColor = AppColors.crimson;
+                      iconColor = AppColors.danger;
                       break;
                     case 'course':
                       iconData = Icons.auto_stories;
@@ -157,7 +157,7 @@ class NotificationsScreen extends StatelessWidget {
                           child: StatusDot(
                             color: item.isRead
                                 ? AppColors.subtleHairline
-                                : AppColors.crimson,
+                                : AppColors.danger,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.spaceMd),

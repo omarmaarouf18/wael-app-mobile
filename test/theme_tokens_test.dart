@@ -107,6 +107,47 @@ void main() {
       );
     });
 
+    // F-UX4 follow-up (Commit 0): small red text moved off crimson onto
+    // danger, and links/retry onto textPrimary. Both pairs are asserted on
+    // every surface they are used on.
+    //
+    // Accent badges (AppBadge accent) set danger text on a translucent
+    // crimson fill; they sit on cards (surfaceLayer1) and on bare screens
+    // (voidCanvas, e.g. the e-books coming-soon badge).
+    final badgeOverCard = Color.alphaBlend(
+      AppColors.crimson.withValues(alpha: 0.15),
+      AppColors.surfaceLayer1,
+    );
+    final badgeOverCanvas = Color.alphaBlend(
+      AppColors.crimson.withValues(alpha: 0.15),
+      AppColors.voidCanvas,
+    );
+    test('danger on accent-badge fill over surfaceLayer1', () {
+      expect(
+        _contrast(AppColors.danger, badgeOverCard),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+    test('danger on accent-badge fill over voidCanvas', () {
+      expect(
+        _contrast(AppColors.danger, badgeOverCanvas),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    // The error banner (ThemedErrorBanner) sets its message and retry on
+    // dangerBg straight onto the screen canvas.
+    test('textPrimary on dangerBg over voidCanvas', () {
+      final composited = Color.alphaBlend(
+        AppColors.dangerBg,
+        AppColors.voidCanvas,
+      );
+      expect(
+        _contrast(AppColors.textPrimary, composited),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
     // Large-text rule (3.0:1): hero and display text are textPrimary, which
     // already clears 4.5 everywhere above; this pins the large threshold.
     test('large text needs 3.0:1 (displayHero on voidCanvas)', () {

@@ -137,13 +137,13 @@ class SettingsScreen extends StatelessWidget {
                 icon: const Icon(
                   Icons.logout,
                   size: 18,
-                  color: AppColors.crimson,
+                  color: AppColors.danger,
                 ),
                 label: Text(
                   AppTypography.uppercaseLabel(l10n.signOut),
                   style: AppTypography.labelSm(isArabic: l10n.isArabic)
                       .copyWith(
-                        color: AppColors.crimson,
+                        color: AppColors.danger,
                         fontWeight: FontWeight.bold,
                       ),
                 ),

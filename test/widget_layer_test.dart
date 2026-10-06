@@ -5,11 +5,13 @@ import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/confirm_action_dialog.dart';
 import 'package:wael_app/widgets/otp_pin_input.dart';
 import 'package:wael_app/widgets/secondary_button.dart';
+import 'package:wael_app/widgets/status_dot.dart';
 import 'package:wael_app/widgets/themed_empty_state.dart';
 import 'package:wael_app/widgets/themed_error_banner.dart';
 import 'package:wael_app/widgets/themed_loading_indicator.dart';
 import 'package:wael_app/widgets/themed_panel.dart';
 import 'package:wael_app/widgets/themed_section_header.dart';
+import 'package:wael_app/widgets/themed_text_field.dart';
 
 import 'widget_layer_harness.dart';
 
@@ -250,6 +252,56 @@ void main() {
             expect(icon, greaterThan(text));
             expect(retry, lessThan(text));
           }
+        });
+
+        testWidgets('retry uses a text token, not red', (tester) async {
+          await pumpLocalized(
+            tester,
+            locale,
+            Scaffold(
+              body: ThemedErrorBanner(
+                message: l10n.errorLoading,
+                onRetry: () {},
+              ),
+            ),
+          );
+          final style = tester.widget<Text>(find.text(l10n.retry)).style!;
+          expect(style.color, AppColors.textPrimary);
+        });
+      });
+
+      group('ThemedTextField', () {
+        testWidgets('validation errors use danger, not crimson', (
+          tester,
+        ) async {
+          await pumpLocalized(
+            tester,
+            locale,
+            Scaffold(
+              body: Form(
+                autovalidateMode: AutovalidateMode.always,
+                child: ThemedTextField(
+                  hintText: 'hint',
+                  validator: (_) => 'bad',
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          final style = tester.widget<Text>(find.text('bad')).style!;
+          expect(style.color, AppColors.danger);
+        });
+      });
+
+      group('StatusDot', () {
+        testWidgets('default pip color is danger, not crimson', (tester) async {
+          await pumpLocalized(
+            tester,
+            locale,
+            const Scaffold(body: StatusDot()),
+          );
+          final dot = tester.widget<StatusDot>(find.byType(StatusDot));
+          expect(dot.color, AppColors.danger);
         });
       });
 

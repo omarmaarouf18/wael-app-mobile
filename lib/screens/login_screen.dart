@@ -160,9 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               size: 18,
+                              // Small icons use danger (WCAG AA).
                               color: _obscurePassword
                                   ? AppColors.textTertiary
-                                  : AppColors.crimson,
+                                  : AppColors.danger,
                             ),
                             onPressed: () {
                               setState(() {
@@ -236,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       AppTypography.bodySm(
                                         isArabic: l10n.isArabic,
                                       ).copyWith(
-                                        color: AppColors.crimson,
+                                        color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                       ),
                                 ),

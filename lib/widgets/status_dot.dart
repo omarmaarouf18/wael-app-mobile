@@ -6,7 +6,8 @@ import '../core/theme.dart';
 class StatusDot extends StatelessWidget {
   const StatusDot({
     super.key,
-    this.color = AppColors.crimson,
+    // Small indicators use danger (WCAG AA); fills stay crimson.
+    this.color = AppColors.danger,
     this.size = 7,
     this.borderColor,
     this.borderWidth = 1.5,

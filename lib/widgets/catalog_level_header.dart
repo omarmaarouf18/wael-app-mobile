@@ -32,7 +32,8 @@ class CatalogLevelHeader extends StatelessWidget {
         children: [
           IconTile(
             icon: Icons.account_balance,
-            iconColor: AppColors.crimson,
+            // Small icons use danger (WCAG AA); tint and border stay crimson.
+            iconColor: AppColors.danger,
             background: AppColors.crimson.withValues(alpha: 0.15),
             borderColor: AppColors.crimson.withValues(alpha: 0.3),
             size: 40,

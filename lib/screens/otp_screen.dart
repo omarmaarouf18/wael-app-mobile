@@ -105,7 +105,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         'DEBUG OTP: $devOtp',
                         style: AppTypography.bodySm(
                           isArabic: l10n.isArabic,
-                        ).copyWith(color: AppColors.crimson),
+                        ).copyWith(color: AppColors.danger),
                       ),
                     ),
                   ],
@@ -151,7 +151,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                   AppTypography.bodySm(
                                     isArabic: l10n.isArabic,
                                   ).copyWith(
-                                    color: AppColors.crimson,
+                                    color: AppColors.textPrimary,
                                     fontWeight: FontWeight.w700,
                                   ),
                             ),

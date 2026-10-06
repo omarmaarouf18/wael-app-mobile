@@ -75,6 +75,10 @@ class ThemedTextField extends StatelessWidget {
             hintStyle: AppTypography.bodyMd().copyWith(
               color: AppColors.textTertiary,
             ),
+            // Validation errors are small text: danger (WCAG AA), not crimson.
+            errorStyle: AppTypography.bodySm().copyWith(
+              color: AppColors.danger,
+            ),
             filled: true,
             fillColor: AppColors.surfaceContainer,
             prefixIcon: prefixIcon,

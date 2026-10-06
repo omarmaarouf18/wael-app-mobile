@@ -62,14 +62,15 @@ class ThemedErrorBanner extends StatelessWidget {
               TextButton(
                 onPressed: onRetry,
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.danger,
+                  // Retry is a link: a text token (WCAG AA), not red.
+                  foregroundColor: AppColors.textPrimary,
                   minimumSize: const Size(48, 48),
                 ),
                 child: Text(
                   retryLabel ?? l10n.retry,
                   style: AppTypography.labelMd(
                     isArabic: l10n.isArabic,
-                  ).copyWith(color: AppColors.danger),
+                  ).copyWith(color: AppColors.textPrimary),
                 ),
               ),
             ],

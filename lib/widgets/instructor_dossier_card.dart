@@ -130,7 +130,7 @@ class InstructorDossierCard extends StatelessWidget {
                     Text(
                       bioExpanded ? l10n.showLess : l10n.readMore,
                       style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                        color: AppColors.crimson,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       ),
@@ -141,7 +141,8 @@ class InstructorDossierCard extends StatelessWidget {
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       size: 16,
-                      color: AppColors.crimson,
+                      // Small icons use danger (WCAG AA); fills stay crimson.
+                      color: AppColors.danger,
                     ),
                   ],
                 ),

@@ -207,7 +207,8 @@ class _OfflineBanner extends StatelessWidget {
               child: Text(
                 l10n.retry,
                 style: AppTypography.bodySm(isArabic: l10n.isArabic).copyWith(
-                  color: AppColors.crimson,
+                  // Link text uses a text token (WCAG AA); fills stay crimson.
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

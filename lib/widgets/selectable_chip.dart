@@ -50,7 +50,8 @@ class SelectableChip extends StatelessWidget {
         ? AppColors.textPrimary
         : AppColors.textSecondary;
     final Color iconColor = outlined
-        ? (selected ? AppColors.crimson : AppColors.textMuted)
+        // Small icons use danger (WCAG AA); fills and borders stay crimson.
+        ? (selected ? AppColors.danger : AppColors.textMuted)
         : (selected ? AppColors.textPrimary : AppColors.textMuted);
 
     // 48x48 dp min tap target around a compact pill visual. The Align

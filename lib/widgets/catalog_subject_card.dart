@@ -59,7 +59,8 @@ class CatalogSubjectCard extends StatelessWidget {
                 const Icon(
                   Icons.person_pin_circle_outlined,
                   size: 14,
-                  color: AppColors.crimson,
+                  // Small icons use danger (WCAG AA); fills stay crimson.
+                  color: AppColors.danger,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -124,7 +125,7 @@ class CatalogSubjectCard extends StatelessWidget {
                   subject.owned ? l10n.continueSubject : l10n.viewSubject,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                    color: AppColors.crimson,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
@@ -135,7 +136,7 @@ class CatalogSubjectCard extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward,
                 size: 13,
-                color: AppColors.crimson,
+                color: AppColors.danger,
               ),
             ],
           ),
@@ -163,7 +164,7 @@ class _CountPill extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: AppColors.crimson),
+        Icon(icon, size: 12, color: AppColors.danger),
         const SizedBox(width: 4),
         Flexible(
           child: Text(

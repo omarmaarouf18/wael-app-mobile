@@ -128,7 +128,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         'DEBUG OTP: $devOtp',
                         style: AppTypography.bodySm(
                           isArabic: l10n.isArabic,
-                        ).copyWith(color: AppColors.crimson),
+                        ).copyWith(color: AppColors.danger),
                       ),
                     ],
                     const SizedBox(height: AppSpacing.spaceLg),
@@ -204,9 +204,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
                             size: 18,
+                            // Small icons use danger (WCAG AA).
                             color: _obscurePassword
                                 ? AppColors.textTertiary
-                                : AppColors.crimson,
+                                : AppColors.danger,
                           ),
                           onPressed: () {
                             setState(() {

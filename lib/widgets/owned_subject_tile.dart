@@ -37,7 +37,8 @@ class OwnedSubjectTile extends StatelessWidget {
         children: [
           const IconTile(
             icon: Icons.school_outlined,
-            iconColor: AppColors.crimson,
+            // Small icons use danger (WCAG AA); fills stay crimson.
+            iconColor: AppColors.danger,
             size: 48,
             iconSize: 22,
             borderRadius: AppRadius.radiusLg,
@@ -68,7 +69,7 @@ class OwnedSubjectTile extends StatelessWidget {
                       ? l10n.readyToStart
                       : l10n.accessUntil(formatDate(expiry)),
                   style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                    color: AppColors.crimson,
+                    color: AppColors.danger,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

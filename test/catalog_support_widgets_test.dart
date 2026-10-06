@@ -45,7 +45,7 @@ void main() {
         expect(deco('two').color, AppColors.crimson.withValues(alpha: 0.15));
         expect(deco('three').borderRadius, AppRadius.radiusPill);
         final accentStyle = tester.widget<Text>(find.text('two')).style!;
-        expect(accentStyle.color, AppColors.crimson);
+        expect(accentStyle.color, AppColors.danger);
         // Arabic letterforms must not be letter-spaced.
         expect(
           accentStyle.letterSpacing,
@@ -107,6 +107,7 @@ void main() {
                   label: 'Selected',
                   selected: true,
                   variant: ChipVariant.outlined,
+                  icon: Icons.school_outlined,
                   onTap: () {},
                 ),
               ],
@@ -121,6 +122,11 @@ void main() {
         expect(deco.boxShadow, AppElevation.crimsonGlow);
         expect((deco.border! as Border).top.color, AppColors.crimson);
         expect(deco.color, AppColors.surfaceElevated);
+        // Small selected icons use danger (WCAG AA); the border stays crimson.
+        expect(
+          tester.widget<Icon>(find.byIcon(Icons.school_outlined)).color,
+          AppColors.danger,
+        );
       });
 
       testWidgets('AccentTitle: bar at the start, trailing at the end', (

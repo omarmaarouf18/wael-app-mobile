@@ -453,7 +453,7 @@ class AppTheme {
         contentTextStyle: AppTypography.bodyMd().copyWith(
           color: AppColors.textPrimary,
         ),
-        actionTextColor: AppColors.crimson,
+        actionTextColor: AppColors.textPrimary,
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.subtleHairline,

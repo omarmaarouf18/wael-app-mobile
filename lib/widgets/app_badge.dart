@@ -53,8 +53,9 @@ class AppBadge extends StatelessWidget {
       child: Text(
         label,
         style: AppTypography.labelSm(isArabic: isArabic).copyWith(
+          // Small red text uses danger (WCAG AA); fills stay crimson.
           color: accent
-              ? AppColors.crimson
+              ? AppColors.danger
               : (subtle ? AppColors.textMuted : AppColors.textSecondary),
           fontSize: fontSize,
           fontWeight: accent ? FontWeight.w800 : FontWeight.w600,

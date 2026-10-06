@@ -97,7 +97,7 @@ class CatalogFileTile extends StatelessWidget {
                   l10n.previewMaterial,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.labelSm(isArabic: isArabic).copyWith(
-                    color: AppColors.crimson,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
@@ -107,7 +107,8 @@ class CatalogFileTile extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward,
                 size: 12,
-                color: AppColors.crimson,
+                // Small icons use danger (WCAG AA); fills stay crimson.
+                color: AppColors.danger,
               ),
             ],
           ),

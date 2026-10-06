@@ -40,7 +40,8 @@ class CatalogVideoTile extends StatelessWidget {
             ),
             child: Icon(
               locked ? Icons.lock_outline : Icons.play_circle_outline,
-              color: locked ? AppColors.textMuted : AppColors.crimson,
+              // Small icons use danger (WCAG AA); fills stay crimson.
+              color: locked ? AppColors.textMuted : AppColors.danger,
             ),
           ),
           const SizedBox(width: AppSpacing.spaceMd),
@@ -75,7 +76,7 @@ class CatalogVideoTile extends StatelessWidget {
           Icon(
             locked ? Icons.lock_outline : Icons.play_arrow,
             size: 20,
-            color: locked ? AppColors.textMuted : AppColors.crimson,
+            color: locked ? AppColors.textMuted : AppColors.danger,
           ),
         ],
       ),
