@@ -11,6 +11,7 @@ import '../../widgets/themed_error_banner.dart';
 import '../../widgets/themed_section_header.dart';
 import '../../widgets/themed_text_field.dart';
 import 'email_change_screen.dart';
+import 'password_change_screen.dart';
 
 /// "My account" settings section (F-UX2 Part B): the name and phone rows.
 /// Each opens a sheet with the new value plus the current password; the
@@ -62,6 +63,16 @@ class ProfileSection extends StatelessWidget {
                 value: user.email,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const EmailChangeScreen()),
+                ),
+              ),
+              _ProfileRow(
+                icon: Icons.lock_outline,
+                title: l10n.changePasswordTitle,
+                value: '',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PasswordChangeScreen(),
+                  ),
                 ),
               ),
             ],

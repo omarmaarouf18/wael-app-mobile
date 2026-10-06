@@ -224,6 +224,10 @@ class AppLocalizations {
   String get editEmailTitle =>
       isArabic ? 'تعديل البريد الإلكتروني' : 'Change email';
   String get newEmailLabel => isArabic ? 'البريد الجديد' : 'New email';
+  String get changePasswordTitle =>
+      isArabic ? 'تغيير كلمة السر' : 'Change password';
+  String get passwordChanged =>
+      isArabic ? 'تم تغيير كلمة السر.' : 'Password changed.';
   String get emailCodeSent => isArabic
       ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
       : 'A code was sent to your new email. Enter it below.';

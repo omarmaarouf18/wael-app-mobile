@@ -98,7 +98,6 @@ void main() {
         expect(find.byType(SwitchListTile), findsNothing);
         for (final icon in [
           Icons.fingerprint,
-          Icons.lock_outline,
           Icons.notifications_none,
           Icons.auto_stories_outlined,
           Icons.verified_outlined,
