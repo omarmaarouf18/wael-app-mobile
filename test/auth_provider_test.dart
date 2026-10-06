@@ -33,6 +33,30 @@ AuthProvider providerWith(FakeAuthRepository repo, MemoryTokenStore store) {
   return AuthProvider(repository: repo, tokenStore: store);
 }
 
+class _TrackingAuthRepository extends FakeAuthRepository {
+  _TrackingAuthRepository({
+    this.delay = Duration.zero,
+    this.onRefresh,
+    super.refreshMode,
+  });
+
+  final Duration delay;
+  final Future<void> Function(String refreshToken)? onRefresh;
+  int refreshCalls = 0;
+
+  @override
+  Future<AuthTokens> refresh({required String refreshToken}) async {
+    refreshCalls++;
+    if (delay > Duration.zero) {
+      await Future<void>.delayed(delay);
+    }
+    if (onRefresh != null) {
+      await onRefresh!(refreshToken);
+    }
+    return super.refresh(refreshToken: refreshToken);
+  }
+}
+
 void main() {
   test('login success stores session and authenticates', () async {
     final store = MemoryTokenStore();
@@ -407,6 +431,53 @@ void main() {
       expect(ok, isFalse);
       expect(auth.isAuthenticated, isFalse);
       expect(await store.readAccessToken(), isNull);
+    });
+
+    test(
+      'concurrent doRefresh calls share the same in-flight Future',
+      () async {
+        final repo = _TrackingAuthRepository(
+          delay: const Duration(milliseconds: 30),
+        );
+        final store = MemoryTokenStore();
+        await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+        final auth = providerWith(repo, store);
+
+        final results = await Future.wait([
+          auth.doRefresh(),
+          auth.doRefresh(),
+          auth.doRefresh(),
+        ]);
+
+        expect(results, [true, true, true]);
+        expect(repo.refreshCalls, 1);
+      },
+    );
+
+    test('interleaving: rotated token prevents clearing on 401', () async {
+      final store = MemoryTokenStore();
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+      late final _TrackingAuthRepository repo;
+      repo = _TrackingAuthRepository(
+        refreshMode: '401',
+        onRefresh: (token) async {
+          // Simulate concurrent successful refresh rotating the token
+          await store.writeTokens(
+            access: 'access-rotated',
+            refresh: 'refresh-rotated',
+          );
+        },
+      );
+      final auth = providerWith(repo, store);
+      await auth.login('u@e.com', 'password123');
+      // Reset store to simulate the starting token of the raced attempt
+      await store.writeTokens(access: 'access-1', refresh: 'refresh-1');
+
+      final ok = await auth.doRefresh();
+      expect(ok, isTrue);
+      expect(auth.isAuthenticated, isTrue);
+      expect(await store.readAccessToken(), 'access-rotated');
+      expect(await store.readRefreshToken(), 'refresh-rotated');
     });
   });
 

@@ -252,14 +252,30 @@ class AuthProvider extends ChangeNotifier {
   @visibleForTesting
   Future<bool> doRefresh() => _doRefresh();
 
-  Future<bool> _doRefresh() async {
-    final refresh = await _tokens.readRefreshToken();
-    if (refresh == null || refresh.isEmpty) {
+  Future<bool>? _refreshInFlight;
+
+  Future<bool> _doRefresh() {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) return inFlight;
+    final future = _performRefresh();
+    _refreshInFlight = future;
+    return future.whenComplete(() {
+      if (identical(_refreshInFlight, future)) {
+        _refreshInFlight = null;
+      }
+    });
+  }
+
+  Future<bool> _performRefresh() async {
+    final startingRefreshToken = await _tokens.readRefreshToken();
+    if (startingRefreshToken == null || startingRefreshToken.isEmpty) {
+      final current = await _tokens.readRefreshToken();
+      if (current != null && current.isNotEmpty) return true;
       await _logoutLocal();
       return false;
     }
     try {
-      final tokens = await _repo.refresh(refreshToken: refresh);
+      final tokens = await _repo.refresh(refreshToken: startingRefreshToken);
       await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
       return true;
     } on ApiException catch (e) {
@@ -268,6 +284,14 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
       if (e.statusCode == 401 || e.statusCode == 403) {
+        final current = await _tokens.readRefreshToken();
+        if (current != startingRefreshToken &&
+            current != null &&
+            current.isNotEmpty) {
+          // Token changed since this attempt started (e.g. rotated by
+          // another concurrent refresh). Keep the fresh tokens and session.
+          return true;
+        }
         await _logoutLocal();
       } else if (_isTransientStatus(e.statusCode)) {
         // Transient refresh failure (network/timeout/5xx/408/429): keep
