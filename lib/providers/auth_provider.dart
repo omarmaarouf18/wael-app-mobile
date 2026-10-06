@@ -35,6 +35,7 @@ class AuthProvider extends ChangeNotifier {
       allowSelfSigned: AppConfig.allowSelfSigned,
       accessTokenReader: _tokens.readAccessToken,
       refreshTokens: _doRefresh,
+      forceLogout: handleForceLogout,
       localeReader: _localeReader,
       onSessionReplaced: (msg) => handleSessionReplaced(msg),
     );
@@ -42,6 +43,32 @@ class AuthProvider extends ChangeNotifier {
 
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
+
+  bool _isExplicitLogout = false;
+  bool _isRestoring = false;
+  bool _navigatingToLogin = false;
+
+  Future<void> handleForceLogout() async {
+    if (_isExplicitLogout || _isRestoring) return;
+    await _logoutLocal();
+    _navigateToLogin();
+  }
+
+  void _navigateToLogin() {
+    if (_isExplicitLogout || _isRestoring) return;
+    if (_navigatingToLogin) return;
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    _navigatingToLogin = true;
+    nav
+        .pushNamedAndRemoveUntil('/login', (route) => false)
+        .then((_) {
+          _navigatingToLogin = false;
+        })
+        .catchError((_) {
+          _navigatingToLogin = false;
+        });
+  }
 
   final String? Function()? _localeReader;
   String? _forcedLocale;
@@ -115,6 +142,7 @@ class AuthProvider extends ChangeNotifier {
   String? get lastDevOtp => kDebugMode ? _lastDevOtp : null;
 
   void _begin() {
+    _navigatingToLogin = false;
     _isLoading = true;
     _errorMessage = null;
     _logoutNotice = null;
@@ -170,16 +198,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> handleSessionReplaced([String? backendMessage]) async {
-    await _logoutLocal();
+    _sessionReplacedActive = true;
     _errorMessage = (backendMessage != null && backendMessage.isNotEmpty)
         ? backendMessage
         : ErrorMessages.sessionReplaced(_isArabic);
-    _sessionReplacedActive = true;
-    notifyListeners();
-    navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/login',
-      (route) => false,
-    );
+    await _logoutLocal();
+    _navigateToLogin();
   }
 
   /// True after a session_replaced logout until the next login attempt: the
@@ -188,6 +212,7 @@ class AuthProvider extends ChangeNotifier {
   bool get sessionReplacedActive => _sessionReplacedActive;
 
   Future<void> _storeSession(AuthAccount account, AuthTokens tokens) async {
+    _navigatingToLogin = false;
     await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
     _account = account;
     _currentUser = _withAccount(_currentUser, account);
@@ -278,33 +303,38 @@ class AuthProvider extends ChangeNotifier {
   ///   never returns these today; a gateway/WAF quirk must not log a
   ///   student out, so keep the tokens and enter offline.
   Future<void> tryRestore() async {
-    final access = await _tokens.readAccessToken();
-    if (access == null || access.isEmpty) {
-      _status = AuthStatus.unauthenticated;
-      notifyListeners();
-      return;
-    }
+    _isRestoring = true;
     try {
-      await _restoreWith(access);
-    } on ApiException catch (e) {
-      if (e.code == 'session_replaced') {
-        await handleSessionReplaced(e.message);
+      final access = await _tokens.readAccessToken();
+      if (access == null || access.isEmpty) {
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
         return;
       }
-      if (e.statusCode == 401) {
-        await _restoreAfterRefresh();
+      try {
+        await _restoreWith(access);
+      } on ApiException catch (e) {
+        if (e.code == 'session_replaced') {
+          await handleSessionReplaced(e.message);
+          return;
+        }
+        if (e.statusCode == 401) {
+          await _restoreAfterRefresh();
+          return;
+        }
+        if (e.statusCode == 403) {
+          await _logoutLocal();
+          return;
+        }
+        _enterOffline(e.retryAfterSeconds);
         return;
+      } catch (_) {
+        _enterOffline();
       }
-      if (e.statusCode == 403) {
-        await _logoutLocal();
-        return;
-      }
-      _enterOffline(e.retryAfterSeconds);
-      return;
-    } catch (_) {
-      _enterOffline();
+      notifyListeners();
+    } finally {
+      _isRestoring = false;
     }
-    notifyListeners();
   }
 
   /// Retry entry point for the offline banner and app-resume revalidation.
@@ -575,29 +605,34 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> logout() async {
-    final access = await _tokens.readAccessToken();
-    bool confirmed = true;
-    if (access != null && access.isNotEmpty) {
-      try {
-        await _repo.logout(accessToken: access);
-        confirmed = true;
-      } on ApiException catch (e) {
-        if (e.statusCode == 204 || e.statusCode == 401) {
+    _isExplicitLogout = true;
+    try {
+      final access = await _tokens.readAccessToken();
+      bool confirmed = true;
+      if (access != null && access.isNotEmpty) {
+        try {
+          await _repo.logout(accessToken: access);
           confirmed = true;
-        } else {
+        } on ApiException catch (e) {
+          if (e.statusCode == 204 || e.statusCode == 401) {
+            confirmed = true;
+          } else {
+            confirmed = false;
+          }
+        } catch (_) {
           confirmed = false;
         }
-      } catch (_) {
-        confirmed = false;
       }
+      await _logoutLocal();
+      _errorMessage = null;
+      if (!confirmed) {
+        _logoutNotice = ErrorMessages.signOutUnconfirmed(_isArabic);
+      }
+      notifyListeners();
+      return confirmed;
+    } finally {
+      _isExplicitLogout = false;
     }
-    await _logoutLocal();
-    _errorMessage = null;
-    if (!confirmed) {
-      _logoutNotice = ErrorMessages.signOutUnconfirmed(_isArabic);
-    }
-    notifyListeners();
-    return confirmed;
   }
 
   Future<void> _logoutLocal() async {
@@ -615,6 +650,7 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.unauthenticated;
     _isLoading = false;
     notifyListeners();
+    _navigateToLogin();
   }
 
   @override

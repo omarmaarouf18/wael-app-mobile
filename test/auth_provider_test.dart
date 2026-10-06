@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/core/secure_store.dart';
@@ -497,5 +498,96 @@ void main() {
         expect(auth.watermarkText, 'u@e.com');
       },
     );
+
+    group('forced logout navigation', () {
+      testWidgets(
+        'handleForceLogout navigates to /login via navigatorKey and is idempotent',
+        (tester) async {
+          final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+          int loginBuilds = 0;
+          await tester.pumpWidget(
+            MaterialApp(
+              navigatorKey: AuthProvider.navigatorKey,
+              initialRoute: '/home',
+              routes: {
+                '/home': (_) => const Scaffold(body: Text('Home')),
+                '/login': (_) {
+                  loginBuilds++;
+                  return const Scaffold(body: Text('Login Screen'));
+                },
+              },
+            ),
+          );
+          expect(find.text('Home'), findsOneWidget);
+          expect(loginBuilds, 0);
+
+          await auth.handleForceLogout();
+          await tester.pumpAndSettle();
+
+          expect(find.text('Login Screen'), findsOneWidget);
+          expect(find.text('Home'), findsNothing);
+          expect(loginBuilds, 1);
+
+          // Idempotent: second call does not re-push /login
+          await auth.handleForceLogout();
+          await tester.pumpAndSettle();
+          expect(loginBuilds, 1);
+        },
+      );
+
+      testWidgets('explicit logout does not navigate via navigatorKey', (
+        tester,
+      ) async {
+        final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: AuthProvider.navigatorKey,
+            initialRoute: '/home',
+            routes: {
+              '/home': (_) => const Scaffold(body: Text('Home')),
+              '/login': (_) => const Scaffold(body: Text('Login Screen')),
+            },
+          ),
+        );
+        expect(find.text('Home'), findsOneWidget);
+
+        await auth.logout();
+        await tester.pumpAndSettle();
+
+        // Still on Home screen (LogoutHelper in UI layer navigates explicitly)
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.text('Login Screen'), findsNothing);
+      });
+
+      testWidgets('tryRestore failure does not navigate via navigatorKey', (
+        tester,
+      ) async {
+        final repo = FakeAuthRepository()
+          ..meMode = '401'
+          ..refreshMode = '401';
+        final store = MemoryTokenStore();
+        await store.writeTokens(access: 'acc', refresh: 'ref');
+        final auth = providerWith(repo, store);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: AuthProvider.navigatorKey,
+            initialRoute: '/splash',
+            routes: {
+              '/splash': (_) => const Scaffold(body: Text('Splash Screen')),
+              '/login': (_) => const Scaffold(body: Text('Login Screen')),
+            },
+          ),
+        );
+        expect(find.text('Splash Screen'), findsOneWidget);
+
+        await auth.tryRestore();
+        await tester.pumpAndSettle();
+
+        // Still on Splash Screen: splash decides route after restore
+        expect(find.text('Splash Screen'), findsOneWidget);
+        expect(find.text('Login Screen'), findsNothing);
+      });
+    });
   });
 }
