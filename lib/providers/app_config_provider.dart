@@ -34,7 +34,9 @@ class AppConfigProvider extends ChangeNotifier {
 
   AppConfigData _config = const AppConfigData();
   DateTime? _loadedAt;
-  bool _loading = false;
+  Future<void>? _pendingLoad;
+
+  bool get isLoading => _pendingLoad != null;
 
   AppConfigData get config => _config;
   String get termsUrl => _config.termsUrl;
@@ -44,11 +46,21 @@ class AppConfigProvider extends ChangeNotifier {
   /// Loads the config unless a fresh copy is already in hand. Concurrent
   /// callers share one fetch.
   Future<void> load({bool force = false}) async {
-    if (_loading) return;
+    final pending = _pendingLoad;
+    if (pending != null) return pending;
     if (!force && _loadedAt != null) {
       if (_clock().difference(_loadedAt!) < cacheTtl) return;
     }
-    _loading = true;
+    final future = _loadInternal(force: force);
+    _pendingLoad = future;
+    try {
+      await future;
+    } finally {
+      _pendingLoad = null;
+    }
+  }
+
+  Future<void> _loadInternal({bool force = false}) async {
     try {
       final cached = await _cache.read();
       if (cached != null && !force) {
@@ -70,8 +82,6 @@ class AppConfigProvider extends ChangeNotifier {
       await _cache.write(AppConfigSnapshot(config: fresh, savedAt: _loadedAt!));
     } catch (_) {
       // Fail soft: keep the last values (possibly empty), no prompt.
-    } finally {
-      _loading = false;
     }
     notifyListeners();
   }
@@ -95,13 +105,20 @@ class AppConfigProvider extends ChangeNotifier {
   /// versions are unknown).
   UpdateState updateState(String currentVersion) {
     if (currentVersion.isEmpty) return UpdateState.none;
-    if (_config.minVersion.isNotEmpty &&
-        compareAppVersions(currentVersion, _config.minVersion) < 0) {
-      return UpdateState.required;
+    final cur = parseAppVersion(currentVersion);
+    if (cur == null) return UpdateState.none;
+
+    if (_config.minVersion.isNotEmpty) {
+      final min = parseAppVersion(_config.minVersion);
+      if (min != null && cur.compareTo(min) < 0) {
+        return UpdateState.required;
+      }
     }
-    if (_config.latestVersion.isNotEmpty &&
-        compareAppVersions(currentVersion, _config.latestVersion) < 0) {
-      return UpdateState.available;
+    if (_config.latestVersion.isNotEmpty) {
+      final latest = parseAppVersion(_config.latestVersion);
+      if (latest != null && cur.compareTo(latest) < 0) {
+        return UpdateState.available;
+      }
     }
     return UpdateState.none;
   }

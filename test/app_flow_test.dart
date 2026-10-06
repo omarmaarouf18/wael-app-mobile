@@ -13,10 +13,19 @@ import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import 'academy_fakes.dart';
 import 'fakes.dart';
 
 Widget testApp() {
+  PackageInfo.setMockInitialValues(
+    appName: 'EL METR ACADEMY',
+    packageName: 'app.elmetracademy.student',
+    version: '1.0.0',
+    buildNumber: '1',
+    buildSignature: '',
+  );
   final auth = AuthProvider(
     repository: FakeAuthRepository(),
     tokenStore: MemoryTokenStore(),

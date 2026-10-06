@@ -292,6 +292,16 @@ class AppLocalizations {
   String get appVersion => isArabic ? 'إصدار التطبيق' : 'App version';
   String get readTerms =>
       isArabic ? 'اقرأ الشروط والأحكام' : 'Read the Terms & Conditions';
+  String get updateAvailable => isArabic ? 'تحديث متاح' : 'Update available';
+  String get updateNow => isArabic ? 'تحديث الآن' : 'Update now';
+  String get updateRequiredTitle =>
+      isArabic ? 'تحديث التطبيق مطلوب' : 'Update required';
+  String get updateRequiredMessage => isArabic
+      ? 'يتوفر إصدار جديد من التطبيق يلزم تثبيته للمتابعة.'
+      : 'A new version of the app is available and required to continue.';
+  String get updateContactSupport => isArabic
+      ? 'يرجى التواصل مع الدعم الفني للحصول على رابط التحديث.'
+      : 'Please contact support to get the update link.';
 
   // Catalog (home, courses, subject detail)
   String get noOwnedCourses => isArabic

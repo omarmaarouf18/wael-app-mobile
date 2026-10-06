@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/secure_store.dart';
@@ -27,6 +28,7 @@ const kStubRoutes = [
   '/ebooks',
   '/course-details',
   '/video-player',
+  '/update-gate',
 ];
 
 /// Arguments passed to the stub routes, newest last. Cleared by [pumpScreen].
@@ -54,6 +56,13 @@ Future<void> pumpScreen(
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+  PackageInfo.setMockInitialValues(
+    appName: 'EL METR ACADEMY',
+    packageName: 'app.elmetracademy.student',
+    version: '1.0.0',
+    buildNumber: '1',
+    buildSignature: '',
+  );
   final authProvider = auth ?? makeAuth();
 
   await tester.pumpWidget(
@@ -65,7 +74,11 @@ Future<void> pumpScreen(
           value: notifications ?? NotificationsProvider(),
         ),
         ChangeNotifierProvider.value(value: speed ?? PlaybackSpeedProvider()),
-        ChangeNotifierProvider.value(value: appConfig ?? AppConfigProvider()),
+        ChangeNotifierProvider.value(
+          value:
+              appConfig ??
+              AppConfigProvider(versionReader: () async => '1.0.0'),
+        ),
         ChangeNotifierProvider.value(
           value:
               accounts ??

@@ -22,6 +22,7 @@ import 'package:wael_app/screens/home_screen.dart';
 import 'package:wael_app/screens/login_screen.dart';
 import 'package:wael_app/screens/notifications_screen.dart';
 import 'package:wael_app/screens/settings_screen.dart';
+import 'package:wael_app/screens/update_gate_screen.dart';
 import 'package:wael_app/widgets/player_next_cards.dart';
 import 'package:wael_app/widgets/protected_video_surface.dart';
 
@@ -288,6 +289,13 @@ void main() {
             ),
           ),
         );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('UpdateGateScreen does not overflow at 2.0x text scaling', (
+        tester,
+      ) async {
+        await pumpScaled(tester, locale, const UpdateGateScreen());
         expect(tester.takeException(), isNull);
       });
     });

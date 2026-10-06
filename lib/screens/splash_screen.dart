@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_shell.dart';
 
@@ -16,9 +17,11 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
     this.restoreBudget = const Duration(seconds: 20),
+    this.configBudget = const Duration(seconds: 3),
   });
 
   final Duration restoreBudget;
+  final Duration configBudget;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -33,11 +36,50 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _boot() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    AppConfigProvider? appConfig;
     try {
-      await auth.tryRestore().timeout(widget.restoreBudget);
-    } on TimeoutException {
-      await auth.enterOffline();
+      appConfig = Provider.of<AppConfigProvider>(context, listen: false);
+    } catch (_) {}
+
+    final restoreFuture = () async {
+      try {
+        await auth.tryRestore().timeout(widget.restoreBudget);
+      } on TimeoutException {
+        await auth.enterOffline();
+      }
+    }();
+
+    final configBudget = widget.configBudget < widget.restoreBudget
+        ? widget.configBudget
+        : widget.restoreBudget;
+
+    final configFuture = () async {
+      if (appConfig != null) {
+        try {
+          await appConfig.load().timeout(configBudget);
+        } catch (_) {
+          // Fail soft: app-config unreachable/offline/malformed never blocks
+        }
+      }
+    }();
+
+    await Future.wait([restoreFuture, configFuture]);
+    if (!mounted) return;
+
+    if (appConfig != null) {
+      try {
+        final version = await appConfig.currentVersion().timeout(configBudget);
+        if (!mounted) return;
+        if (version.isNotEmpty &&
+            appConfig.updateState(version) == UpdateState.required) {
+          Navigator.of(context).pushReplacementNamed('/update-gate');
+          return;
+        }
+      } catch (_) {
+        // Fail soft: never block users if version check fails
+      }
     }
+
     if (!mounted) return;
     if (auth.isAuthenticated) {
       Navigator.of(context).pushReplacementNamed('/main');

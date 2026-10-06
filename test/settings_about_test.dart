@@ -77,6 +77,72 @@ void main() {
         );
         expect(find.text('1.2.3'), findsOneWidget);
       });
+
+      testWidgets(
+        'shows update available row when latest > current and opens URL externally',
+        (tester) async {
+          final launched = <Uri>[];
+          await pumpScreen(
+            tester,
+            locale,
+            SettingsScreen(
+              launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
+                launched.add(uri);
+                return true;
+              },
+            ),
+            appConfig: configWith(
+              data: const AppConfigData(
+                latestVersion: '2.0.0',
+                updateUrl: 'https://elmetracademy.app/download',
+              ),
+              version: '1.0.0',
+            ),
+            size: _tall,
+          );
+          expect(find.text(l10n.updateAvailable), findsOneWidget);
+          await tester.tap(find.text(l10n.updateAvailable));
+          await tester.pump();
+          expect(launched.map((u) => u.toString()), [
+            'https://elmetracademy.app/download',
+          ]);
+        },
+      );
+
+      testWidgets('hides update available row when current >= latest', (
+        tester,
+      ) async {
+        await pumpScreen(
+          tester,
+          locale,
+          const SettingsScreen(),
+          appConfig: configWith(
+            data: const AppConfigData(
+              latestVersion: '1.0.0',
+              updateUrl: 'https://elmetracademy.app/download',
+            ),
+            version: '1.0.0',
+          ),
+          size: _tall,
+        );
+        expect(find.text(l10n.updateAvailable), findsNothing);
+      });
+
+      testWidgets('hides update available row when updateUrl is empty', (
+        tester,
+      ) async {
+        await pumpScreen(
+          tester,
+          locale,
+          const SettingsScreen(),
+          appConfig: configWith(
+            data: const AppConfigData(latestVersion: '2.0.0', updateUrl: ''),
+            version: '1.0.0',
+          ),
+          size: _tall,
+        );
+        expect(find.text(l10n.updateAvailable), findsNothing);
+      });
     });
   }
 }

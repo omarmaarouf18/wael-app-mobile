@@ -46,6 +46,7 @@ dependencies:
   # BSD-3-Clause (Flutter Authors).
   url_launcher: 6.3.2
   youtube_player_iframe: ^6.0.2
+  # Reads installed app version for update gating. BSD-3-Clause (Flutter Authors).
   package_info_plus: ^10.2.2
 
 dev_dependencies:

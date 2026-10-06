@@ -48,17 +48,77 @@ class AppConfigData {
   };
 }
 
-/// Compares dotted version names numerically (`1.10.0` beats `1.9.0`;
-/// non-numeric segments compare as 0). Returns negative/zero/positive like
-/// [Comparable.compareTo]. Missing segments count as 0.
-int compareAppVersions(String a, String b) {
-  final pa = a.split('.');
-  final pb = b.split('.');
-  final len = pa.length > pb.length ? pa.length : pb.length;
-  for (var i = 0; i < len; i++) {
-    final na = i < pa.length ? int.tryParse(pa[i]) ?? 0 : 0;
-    final nb = i < pb.length ? int.tryParse(pb[i]) ?? 0 : 0;
-    if (na != nb) return na.compareTo(nb);
+/// Represents a parsed semantic app version with dotted segments and an
+/// optional numeric build number (e.g. `1.2.3+4`).
+class AppVersion implements Comparable<AppVersion> {
+  const AppVersion(this.segments, [this.build = 0]);
+
+  final List<int> segments;
+  final int build;
+
+  @override
+  int compareTo(AppVersion other) {
+    final maxLen = segments.length > other.segments.length
+        ? segments.length
+        : other.segments.length;
+    for (var i = 0; i < maxLen; i++) {
+      final sa = i < segments.length ? segments[i] : 0;
+      final sb = i < other.segments.length ? other.segments[i] : 0;
+      if (sa != sb) return sa.compareTo(sb);
+    }
+    return build.compareTo(other.build);
   }
-  return 0;
+}
+
+/// Parses a semver-style version string tolerant of `"1.2"`, `"1.2.3"`, and
+/// build suffix `"+4"`. Returns null for invalid or empty strings.
+AppVersion? parseAppVersion(String raw) {
+  var s = raw.trim();
+  if (s.isEmpty) return null;
+  if (s.startsWith('v') || s.startsWith('V')) {
+    s = s.substring(1).trim();
+  }
+  if (s.isEmpty) return null;
+
+  int build = 0;
+  if (s.contains('+')) {
+    final plusParts = s.split('+');
+    s = plusParts.first.trim();
+    final buildPart = plusParts.length > 1 ? plusParts[1].trim() : '';
+    if (buildPart.isNotEmpty) {
+      final b = int.tryParse(buildPart);
+      if (b == null || b < 0) return null;
+      build = b;
+    }
+  } else if (s.contains('-')) {
+    s = s.split('-').first.trim();
+  }
+
+  if (s.isEmpty) return null;
+  final segs = s.split('.');
+  final numbers = <int>[];
+  for (final seg in segs) {
+    final trimmed = seg.trim();
+    if (trimmed.isEmpty) return null;
+    final n = int.tryParse(trimmed);
+    if (n == null || n < 0) return null;
+    numbers.add(n);
+  }
+  if (numbers.isEmpty) return null;
+  return AppVersion(numbers, build);
+}
+
+/// Returns true if [version] is a valid semver-style version string.
+bool isValidAppVersion(String version) => parseAppVersion(version) != null;
+
+/// Compares semver-style version strings. Tolerant of "1.2", "1.2.3", and
+/// build suffix "+4". Returns negative/zero/positive like [Comparable.compareTo].
+/// Invalid or empty versions compare as lower than valid ones.
+int compareAppVersions(String a, String b) {
+  final va = parseAppVersion(a);
+  final vb = parseAppVersion(b);
+  if (va == null && vb == null) return 0;
+  if (va == null) return -1;
+  if (vb == null) return 1;
+  return va.compareTo(vb);
 }

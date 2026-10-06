@@ -46,6 +46,7 @@ import 'screens/video_player_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/ebook_screen.dart';
+import 'screens/update_gate_screen.dart';
 import 'debug/component_library_screen.dart';
 import 'debug/diagnostics_screen.dart';
 
@@ -89,6 +90,7 @@ Map<String, WidgetBuilder> buildAppRoutes({
     '/notifications': (context) => const NotificationsScreen(),
     '/settings': (context) => const SettingsScreen(),
     '/ebooks': (context) => const EbookScreen(),
+    '/update-gate': (context) => const UpdateGateScreen(),
     if (includeDebugRoutes) ...{
       '/debug': (context) => const DiagnosticsScreen(),
       '/components': (context) => const ComponentLibraryScreen(),

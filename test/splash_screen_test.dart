@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wael_app/core/api_client.dart';
+import 'package:wael_app/core/app_config_cache.dart';
 import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/models/app_config.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
+import 'package:wael_app/repositories/academy_repository.dart';
 import 'package:wael_app/screens/splash_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 
@@ -68,6 +73,81 @@ void main() {
         );
         expect(find.text('route:/main'), findsOneWidget);
       });
+
+      testWidgets('routes to /update-gate when current < min_version', (
+        tester,
+      ) async {
+        final config = AppConfigProvider(
+          cache: MemoryAppConfigCache(),
+          versionReader: () async => '1.0.0',
+        )..setForTesting(const AppConfigData(minVersion: '2.0.0'));
+        await pumpScreen(
+          tester,
+          locale,
+          const SplashScreen(),
+          appConfig: config,
+        );
+        expect(find.text('route:/update-gate'), findsOneWidget);
+      });
+
+      testWidgets('routes normally to /login when current >= min_version', (
+        tester,
+      ) async {
+        final config = AppConfigProvider(
+          cache: MemoryAppConfigCache(),
+          versionReader: () async => '2.0.0',
+        )..setForTesting(const AppConfigData(minVersion: '2.0.0'));
+        await pumpScreen(
+          tester,
+          locale,
+          const SplashScreen(),
+          appConfig: config,
+        );
+        expect(find.text('route:/login'), findsOneWidget);
+        expect(find.text('route:/update-gate'), findsNothing);
+      });
+
+      testWidgets('gate absent when min_version is empty', (tester) async {
+        final config = AppConfigProvider(
+          cache: MemoryAppConfigCache(),
+          versionReader: () async => '1.0.0',
+        )..setForTesting(const AppConfigData(minVersion: ''));
+        await pumpScreen(
+          tester,
+          locale,
+          const SplashScreen(),
+          appConfig: config,
+        );
+        expect(find.text('route:/login'), findsOneWidget);
+        expect(find.text('route:/update-gate'), findsNothing);
+      });
+
+      testWidgets('gate absent when config fetch fails (fails soft)', (
+        tester,
+      ) async {
+        final config = AppConfigProvider(
+          repository: _FailingRepo(),
+          cache: MemoryAppConfigCache(),
+          versionReader: () async => '1.0.0',
+        );
+        await pumpScreen(
+          tester,
+          locale,
+          const SplashScreen(),
+          appConfig: config,
+        );
+        expect(find.text('route:/login'), findsOneWidget);
+        expect(find.text('route:/update-gate'), findsNothing);
+      });
     });
   }
+}
+
+class _FailingRepo implements AcademyRepository {
+  @override
+  Future<AppConfigData> appConfig() async =>
+      throw ApiException(statusCode: 500, message: 'Server down');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

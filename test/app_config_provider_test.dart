@@ -71,13 +71,54 @@ void main() {
     });
   });
 
-  group('compareAppVersions', () {
-    test('compares numerically per segment', () {
+  group('compareAppVersions and parseAppVersion', () {
+    test('equal versions', () {
+      expect(compareAppVersions('1.2.0', '1.2.0'), 0);
+      expect(compareAppVersions('1.2', '1.2.0'), 0);
+      expect(compareAppVersions('1.2.0', '1.2'), 0);
+      expect(compareAppVersions('v1.2.3', '1.2.3'), 0);
+      expect(compareAppVersions('V1.2.3', '1.2.3'), 0);
+      expect(compareAppVersions('1.2.3+4', '1.2.3+4'), 0);
+      expect(compareAppVersions('1.2.3-beta', '1.2.3'), 0);
+    });
+
+    test('lower versions', () {
+      expect(compareAppVersions('1.2.0', '1.3.0'), lessThan(0));
+      expect(compareAppVersions('1.2', '1.2.1'), lessThan(0));
+      expect(compareAppVersions('1.2.3', '1.2.3+1'), lessThan(0));
+      expect(compareAppVersions('1.2.3+4', '1.2.3+5'), lessThan(0));
+      expect(compareAppVersions('0.9.9', '1.0.0'), lessThan(0));
+    });
+
+    test('higher versions', () {
       expect(compareAppVersions('1.10.0', '1.9.0'), greaterThan(0));
-      expect(compareAppVersions('1.9.0', '1.9.0'), 0);
-      expect(compareAppVersions('1.9', '1.9.1'), lessThan(0));
       expect(compareAppVersions('2.0', '1.99.99'), greaterThan(0));
-      expect(compareAppVersions('x', '1.0.0'), lessThan(0));
+      expect(compareAppVersions('1.2.3+5', '1.2.3+4'), greaterThan(0));
+      expect(compareAppVersions('1.2.3+1', '1.2.3'), greaterThan(0));
+      expect(compareAppVersions('1.3.0', '1.2.9'), greaterThan(0));
+    });
+
+    test('suffixes tolerance', () {
+      expect(isValidAppVersion('1.2.3+4'), isTrue);
+      expect(isValidAppVersion('1.2.3+100'), isTrue);
+      expect(isValidAppVersion('v1.2.3'), isTrue);
+      expect(isValidAppVersion('V2.0.0'), isTrue);
+      expect(isValidAppVersion('1.2.3-rc1'), isTrue);
+    });
+
+    test('junk and invalid versions', () {
+      expect(isValidAppVersion(''), isFalse);
+      expect(isValidAppVersion('   '), isFalse);
+      expect(isValidAppVersion('abc'), isFalse);
+      expect(isValidAppVersion('1.a.3'), isFalse);
+      expect(isValidAppVersion('1..2'), isFalse);
+      expect(isValidAppVersion('1.2.3+abc'), isFalse);
+      expect(isValidAppVersion('v'), isFalse);
+
+      expect(compareAppVersions('junk', '1.0.0'), lessThan(0));
+      expect(compareAppVersions('1.0.0', 'junk'), greaterThan(0));
+      expect(compareAppVersions('junk', 'garbage'), 0);
+      expect(compareAppVersions('', ''), 0);
     });
   });
 
@@ -138,6 +179,16 @@ void main() {
       expect(provider.updateState('1.4.0'), UpdateState.none);
       expect(provider.updateState('9.0.0'), UpdateState.none);
       expect(provider.updateState(''), UpdateState.none);
+      expect(provider.updateState('junk'), UpdateState.none);
+      expect(provider.updateState('   '), UpdateState.none);
+    });
+
+    test('updateState with invalid min/latest in config returns none', () {
+      final provider = AppConfigProvider(cache: MemoryAppConfigCache())
+        ..setForTesting(
+          const AppConfigData(minVersion: 'invalid', latestVersion: 'garbage'),
+        );
+      expect(provider.updateState('1.0.0'), UpdateState.none);
     });
 
     test('concurrent loads share one fetch', () async {

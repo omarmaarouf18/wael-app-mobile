@@ -197,12 +197,32 @@ class SettingsScreen extends StatelessWidget {
                     future: appConfig.currentVersion(),
                     builder: (context, snapshot) {
                       final version = snapshot.data ?? '';
-                      return _buildNavigationTile(
-                        icon: Icons.info_outline,
-                        title: l10n.appVersion,
-                        trailingText: version.isNotEmpty ? version : null,
-                        chevron: false,
-                        onTap: () {},
+                      final isUpdateAvailable =
+                          version.isNotEmpty &&
+                          appConfig.updateState(version) ==
+                              UpdateState.available &&
+                          appConfig.config.updateUrl.isNotEmpty;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isUpdateAvailable)
+                            _buildNavigationTile(
+                              icon: Icons.system_update_outlined,
+                              title: l10n.updateAvailable,
+                              onTap: () => _openExternal(
+                                context,
+                                launch,
+                                appConfig.config.updateUrl,
+                              ),
+                            ),
+                          _buildNavigationTile(
+                            icon: Icons.info_outline,
+                            title: l10n.appVersion,
+                            trailingText: version.isNotEmpty ? version : null,
+                            chevron: false,
+                            onTap: () {},
+                          ),
+                        ],
                       );
                     },
                   ),
