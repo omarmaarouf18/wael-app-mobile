@@ -13,6 +13,12 @@ class FakePlayerEngine implements PlayerEngine {
   final bool failOnLoad;
   final List<String> loadedIds = [];
   final List<String> calls = [];
+
+  /// Rates passed to [setPlaybackRate], in order.
+  final List<double> rates = [];
+
+  /// The rate the screen last asked for (1 until the speed menu is used).
+  double get playbackRate => rates.isEmpty ? 1.0 : rates.last;
   final StreamController<PlayerSnapshot> _controller =
       StreamController<PlayerSnapshot>.broadcast();
   bool disposed = false;
@@ -41,6 +47,12 @@ class FakePlayerEngine implements PlayerEngine {
   @override
   Future<void> seekTo(Duration position) async =>
       calls.add('seek:${position.inSeconds}');
+
+  @override
+  Future<void> setPlaybackRate(double rate) async {
+    rates.add(rate);
+    calls.add('rate:$rate');
+  }
 
   @override
   Future<void> dispose() async {

@@ -21,6 +21,7 @@ import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/notifications_provider.dart';
+import 'providers/playback_speed_provider.dart';
 
 // Services
 import 'player/player_engine.dart';
@@ -53,7 +54,16 @@ void main() async {
   final tokenStore = SecureTokenStore();
   final localeProvider = LocaleProvider(store: tokenStore);
   await localeProvider.load();
-  runApp(WaelApp(localeProvider: localeProvider, tokenStore: tokenStore));
+  // The single saved playback speed (1x when nothing was chosen yet).
+  final speedProvider = PlaybackSpeedProvider(store: tokenStore);
+  await speedProvider.load();
+  runApp(
+    WaelApp(
+      localeProvider: localeProvider,
+      tokenStore: tokenStore,
+      speedProvider: speedProvider,
+    ),
+  );
 }
 
 /// Named routes. Debug-only routes (`/debug`, `/components`) are registered
@@ -86,6 +96,7 @@ class WaelApp extends StatelessWidget {
     this.providersOverride,
     this.localeProvider,
     this.tokenStore,
+    this.speedProvider,
   });
 
   /// Injected providers for widget tests (fake auth repository, memory
@@ -100,6 +111,10 @@ class WaelApp extends StatelessWidget {
   /// Shared with [localeProvider] in production so the language choice and
   /// the session use one store. Tests pass nothing.
   final TokenStore? tokenStore;
+
+  /// Preloaded before the first frame in `main()` (production) so the saved
+  /// speed is already in place. Tests pass nothing and get 1x.
+  final PlaybackSpeedProvider? speedProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +154,10 @@ class WaelApp extends StatelessWidget {
             ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
             ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+            // One saved playback speed for every video.
+            ChangeNotifierProvider.value(
+              value: speedProvider ?? PlaybackSpeedProvider(),
+            ),
           ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {

@@ -11,6 +11,7 @@ import '../models/academy_catalog.dart';
 import '../player/player_engine.dart';
 import '../providers/academy_catalog_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/playback_speed_provider.dart';
 import '../services/secure_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/protected_video_surface.dart';
@@ -71,6 +72,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     with WidgetsBindingObserver {
   late final PlayerDependencies _deps;
   late final AcademyCatalogProvider _catalog;
+  late final PlaybackSpeedProvider _speed;
   late final String? _watermark;
 
   PlayerEngine? _engine;
@@ -92,6 +94,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     super.initState();
     _deps = context.read<PlayerDependencies>();
     _catalog = context.read<AcademyCatalogProvider>();
+    _speed = context.read<PlaybackSpeedProvider>();
     _watermark = context.read<AuthProvider>().watermarkText;
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -140,6 +143,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       _engine = engine;
       _subscription = engine.snapshots.listen(_onSnapshot);
       await engine.load(_youtubeId!);
+      // YouTube resets the rate on every load; the student's saved speed
+      // (one preference, not per video) wins.
+      await engine.setPlaybackRate(_speed.rate);
     } catch (_) {
       // The platform has no embedded player (or it failed to start).
       return _fail(_Failure.unavailable);
@@ -281,6 +287,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   void _seek(Duration position) => _engine?.seekTo(position);
 
+  /// The speed menu chose [rate]: the embed applies it now and the choice is
+  /// saved as the one app preference (not per video).
+  void _selectRate(double rate) {
+    _speed.setRate(rate);
+    unawaited(_engine?.setPlaybackRate(rate));
+    // The controls read the provider, so they show the new rate at once.
+    setState(() {});
+  }
+
   Future<void> _replay() async {
     final engine = _engine;
     if (engine == null) return;
@@ -384,6 +399,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                 onSeek: _seek,
                 onToggleFullscreen: () => _setFullscreen(!_fullscreen),
                 onReplay: _replay,
+                playbackRate: _speed.rate,
+                onSelectRate: _selectRate,
               ),
             ),
             if (!_fullscreen)

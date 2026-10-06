@@ -6,6 +6,7 @@ import 'package:wael_app/core/secure_store.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
+import 'package:wael_app/providers/playback_speed_provider.dart';
 
 import 'fakes.dart';
 import 'widget_layer_harness.dart';
@@ -40,6 +41,7 @@ Future<void> pumpScreen(
   Widget screen, {
   AuthProvider? auth,
   NotificationsProvider? notifications,
+  PlaybackSpeedProvider? speed,
   List<SingleChildWidget> extraProviders = const [],
   bool settle = true,
   Size size = const Size(390, 844),
@@ -57,6 +59,7 @@ Future<void> pumpScreen(
         ChangeNotifierProvider.value(
           value: notifications ?? NotificationsProvider(),
         ),
+        ChangeNotifierProvider.value(value: speed ?? PlaybackSpeedProvider()),
         ...extraProviders,
       ],
       child: localizedApp(

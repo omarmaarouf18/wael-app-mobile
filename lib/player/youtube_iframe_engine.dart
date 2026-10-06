@@ -44,6 +44,10 @@ class YoutubeIframeEngine implements PlayerEngine {
   Future<void>? _initialised;
   bool _disposed = false;
 
+  /// The rate the app chose (1 until the speed menu says otherwise).
+  /// Re-applied after every load: the embed resets to 1 on loadVideoById.
+  double _rate = 1.0;
+
   @override
   Stream<PlayerSnapshot> get snapshots => _snapshots.stream;
 
@@ -88,6 +92,14 @@ class YoutubeIframeEngine implements PlayerEngine {
     await _initialised;
     if (_disposed) return;
     await _controller.loadVideoById(videoId: youtubeVideoId);
+    if (_disposed) return;
+    if (_rate != 1.0) await _controller.setPlaybackRate(_rate);
+  }
+
+  @override
+  Future<void> setPlaybackRate(double rate) async {
+    _rate = rate;
+    await _controller.setPlaybackRate(rate);
   }
 
   @override

@@ -17,6 +17,7 @@ import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
+import 'package:wael_app/providers/playback_speed_provider.dart';
 import 'package:wael_app/repositories/academy_repository.dart';
 import 'package:wael_app/screens/video_player_screen.dart';
 import 'package:wael_app/widgets/moving_watermark.dart';
@@ -46,9 +47,11 @@ class _Rig {
     FakeAcademyRepository? repo,
     FakePlayerEngine? engine,
     FakeSecureScreen? secure,
+    PlaybackSpeedProvider? speed,
   }) : repo = repo ?? fake(),
        engine = engine ?? FakePlayerEngine(),
-       secure = secure ?? FakeSecureScreen() {
+       secure = secure ?? FakeSecureScreen(),
+       speed = speed ?? PlaybackSpeedProvider() {
     this.repo.playResults['v1'] = _playback();
     catalog = AcademyCatalogProvider(this.repo);
     deps = PlayerDependencies(
@@ -60,6 +63,7 @@ class _Rig {
   final FakeAcademyRepository repo;
   final FakePlayerEngine engine;
   final FakeSecureScreen secure;
+  final PlaybackSpeedProvider speed;
   late final AcademyCatalogProvider catalog;
   late final PlayerDependencies deps;
   Object? exit;
@@ -90,6 +94,7 @@ class _Rig {
         ),
       ),
       auth: auth ?? await signedInAuth(),
+      speed: speed,
       extraProviders: [
         ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
         Provider<PlayerDependencies>.value(value: deps),
@@ -731,6 +736,83 @@ void main() {
         }
         expect(calls.first.path, '/api/v1/academy/videos/v1/play');
       });
+    });
+
+    group('playback speed [$name]', () {
+      testWidgets('the menu offers every rate and each reaches the engine', (
+        tester,
+      ) async {
+        final rig = _Rig();
+        await rig.pump(tester, locale);
+        // Paused: the controls stay up (no auto-hide timer to race).
+        rig.engine.emit(
+          const PlayerSnapshot(
+            phase: PlayerPhase.paused,
+            duration: Duration(minutes: 3),
+          ),
+        );
+        await tester.pump();
+        expect(find.byType(PlayerControls), findsOneWidget);
+
+        for (final rate in kPlaybackRates) {
+          await tester.tap(find.byTooltip(l10n.playbackSpeed));
+          // Two frames: the first installs the menu route and starts its
+          // entrance, the second completes it (a single jump leaves the
+          // menu at size zero with its items off-screen).
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          // The open menu duplicates the current label; the item is last.
+          await tester.tap(find.text(playbackRateLabel(rate)).last);
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+        }
+        // The saved speed (1x) is applied on load, then each menu choice.
+        expect(rig.engine.rates, [1.0, ...kPlaybackRates]);
+        expect(
+          find.text(playbackRateLabel(kPlaybackRates.last)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the saved speed is applied on load', (tester) async {
+        final store = MemoryTokenStore();
+        await store.writePlaybackSpeed('1.5');
+        final speed = PlaybackSpeedProvider(store: store);
+        await speed.load();
+        final rig = _Rig(speed: speed);
+        await rig.pump(tester, locale);
+        expect(rig.engine.rates, [1.5]);
+        expect(find.text('1.5x'), findsOneWidget);
+      });
+
+      test(
+        'one preference, not per video: choices persist, others ignored',
+        () async {
+          final store = MemoryTokenStore();
+          final speed = PlaybackSpeedProvider(store: store);
+          await speed.load();
+          expect(speed.rate, 1.0);
+
+          speed.setRate(1.75);
+          expect(speed.rate, 1.75);
+          expect(await store.readPlaybackSpeed(), '1.75');
+
+          // Unknown values never stick.
+          speed.setRate(3.0);
+          expect(speed.rate, 1.75);
+
+          // A later launch reads the saved choice back.
+          final again = PlaybackSpeedProvider(store: store);
+          await again.load();
+          expect(again.rate, 1.75);
+
+          // Garbage in the store means 1x.
+          await store.writePlaybackSpeed('fast');
+          final fallback = PlaybackSpeedProvider(store: store);
+          await fallback.load();
+          expect(fallback.rate, 1.0);
+        },
+      );
     });
   }
 

@@ -5,6 +5,15 @@ import '../services/secure_screen.dart';
 /// Coarse playback phase reported by an embedded player.
 enum PlayerPhase { idle, buffering, playing, paused, ended, error }
 
+/// Speeds the app's own player controls offer, slowest to fastest. YouTube
+/// resets the rate to 1 whenever a video is (re)loaded, so engines re-apply
+/// the chosen rate after every [PlayerEngine.load].
+const kPlaybackRates = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+/// Short label for a rate in the speed menu (`1x`, `1.25x`).
+String playbackRateLabel(double rate) =>
+    rate == rate.roundToDouble() ? '${rate.toInt()}x' : '${rate}x';
+
 /// What the screen needs to know about playback right now.
 class PlayerSnapshot {
   const PlayerSnapshot({
@@ -48,6 +57,10 @@ abstract class PlayerEngine {
   Future<void> play();
   Future<void> pause();
   Future<void> seekTo(Duration position);
+
+  /// Suggests a playback rate from [kPlaybackRates] through the embed
+  /// (`setPlaybackRate`; the app's own controls, never the embed's).
+  Future<void> setPlaybackRate(double rate);
 
   /// Stops playback and releases the player.
   Future<void> dispose();

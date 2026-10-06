@@ -47,6 +47,8 @@ class ProtectedVideoSurface extends StatefulWidget {
     required this.onReplay,
     this.watermarkInterval = const Duration(seconds: 20),
     this.titleMaskHold = const Duration(seconds: 4),
+    this.playbackRate = 1.0,
+    this.onSelectRate,
   });
 
   /// The title mask is this fraction of the player height (about 56 logical
@@ -72,6 +74,11 @@ class ProtectedVideoSurface extends StatefulWidget {
   final VoidCallback onToggleFullscreen;
   final VoidCallback onReplay;
   final Duration watermarkInterval;
+
+  /// The speed the controls show; the menu fires [onSelectRate]. Null hides
+  /// the menu (the embed's own settings stay hidden regardless).
+  final double playbackRate;
+  final ValueChanged<double>? onSelectRate;
 
   /// How long the title mask stays up after the video starts playing.
   final Duration titleMaskHold;
@@ -201,6 +208,8 @@ class _ProtectedVideoSurfaceState extends State<ProtectedVideoSurface> {
                 onPlayPause: widget.onPlayPause,
                 onSeek: _seek,
                 onToggleFullscreen: widget.onToggleFullscreen,
+                playbackRate: widget.playbackRate,
+                onSelectRate: widget.onSelectRate,
               ),
             ),
           MovingWatermark(

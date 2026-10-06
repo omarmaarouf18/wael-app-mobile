@@ -256,6 +256,7 @@ class AppLocalizations {
   String get exitFullscreen =>
       isArabic ? 'إنهاء ملء الشاشة' : 'Exit full screen';
   String get replayLabel => isArabic ? 'إعادة التشغيل' : 'Replay';
+  String get playbackSpeed => isArabic ? 'سرعة التشغيل' : 'Playback speed';
   String get playerStarting =>
       isArabic ? 'جارٍ تجهيز الفيديو...' : 'Preparing the video...';
   String get playerNoIdentity => isArabic

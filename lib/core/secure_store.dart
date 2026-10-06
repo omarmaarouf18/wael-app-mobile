@@ -8,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///
 /// The saved app language also lives here (`readLocale`/`writeLocale`):
 /// no new dependency, and sign-out ([clear]) never resets the language.
+/// The same holds for the single playback-speed preference
+/// (`readPlaybackSpeed`/`writePlaybackSpeed`): one rate for every video.
 abstract class TokenStore {
   Future<String?> readAccessToken();
   Future<String?> readRefreshToken();
@@ -16,6 +18,8 @@ abstract class TokenStore {
   Future<void> writeDeviceId(String deviceId);
   Future<String?> readLocale();
   Future<void> writeLocale(String languageCode);
+  Future<String?> readPlaybackSpeed();
+  Future<void> writePlaybackSpeed(String rate);
   Future<void> clear();
 }
 
@@ -30,6 +34,7 @@ class SecureTokenStore implements TokenStore {
   static const _refreshKey = 'wael_refresh_token';
   static const _deviceIdKey = 'wael_device_id';
   static const _localeKey = 'wael_locale';
+  static const _speedKey = 'wael_playback_speed';
 
   final FlutterSecureStorage _storage;
   final Map<String, String> _fallback = {};
@@ -91,6 +96,18 @@ class SecureTokenStore implements TokenStore {
   }
 
   @override
+  Future<String?> readPlaybackSpeed() =>
+      _guard(() => _storage.read(key: _speedKey), _fallback[_speedKey]);
+
+  @override
+  Future<void> writePlaybackSpeed(String rate) {
+    _fallback[_speedKey] = rate;
+    return _guard(() async {
+      await _storage.write(key: _speedKey, value: rate);
+    }, null);
+  }
+
+  @override
   Future<void> clear() {
     _fallback.remove(_accessKey);
     _fallback.remove(_refreshKey);
@@ -107,6 +124,7 @@ class MemoryTokenStore implements TokenStore {
   String? _refresh;
   String? _deviceId;
   String? _locale;
+  String? _speed;
 
   @override
   Future<String?> readAccessToken() async => _access;
@@ -137,6 +155,14 @@ class MemoryTokenStore implements TokenStore {
   @override
   Future<void> writeLocale(String languageCode) async {
     _locale = languageCode;
+  }
+
+  @override
+  Future<String?> readPlaybackSpeed() async => _speed;
+
+  @override
+  Future<void> writePlaybackSpeed(String rate) async {
+    _speed = rate;
   }
 
   @override

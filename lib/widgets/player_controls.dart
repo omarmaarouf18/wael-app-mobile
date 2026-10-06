@@ -13,8 +13,11 @@ String formatPlayerTime(Duration d) {
 }
 
 /// The player's own control bar (the embedded one is hidden): play or pause,
-/// 10-second jumps, a seek slider with times, and full screen. The time row is
-/// always left to right, like every media player.
+/// 10-second jumps, a seek slider with times, playback speed and full screen.
+/// The time row is always left to right, like every media player.
+///
+/// The speed menu lives here, in the app's own bar, never inside the embed:
+/// [playbackRate] is the current choice, [onSelectRate] fires for a new one.
 class PlayerControls extends StatelessWidget {
   const PlayerControls({
     super.key,
@@ -23,6 +26,8 @@ class PlayerControls extends StatelessWidget {
     required this.onPlayPause,
     required this.onSeek,
     required this.onToggleFullscreen,
+    this.playbackRate = 1.0,
+    this.onSelectRate,
   });
 
   final PlayerSnapshot snapshot;
@@ -30,6 +35,8 @@ class PlayerControls extends StatelessWidget {
   final VoidCallback onPlayPause;
   final ValueChanged<Duration> onSeek;
   final VoidCallback onToggleFullscreen;
+  final double playbackRate;
+  final ValueChanged<double>? onSelectRate;
 
   Duration _clamp(Duration d) {
     if (d < Duration.zero) return Duration.zero;
@@ -104,7 +111,58 @@ class PlayerControls extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(width: 48),
+                // 48dp like the full-screen button on the other end, so the
+                // middle cluster stays centred.
+                SizedBox(
+                  width: 48,
+                  child: onSelectRate == null
+                      ? const SizedBox.shrink()
+                      : PopupMenuButton<double>(
+                          tooltip: l10n.playbackSpeed,
+                          initialValue: playbackRate,
+                          onSelected: onSelectRate,
+                          itemBuilder: (context) => [
+                            for (final rate in kPlaybackRates)
+                              PopupMenuItem<double>(
+                                value: rate,
+                                child: Row(
+                                  children: [
+                                    if (rate == playbackRate)
+                                      const Icon(
+                                        Icons.check,
+                                        size: 18,
+                                        color: AppColors.textPrimary,
+                                      )
+                                    else
+                                      const SizedBox(width: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      playbackRateLabel(rate),
+                                      style: AppTypography.labelMd().copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: rate == playbackRate
+                                            ? FontWeight.w700
+                                            : FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                playbackRateLabel(playbackRate),
+                                style: AppTypography.labelSm().copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
