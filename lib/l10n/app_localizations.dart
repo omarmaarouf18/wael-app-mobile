@@ -207,6 +207,21 @@ class AppLocalizations {
   String get allRightsReserved =>
       isArabic ? 'جميع الحقوق محفوظة © 2026' : 'All rights reserved © 2026';
 
+  // Settings: my account (name, phone, email, password).
+  String get myAccount => isArabic ? 'حسابي' : 'My account';
+  String get nameLabel => isArabic ? 'الاسم' : 'Name';
+  String get mobileNumber => isArabic ? 'رقم الموبايل' : 'Mobile number';
+  String get currentPassword =>
+      isArabic ? 'كلمة المرور الحالية' : 'Current password';
+  String get changeOnceEvery30Days => isArabic
+      ? 'يمكن التغيير مرة كل 30 يوم'
+      : 'Can be changed once every 30 days';
+  String get profileUpdated =>
+      isArabic ? 'تم تحديث البيانات.' : 'Profile updated.';
+  String get editNameTitle => isArabic ? 'تعديل الاسم' : 'Edit name';
+  String get editPhoneTitle =>
+      isArabic ? 'تعديل رقم الموبايل' : 'Edit mobile number';
+
   // Settings: about this app (terms, privacy, version).
   String get aboutApp => isArabic ? 'عن التطبيق' : 'About';
   String get termsTitle => isArabic ? 'الشروط والأحكام' : 'Terms & Conditions';

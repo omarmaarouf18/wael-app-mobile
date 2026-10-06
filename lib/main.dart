@@ -20,9 +20,11 @@ import 'widgets/themed_error_banner.dart';
 
 // Providers
 import 'providers/locale_provider.dart';
+import 'providers/account_provider.dart';
 import 'providers/app_config_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
+import 'repositories/account_repository.dart';
 import 'providers/home_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/playback_speed_provider.dart';
@@ -148,6 +150,20 @@ class WaelApp extends StatelessWidget {
                 ),
                 cache: SecureAppConfigCache(),
               )..load(),
+            ),
+            // Self-service account actions (F-UX2 Part B). Stateless
+            // across sign-outs: results return directly, errors are shown
+            // where the call was made.
+            ChangeNotifierProxyProvider<AuthProvider, AccountProvider>(
+              create: (ctx) => AccountProvider(
+                auth: ctx.read<AuthProvider>(),
+                repository: HttpAccountRepository(
+                  ctx.read<AuthProvider>().authedApi,
+                ),
+                localeReader: () =>
+                    ctx.read<LocaleProvider>().locale.languageCode,
+              ),
+              update: (_, auth, accounts) => accounts!,
             ),
             ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
               create: (ctx) => AcademyCatalogProvider(

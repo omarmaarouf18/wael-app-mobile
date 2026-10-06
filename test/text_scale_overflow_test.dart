@@ -8,6 +8,7 @@ import 'package:wael_app/l10n/app_localizations.dart';
 import 'package:wael_app/models/notification_model.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/account_provider.dart';
 import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
@@ -43,13 +44,21 @@ Future<void> pumpScaled(
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+  final authProvider = auth ?? makeAuth();
 
   await tester.pumpWidget(
     MultiProvider(
       providers: <SingleChildWidget>[
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider.value(value: auth ?? makeAuth()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider.value(value: AppConfigProvider()),
+        ChangeNotifierProvider.value(
+          value: AccountProvider(
+            auth: authProvider,
+            repository: null,
+            localeReader: () => locale.languageCode,
+          ),
+        ),
         ChangeNotifierProvider.value(
           value: notifications ?? NotificationsProvider(),
         ),

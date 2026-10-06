@@ -196,6 +196,58 @@ class ApiClient {
     }
   }
 
+  /// Authenticated PATCH with the refresh dance (account profile edits).
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final token = await _token();
+      final res = await _client
+          .patch(
+            Uri.parse('$baseUrl$path'),
+            headers: _headers(token),
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(_timeoutFor(path));
+      statusCode = res.statusCode;
+      return await _handle(res, () => patch(path, body: body));
+    } on TimeoutException {
+      throw _timedOut();
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('PATCH', path, statusCode, sw.elapsedMilliseconds);
+    }
+  }
+
+  /// Authenticated DELETE with the refresh dance (ending a device session).
+  /// A 204 answers the empty map.
+  Future<Map<String, dynamic>> delete(String path) async {
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final token = await _token();
+      final res = await _client
+          .delete(Uri.parse('$baseUrl$path'), headers: _headers(token))
+          .timeout(_timeoutFor(path));
+      statusCode = res.statusCode;
+      return await _handle(res, () => delete(path));
+    } on TimeoutException {
+      throw _timedOut();
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('DELETE', path, statusCode, sw.elapsedMilliseconds);
+    }
+  }
+
   Future<Map<String, dynamic>> _handle(
     http.Response res,
     Future<Map<String, dynamic>> Function() retry,

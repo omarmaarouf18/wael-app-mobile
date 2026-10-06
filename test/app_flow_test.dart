@@ -5,6 +5,7 @@ import 'package:wael_app/main.dart';
 import 'package:wael_app/widgets/app_bottom_nav.dart';
 import 'package:wael_app/widgets/framed_poster_card.dart';
 import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/account_provider.dart';
 import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -16,19 +17,25 @@ import 'academy_fakes.dart';
 import 'fakes.dart';
 
 Widget testApp() {
+  final auth = AuthProvider(
+    repository: FakeAuthRepository(),
+    tokenStore: MemoryTokenStore(),
+  );
   return WaelApp(
     providersOverride: [
       ChangeNotifierProvider(create: (_) => LocaleProvider()),
-      ChangeNotifierProvider(
-        create: (_) => AuthProvider(
-          repository: FakeAuthRepository(),
-          tokenStore: MemoryTokenStore(),
-        ),
-      ),
+      ChangeNotifierProvider.value(value: auth),
       ChangeNotifierProvider(create: (_) => AcademyCatalogProvider(fake())),
       ChangeNotifierProvider(create: (_) => HomeProvider()),
       ChangeNotifierProvider(create: (_) => NotificationsProvider()),
       ChangeNotifierProvider(create: (_) => AppConfigProvider()),
+      ChangeNotifierProvider(
+        create: (_) => AccountProvider(
+          auth: auth,
+          repository: null,
+          localeReader: () => "en",
+        ),
+      ),
     ],
   );
 }

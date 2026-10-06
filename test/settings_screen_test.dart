@@ -42,9 +42,10 @@ void main() {
         await pump(tester);
         expect(find.byType(AppShell), findsOneWidget);
         expect(find.byType(AppBar), findsNothing);
-        expect(find.text('Jane Doe'), findsOneWidget);
+        // The name also shows in the My-account name row below.
+        expect(find.text('Jane Doe'), findsNWidgets(2));
         expect(find.text('u@e.com'), findsOneWidget);
-        expect(find.text('+201000000000'), findsOneWidget);
+        expect(find.text('+201000000000'), findsNWidgets(2));
         expect(find.byType(ProfileAvatar), findsOneWidget);
       });
 
@@ -82,7 +83,7 @@ void main() {
         await pump(tester);
         // Two sections (language, about), the sign-out button, and the
         // version row. Terms/privacy tiles hide until configured.
-        expect(find.byType(ThemedSectionHeader), findsNWidgets(2));
+        expect(find.byType(ThemedSectionHeader), findsNWidgets(3));
         expect(find.text(upper(l10n.languageAndPreferences)), findsOneWidget);
         expect(find.text(l10n.languageAndSubtitles), findsOneWidget);
         expect(find.text(upper(l10n.aboutApp)), findsOneWidget);
@@ -135,16 +136,28 @@ void main() {
           startsBefore(
             tester,
             find.byType(ProfileAvatar),
-            find.text('Jane Doe'),
+            find.text('Jane Doe').first,
             direction,
           ),
           isTrue,
         );
         // Language row: icon tile, then title, then the chevron at the end.
+        final langTile = find.ancestor(
+          of: find.text(l10n.languageAndSubtitles),
+          matching: find.byType(InkWell),
+        );
+        final langIcon = find.descendant(
+          of: langTile,
+          matching: find.byType(IconTile),
+        );
+        final langChevron = find.descendant(
+          of: langTile,
+          matching: find.byIcon(Icons.chevron_right),
+        );
         expect(
           startsBefore(
             tester,
-            find.byType(IconTile).first,
+            langIcon,
             find.text(l10n.languageAndSubtitles),
             direction,
           ),
@@ -154,7 +167,7 @@ void main() {
           startsBefore(
             tester,
             find.text(l10n.languageAndSubtitles),
-            find.byIcon(Icons.chevron_right),
+            langChevron,
             direction,
           ),
           isTrue,

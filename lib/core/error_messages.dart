@@ -197,4 +197,57 @@ class ErrorMessages {
     }
     return networkError(isArabic);
   }
+
+  /// Message for a failed self-service account call (F-UX2 Part B). Every
+  /// Part A refusal maps to a clear message; `change_too_soon` names the
+  /// date the field may be changed again.
+  static String forAccountError(Object e, {bool isArabic = false}) {
+    if (e is ApiException) {
+      if (e.code == 'change_too_soon') {
+        return accountChangeTooSoon(
+          isArabic,
+          _allowedDate(e.retryAfterSeconds),
+        );
+      }
+      if (e.code == 'password_too_long') return passwordTooLong(isArabic);
+      if (e.isRateLimited ||
+          e.code == 'locked_out' ||
+          e.code == 'too_many_attempts') {
+        return tooManyAttempts(isArabic, e.retryAfterSeconds);
+      }
+      if (e.code == 'invalid_token') return invalidOrExpiredCode(isArabic);
+      if (e.code == 'conflict') return changeUnavailable(isArabic);
+      if (e.code == 'not_found') return sessionNotFound(isArabic);
+      if (e.code == 'timeout') return networkError(isArabic);
+      if (e.statusCode == 400) return invalidInput(isArabic);
+      if (e.statusCode == 401) return invalidCredentials(isArabic);
+      if (e.statusCode == 503) return serviceUnavailable(isArabic);
+      return requestFailed(isArabic);
+    }
+    return networkError(isArabic);
+  }
+
+  /// Calendar date (`yyyy-MM-dd`) `waitSeconds` from now, for the
+  /// change-too-soon message.
+  static String _allowedDate(int? waitSeconds) {
+    final date = DateTime.now().add(Duration(seconds: waitSeconds ?? 0));
+    final mm = date.month.toString().padLeft(2, '0');
+    final dd = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$mm-$dd';
+  }
+
+  static String accountChangeTooSoon(bool isArabic, String date) => isArabic
+      ? 'لا يمكن التغيير الآن. يمكنك التغيير اعتبارًا من $date.'
+      : 'Too soon to change. You can change it again from $date.';
+
+  static String changeUnavailable(bool isArabic) => isArabic
+      ? 'تعذر إتمام التغيير. يرجى المحاولة لاحقًا.'
+      : 'Could not complete the change. Please try again later.';
+
+  static String sessionNotFound(bool isArabic) =>
+      isArabic ? 'لم يتم العثور على الجلسة.' : 'Session not found.';
+
+  static String invalidInput(bool isArabic) => isArabic
+      ? 'البيانات المدخلة غير صالحة.'
+      : 'The entered data is not valid.';
 }

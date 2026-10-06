@@ -62,6 +62,9 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  /// Arabic-ness for providers composed on top of auth (account errors).
+  bool get isArabic => _isArabic;
+
   ApiClient _plainApi() => ApiClient(
     baseUrl: AppConfig.baseUrl,
     allowSelfSigned: AppConfig.allowSelfSigned,
@@ -137,6 +140,22 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<String> getDeviceId() => DeviceIdManager.getOrCreateDeviceId(_tokens);
+
+  /// Re-reads `/auth/me` into the profile (name/phone) after a server-side
+  /// change. False when signed out or unreachable; never throws.
+  Future<bool> refreshProfile() async {
+    final access = await _tokens.readAccessToken();
+    if (access == null || access.isEmpty) return false;
+    try {
+      final account = await _repo.me(accessToken: access);
+      _account = account;
+      _currentUser = _withAccount(_currentUser, account);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> handleSessionReplaced([String? backendMessage]) async {
     await _logoutLocal();

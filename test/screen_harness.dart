@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:wael_app/core/secure_store.dart';
+import 'package:wael_app/providers/account_provider.dart';
 import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/auth_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
@@ -44,6 +45,7 @@ Future<void> pumpScreen(
   NotificationsProvider? notifications,
   PlaybackSpeedProvider? speed,
   AppConfigProvider? appConfig,
+  AccountProvider? accounts,
   List<SingleChildWidget> extraProviders = const [],
   bool settle = true,
   Size size = const Size(390, 844),
@@ -52,17 +54,27 @@ Future<void> pumpScreen(
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+  final authProvider = auth ?? makeAuth();
 
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider.value(value: auth ?? makeAuth()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider.value(
           value: notifications ?? NotificationsProvider(),
         ),
         ChangeNotifierProvider.value(value: speed ?? PlaybackSpeedProvider()),
         ChangeNotifierProvider.value(value: appConfig ?? AppConfigProvider()),
+        ChangeNotifierProvider.value(
+          value:
+              accounts ??
+              AccountProvider(
+                auth: authProvider,
+                repository: null,
+                localeReader: () => locale.languageCode,
+              ),
+        ),
         ...extraProviders,
       ],
       child: localizedApp(

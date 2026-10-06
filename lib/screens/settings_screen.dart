@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/app_shell.dart';
+import 'settings/profile_section.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/icon_tile.dart';
 import '../widgets/profile_avatar.dart';
@@ -98,7 +99,11 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceLg),
 
-            // 2. LANGUAGE
+            // 2. MY ACCOUNT (name, phone)
+            const ProfileSection(),
+            const SizedBox(height: AppSpacing.spaceLg),
+
+            // 3. LANGUAGE
             ThemedSectionHeader(title: l10n.languageAndPreferences),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -122,7 +127,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 3. ABOUT (server-provided pages + installed version)
+            // 4. ABOUT (server-provided pages + installed version)
             ThemedSectionHeader(title: l10n.aboutApp),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -161,7 +166,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 4. SIGN OUT BUTTON (with confirmation)
+            // 5. SIGN OUT BUTTON (with confirmation)
             SizedBox(
               width: double.infinity,
               height: 48,
