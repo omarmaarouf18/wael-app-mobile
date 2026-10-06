@@ -93,6 +93,12 @@ class FakeAuthRepository implements AuthRepository {
     if (logoutMode == '401') {
       throw ApiException(statusCode: 401, message: 'unauthorized');
     }
+    if (logoutMode == '401-then-ok') {
+      if (logoutCalls == 1) {
+        throw ApiException(statusCode: 401, message: 'unauthorized');
+      }
+      return;
+    }
     if (logoutMode == '503') {
       throw ApiException(statusCode: 503, message: 'service unavailable');
     }

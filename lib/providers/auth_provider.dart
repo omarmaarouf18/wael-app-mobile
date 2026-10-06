@@ -632,13 +632,31 @@ class AuthProvider extends ChangeNotifier {
     _isExplicitLogout = true;
     try {
       final access = await _tokens.readAccessToken();
-      bool confirmed = true;
+      bool confirmed = false;
       if (access != null && access.isNotEmpty) {
         try {
           await _repo.logout(accessToken: access);
           confirmed = true;
         } on ApiException catch (e) {
-          if (e.statusCode == 204 || e.statusCode == 401) {
+          if (e.statusCode == 401) {
+            // Access token expired: attempt one refresh and retry server logout.
+            final refreshed = await _doRefresh();
+            if (refreshed) {
+              final newAccess = await _tokens.readAccessToken();
+              if (newAccess != null && newAccess.isNotEmpty) {
+                try {
+                  await _repo.logout(accessToken: newAccess);
+                  confirmed = true;
+                } catch (_) {
+                  confirmed = false;
+                }
+              } else {
+                confirmed = false;
+              }
+            } else {
+              confirmed = false;
+            }
+          } else if (e.statusCode == 204) {
             confirmed = true;
           } else {
             confirmed = false;
@@ -646,6 +664,8 @@ class AuthProvider extends ChangeNotifier {
         } catch (_) {
           confirmed = false;
         }
+      } else {
+        confirmed = true;
       }
       await _logoutLocal();
       _errorMessage = null;

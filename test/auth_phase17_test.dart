@@ -354,9 +354,9 @@ void main() {
     );
 
     test(
-      'logout on 401: proceeds, clears local tokens, confirmed=true',
+      'logout on 401: refreshes and retries logout, confirmed=true on success',
       () async {
-        final repo = FakeAuthRepository()..logoutMode = '401';
+        final repo = FakeAuthRepository()..logoutMode = '401-then-ok';
         final store = MemoryTokenStore();
         await store.writeTokens(access: 'acc-1', refresh: 'ref-1');
 
@@ -365,11 +365,40 @@ void main() {
 
         final confirmed = await auth.logout();
         expect(confirmed, isTrue);
-        expect(repo.logoutCalls, 1);
+        expect(repo.logoutCalls, 2);
         expect(auth.status, equals(AuthStatus.unauthenticated));
         expect(await store.readAccessToken(), isNull);
         expect(await store.readRefreshToken(), isNull);
         expect(auth.logoutNotice, isNull);
+      },
+    );
+
+    test(
+      'logout on 401 where refresh fails: clears local tokens, confirmed=false, sets notice',
+      () async {
+        final repo = FakeAuthRepository()
+          ..logoutMode = '401'
+          ..refreshMode = '401';
+        final store = MemoryTokenStore();
+        await store.writeTokens(access: 'acc-1', refresh: 'ref-1');
+
+        final auth = AuthProvider(
+          repository: repo,
+          tokenStore: store,
+          localeReader: () => 'en',
+        );
+        expect(await auth.login('test@example.com', 'pass'), isTrue);
+
+        final confirmed = await auth.logout();
+        expect(confirmed, isFalse);
+        expect(repo.logoutCalls, 1);
+        expect(auth.status, equals(AuthStatus.unauthenticated));
+        expect(await store.readAccessToken(), isNull);
+        expect(await store.readRefreshToken(), isNull);
+        expect(
+          auth.logoutNotice,
+          equals(ErrorMessages.signOutUnconfirmed(false)),
+        );
       },
     );
 
