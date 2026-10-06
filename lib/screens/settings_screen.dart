@@ -10,6 +10,7 @@ import '../providers/locale_provider.dart';
 import '../utils/logout_helper.dart';
 import '../widgets/app_shell.dart';
 import 'settings/profile_section.dart';
+import 'settings/devices_screen.dart';
 import '../widgets/confirm_action_dialog.dart';
 import '../widgets/icon_tile.dart';
 import '../widgets/profile_avatar.dart';
@@ -99,11 +100,27 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceLg),
 
-            // 2. MY ACCOUNT (name, phone)
+            // 2. MY ACCOUNT (name, phone, email, password)
             const ProfileSection(),
             const SizedBox(height: AppSpacing.spaceLg),
 
-            // 3. LANGUAGE
+            // 3. MY DEVICES
+            ThemedSectionHeader(title: l10n.myDevices),
+            ThemedCard(
+              padding: EdgeInsets.zero,
+              child: _buildNavigationTile(
+                icon: Icons.devices_outlined,
+                title: l10n.myDevices,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DevicesScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.spaceLg),
+
+            // 4. LANGUAGE
             ThemedSectionHeader(title: l10n.languageAndPreferences),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -127,7 +144,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 4. ABOUT (server-provided pages + installed version)
+            // 5. ABOUT (server-provided pages + installed version)
             ThemedSectionHeader(title: l10n.aboutApp),
             ThemedCard(
               padding: EdgeInsets.zero,
@@ -166,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 5. SIGN OUT BUTTON (with confirmation)
+            // 6. SIGN OUT BUTTON (with confirmation)
             SizedBox(
               width: double.infinity,
               height: 48,

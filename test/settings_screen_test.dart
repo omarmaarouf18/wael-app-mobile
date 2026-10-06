@@ -83,7 +83,7 @@ void main() {
         await pump(tester);
         // Two sections (language, about), the sign-out button, and the
         // version row. Terms/privacy tiles hide until configured.
-        expect(find.byType(ThemedSectionHeader), findsNWidgets(3));
+        expect(find.byType(ThemedSectionHeader), findsNWidgets(4));
         expect(find.text(upper(l10n.languageAndPreferences)), findsOneWidget);
         expect(find.text(l10n.languageAndSubtitles), findsOneWidget);
         expect(find.text(upper(l10n.aboutApp)), findsOneWidget);

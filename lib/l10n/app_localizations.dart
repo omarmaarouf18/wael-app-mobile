@@ -228,6 +228,30 @@ class AppLocalizations {
       isArabic ? 'تغيير كلمة السر' : 'Change password';
   String get passwordChanged =>
       isArabic ? 'تم تغيير كلمة السر.' : 'Password changed.';
+  String get myDevices => isArabic ? 'أجهزتي' : 'My devices';
+  String get thisDevice => isArabic ? 'هذا الجهاز' : 'This device';
+  String get unknownDevice =>
+      isArabic ? 'جهاز غير معروف' : 'Unknown device';
+  String get signOutDevice =>
+      isArabic ? 'تسجيل خروج من الجهاز ده' : 'Sign out of this device';
+  String get signOutDeviceTitle =>
+      isArabic ? 'إنهاء جلسة الجهاز؟' : "End this device's session?";
+  String get signOutDeviceMessage => isArabic
+      ? 'سيتم تسجيل الخروج من هذا الجهاز فورًا.'
+      : 'This device will be signed out immediately.';
+  String get deviceLimitNote => isArabic
+      ? 'يمكن تسجيل الدخول من جهازين كحد أقصى في نفس الوقت.'
+      : 'At most two devices may be signed in at once.';
+  String get deviceSignedOut =>
+      isArabic ? 'تم تسجيل الخروج من الجهاز.' : 'The device was signed out.';
+  String get justNow => isArabic ? 'الآن' : 'Just now';
+  String minutesAgo(int n) =>
+      isArabic ? 'منذ $n دقيقة' : '$n minutes ago';
+  String hoursAgo(int n) => isArabic ? 'منذ $n ساعة' : '$n hours ago';
+  String daysAgo(int n) => isArabic ? 'منذ $n يوم' : '$n days ago';
+  String get noOtherDevices => isArabic
+      ? 'لا توجد أجهزة أخرى مسجلة الدخول.'
+      : 'No other signed-in devices.';
   String get emailCodeSent => isArabic
       ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
       : 'A code was sent to your new email. Enter it below.';
