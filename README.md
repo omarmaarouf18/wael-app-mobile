@@ -117,8 +117,8 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   tab support pull-to-refresh (a no-op on the e-book tab until SPEC Phase 5).
 - **Fonts**: Cairo, Syne and Plus Jakarta Sans are bundled assets (`assets/fonts/`);
   `GoogleFonts.config.allowRuntimeFetching` is `false`, so no font is downloaded.
-- **Support links**: a pending request opens its `https://wa.me` support chat with
-  `url_launcher` (only `wa.me` links are ever opened; copy is the fallback).
+- **Support links**: a pending request, the Settings Help section, and the session-replaced notice on the login screen open the support WhatsApp chat with `url_launcher` (external app with browser fallback; only `https://wa.me` links are ever opened).
+- **Public config & update gating**: the app reads `GET /api/v1/academy/app-config` via `AppConfigProvider` (terms/privacy URLs, support WhatsApp link, update metadata). If the installed version is strictly below `min_version`, a blocking update gate is shown at launch (`/update-gate`); if below `latest_version`, an inline update row is shown in Settings About section. Fails soft if unreachable, timeout, or malformed.
 
 ## Quality gates
 
