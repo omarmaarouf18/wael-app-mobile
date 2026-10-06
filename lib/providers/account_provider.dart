@@ -30,6 +30,11 @@ class AccountProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  void reset() {
+    _busy = false;
+    _errorMessage = null;
+  }
+
   final String? Function()? _localeReader;
 
   bool get _isArabic {

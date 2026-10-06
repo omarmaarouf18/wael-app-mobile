@@ -77,4 +77,13 @@ class NotificationsProvider extends ChangeNotifier {
     _notifications.insert(0, notification);
     notifyListeners();
   }
+
+  /// Clears in-memory notifications on sign-out / account switch.
+  void reset({bool notify = true}) {
+    _notifications.clear();
+    _repository = const EmptyNotificationRepository();
+    _remote = false;
+    _hasError = false;
+    if (notify) notifyListeners();
+  }
 }

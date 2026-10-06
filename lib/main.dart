@@ -165,7 +165,12 @@ class WaelApp extends StatelessWidget {
                 localeReader: () =>
                     ctx.read<LocaleProvider>().locale.languageCode,
               ),
-              update: (_, auth, accounts) => accounts!,
+              update: (_, auth, accounts) {
+                if (!auth.isAuthenticated) {
+                  accounts!.reset();
+                }
+                return accounts!;
+              },
             ),
             ChangeNotifierProxyProvider<AuthProvider, AcademyCatalogProvider>(
               create: (ctx) => AcademyCatalogProvider(
@@ -176,8 +181,8 @@ class WaelApp extends StatelessWidget {
               // when the session ends.
               update: (_, auth, catalog) {
                 // Runs during build, so it must not notify.
-                if (!auth.isAuthenticated && !catalog!.isPristine) {
-                  catalog.reset(notify: false);
+                if (!auth.isAuthenticated) {
+                  catalog!.reset(notify: false);
                 }
                 return catalog!;
               },
@@ -188,7 +193,15 @@ class WaelApp extends StatelessWidget {
                   PlayerDependencies(engineFactory: YoutubeIframeEngine.new),
             ),
             ChangeNotifierProvider(create: (_) => HomeProvider()),
-            ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+            ChangeNotifierProxyProvider<AuthProvider, NotificationsProvider>(
+              create: (_) => NotificationsProvider(),
+              update: (_, auth, notifs) {
+                if (!auth.isAuthenticated) {
+                  notifs!.reset(notify: false);
+                }
+                return notifs!;
+              },
+            ),
             // One saved playback speed for every video.
             ChangeNotifierProvider.value(
               value: speedProvider ?? PlaybackSpeedProvider(),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/widgets.dart' show GlobalKey, NavigatorState;
 import '../core/api_client.dart';
 import '../core/app_config.dart';
+import '../core/catalog_cache.dart';
 import '../core/device_id.dart';
 import '../core/error_messages.dart';
 import '../core/haptics.dart';
@@ -18,9 +19,11 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     AuthRepository? repository,
     TokenStore? tokenStore,
+    CatalogCache? catalogCache,
     ApiClient? api,
     String? Function()? localeReader,
   }) : _tokens = tokenStore ?? SecureTokenStore(),
+       _catalogCache = catalogCache ?? SecureCatalogCache(),
        _localeReader = localeReader,
        _api =
            api ??
@@ -100,6 +103,7 @@ class AuthProvider extends ChangeNotifier {
 
   late final AuthRepository _repo;
   final TokenStore _tokens;
+  final CatalogCache _catalogCache;
   final ApiClient _api;
   late final ApiClient _apiWithCallbacks;
 
@@ -681,6 +685,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _logoutLocal() async {
     await _tokens.clear();
+    await _catalogCache.clear();
     _account = null;
     _deletionCancelled = false;
     // The next student must never inherit this one's name or phone (the

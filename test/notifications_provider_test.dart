@@ -155,5 +155,30 @@ void main() {
         );
       }
     });
+
+    test('reset clears items, resets repository, and clears error state', () {
+      final provider = NotificationsProvider();
+      provider.addNotification(
+        const NotificationModel(
+          id: 'n1',
+          title: 'Title',
+          titleAr: 'العنوان',
+          body: 'Body',
+          bodyAr: 'المحتوى',
+          timestamp: 'now',
+          timestampAr: 'الآن',
+          isRead: false,
+          type: 'system',
+        ),
+      );
+      expect(provider.notifications, isNotEmpty);
+      expect(provider.unreadCount, 1);
+
+      provider.reset();
+
+      expect(provider.notifications, isEmpty);
+      expect(provider.unreadCount, 0);
+      expect(provider.hasError, isFalse);
+    });
   });
 }
