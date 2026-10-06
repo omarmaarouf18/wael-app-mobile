@@ -44,7 +44,7 @@ void main() {
         expect(find.byType(AppBar), findsNothing);
         // The name also shows in the My-account name row below.
         expect(find.text('Jane Doe'), findsNWidgets(2));
-        expect(find.text('u@e.com'), findsOneWidget);
+        expect(find.text('u@e.com'), findsNWidgets(2));
         expect(find.text('+201000000000'), findsNWidgets(2));
         expect(find.byType(ProfileAvatar), findsOneWidget);
       });
@@ -99,7 +99,6 @@ void main() {
         for (final icon in [
           Icons.fingerprint,
           Icons.lock_outline,
-          Icons.mail_outline,
           Icons.notifications_none,
           Icons.auto_stories_outlined,
           Icons.verified_outlined,
@@ -125,7 +124,7 @@ void main() {
         tester,
       ) async {
         await pump(tester, fullName: '', phone: '');
-        expect(find.text('u@e.com'), findsOneWidget);
+        expect(find.text('u@e.com'), findsNWidgets(2));
         expect(find.byType(ProfileAvatar), findsOneWidget);
         expect(find.textContaining('+20'), findsNothing);
       });

@@ -88,10 +88,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('EDUCATION TYPE'), findsOneWidget);
 
-    // Settings shows the authenticated account email.
+    // Settings shows the authenticated account email (header and row).
     await tester.tap(find.byIcon(Icons.tune));
     await tester.pumpAndSettle();
-    expect(find.text('u@e.com'), findsOneWidget);
+    expect(find.text('u@e.com'), findsNWidgets(2));
 
     // Sign out returns to login (after confirming the dialog).
     await tester.ensureVisible(find.text('SIGN OUT OF EL METR ACADEMY'));

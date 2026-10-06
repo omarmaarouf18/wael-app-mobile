@@ -221,6 +221,16 @@ class AppLocalizations {
   String get editNameTitle => isArabic ? 'تعديل الاسم' : 'Edit name';
   String get editPhoneTitle =>
       isArabic ? 'تعديل رقم الموبايل' : 'Edit mobile number';
+  String get editEmailTitle =>
+      isArabic ? 'تعديل البريد الإلكتروني' : 'Change email';
+  String get newEmailLabel => isArabic ? 'البريد الجديد' : 'New email';
+  String get emailCodeSent => isArabic
+      ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
+      : 'A code was sent to your new email. Enter it below.';
+  String get emailChangedMessage => isArabic
+      ? 'تم تغيير البريد. سجل الدخول مجددًا.'
+      : 'Email changed. Please sign in again.';
+  String get sendCodeAction => isArabic ? 'إرسال الرمز' : 'Send code';
 
   // Settings: about this app (terms, privacy, version).
   String get aboutApp => isArabic ? 'عن التطبيق' : 'About';

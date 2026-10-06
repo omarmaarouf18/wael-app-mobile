@@ -10,6 +10,7 @@ import '../../widgets/themed_card.dart';
 import '../../widgets/themed_error_banner.dart';
 import '../../widgets/themed_section_header.dart';
 import '../../widgets/themed_text_field.dart';
+import 'email_change_screen.dart';
 
 /// "My account" settings section (F-UX2 Part B): the name and phone rows.
 /// Each opens a sheet with the new value plus the current password; the
@@ -55,6 +56,14 @@ class ProfileSection extends StatelessWidget {
                   isPhone: true,
                 ),
               ),
+              _ProfileRow(
+                icon: Icons.mail_outline,
+                title: l10n.email,
+                value: user.email,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const EmailChangeScreen()),
+                ),
+              ),
             ],
           ),
         ),
@@ -68,14 +77,14 @@ class _ProfileRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.value,
-    required this.hint,
+    this.hint,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String value;
-  final String hint;
+  final String? hint;
   final VoidCallback onTap;
 
   @override
@@ -124,13 +133,15 @@ class _ProfileRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hint,
-                      style: AppTypography.caption(
-                        isArabic: l10n.isArabic,
-                      ).copyWith(color: AppColors.textTertiary),
-                    ),
+                    if (hint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        hint!,
+                        style: AppTypography.caption(
+                          isArabic: l10n.isArabic,
+                        ).copyWith(color: AppColors.textTertiary),
+                      ),
+                    ],
                   ],
                 ),
               ),
