@@ -162,6 +162,13 @@ class FakeAuthRepository implements AuthRepository {
     if (refreshMode == '408') {
       throw ApiException(statusCode: 408, message: 'request timeout');
     }
+    if (refreshMode == 'timeout') {
+      throw ApiException(
+        statusCode: -1,
+        message: 'Request timed out',
+        code: 'timeout',
+      );
+    }
     if (refreshMode == '429') {
       throw ApiException(
         statusCode: 429,
