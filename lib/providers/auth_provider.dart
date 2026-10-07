@@ -38,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
       allowSelfSigned: AppConfig.allowSelfSigned,
       accessTokenReader: _tokens.readAccessToken,
       refreshTokens: _doRefresh,
+      refreshWithOutcome: _doRefreshWithOutcome,
       forceLogout: handleForceLogout,
       localeReader: _localeReader,
       onSessionReplaced: (msg) => handleSessionReplaced(msg),
@@ -256,36 +257,42 @@ class AuthProvider extends ChangeNotifier {
   @visibleForTesting
   Future<bool> doRefresh() => _doRefresh();
 
-  Future<bool>? _refreshInFlight;
+  @visibleForTesting
+  Future<RefreshOutcome> doRefreshWithOutcome() => _doRefreshWithOutcome();
 
-  Future<bool> _doRefresh() {
-    final inFlight = _refreshInFlight;
+  Future<RefreshOutcome>? _refreshOutcomeInFlight;
+
+  Future<bool> _doRefresh() async {
+    final outcome = await _doRefreshWithOutcome();
+    return outcome == RefreshOutcome.success;
+  }
+
+  Future<RefreshOutcome> _doRefreshWithOutcome() {
+    final inFlight = _refreshOutcomeInFlight;
     if (inFlight != null) return inFlight;
-    final future = _performRefresh();
-    _refreshInFlight = future;
+    final future = _performRefreshWithOutcome();
+    _refreshOutcomeInFlight = future;
     return future.whenComplete(() {
-      if (identical(_refreshInFlight, future)) {
-        _refreshInFlight = null;
+      if (identical(_refreshOutcomeInFlight, future)) {
+        _refreshOutcomeInFlight = null;
       }
     });
   }
 
-  Future<bool> _performRefresh() async {
+  Future<RefreshOutcome> _performRefreshWithOutcome() async {
     final startingRefreshToken = await _tokens.readRefreshToken();
     if (startingRefreshToken == null || startingRefreshToken.isEmpty) {
-      final current = await _tokens.readRefreshToken();
-      if (current != null && current.isNotEmpty) return true;
       await _logoutLocal();
-      return false;
+      return RefreshOutcome.permanentFailure;
     }
     try {
       final tokens = await _repo.refresh(refreshToken: startingRefreshToken);
       await _tokens.writeTokens(access: tokens.access, refresh: tokens.refresh);
-      return true;
+      return RefreshOutcome.success;
     } on ApiException catch (e) {
       if (e.code == 'session_replaced') {
         await handleSessionReplaced(e.message);
-        return false;
+        return RefreshOutcome.permanentFailure;
       }
       if (e.statusCode == 401 || e.statusCode == 403) {
         final current = await _tokens.readRefreshToken();
@@ -294,17 +301,21 @@ class AuthProvider extends ChangeNotifier {
             current.isNotEmpty) {
           // Token changed since this attempt started (e.g. rotated by
           // another concurrent refresh). Keep the fresh tokens and session.
-          return true;
+          return RefreshOutcome.success;
         }
         await _logoutLocal();
-      } else if (_isTransientStatus(e.statusCode)) {
+        return RefreshOutcome.permanentFailure;
+      }
+      if (_isTransientStatus(e.statusCode)) {
         // Transient refresh failure (network/timeout/5xx/408/429): keep
         // the stored tokens and remember Retry-After for the retry button.
         _retryAfterSeconds = e.retryAfterSeconds;
       }
-      return false;
+      // Any other failure keeps the tokens (never end the session on a
+      // transient blip); only 401/403 above are definitive.
+      return RefreshOutcome.transientFailure;
     } catch (_) {
-      return false;
+      return RefreshOutcome.transientFailure;
     }
   }
 
@@ -366,11 +377,19 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Retry entry point for the offline banner and app-resume revalidation.
+  /// Unlike the splash-driven [tryRestore] (which never navigates; the
+  /// splash routes by status), a revoked/suspended session discovered here
+  /// must leave the main shell: after [tryRestore] settles, an
+  /// unauthenticated status navigates to `/login` (idempotent via
+  /// `_navigatingToLogin`).
   Future<void> retryRestore() async {
     _offline = false;
     _retryAfterSeconds = null;
     notifyListeners();
     await tryRestore();
+    if (_status == AuthStatus.unauthenticated) {
+      _navigateToLogin();
+    }
   }
 
   /// Splash fallback: `tryRestore` hung past the splash budget. Keeps the

@@ -6,12 +6,20 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' show IOClient;
 import '../debug/diagnostics_tracker.dart';
 
+/// Outcome of a token refresh attempt, so a transient failure (network,
+/// timeout, 5xx, 408, 429) never ends the session while a definitive one
+/// (rejected refresh, missing token) still does.
+enum RefreshOutcome { success, transientFailure, permanentFailure }
+
 /// Real HTTP client for the wael-app gateway.
 ///
 /// - Base URL is injected (see [AppConfig]); nothing is hardcoded.
 /// - JWT is injected per request via [accessTokenReader].
-/// - On 401 the client runs [refreshTokens] once and retries; if refresh
-///   fails (or none is configured) it runs [forceLogout].
+/// - On 401 the client runs the refresh once and retries; if refresh fails
+///   definitively (or none is configured) it runs [forceLogout]. A transient
+///   refresh failure ([RefreshOutcome.transientFailure]) never triggers
+///   [forceLogout]: the original 401 surfaces and the caller keeps its
+///   tokens. The second-401 depth-limit path always triggers [forceLogout].
 /// - 429 responses surface as [ApiException] with the backend message so the
 ///   UI can show a clear rate-limit/lockout notice.
 /// - Every request has a timeout ([timeout], [playTimeout] for `/play`):
@@ -26,6 +34,7 @@ class ApiClient {
     http.Client? client,
     this.accessTokenReader,
     this.refreshTokens,
+    this.refreshWithOutcome,
     this.forceLogout,
     this.localeReader,
     this.onSessionReplaced,
@@ -42,6 +51,13 @@ class ApiClient {
   final http.Client _client;
   final Future<String?> Function()? accessTokenReader;
   final Future<bool> Function()? refreshTokens;
+
+  /// Distinguishing refresh callback (preferred over [refreshTokens] when
+  /// both are set): `success` retries, `permanentFailure` triggers
+  /// [forceLogout], `transientFailure` surfaces the 401 with no logout.
+  /// Legacy [refreshTokens] (`false`) keeps the old behaviour (logout) for
+  /// existing callers and tests.
+  final Future<RefreshOutcome> Function()? refreshWithOutcome;
   final Future<void> Function()? forceLogout;
   final String? Function()? localeReader;
   final Future<void> Function(String? message)? onSessionReplaced;
@@ -64,6 +80,7 @@ class ApiClient {
   );
 
   Future<bool>? _refreshInFlight;
+  Future<RefreshOutcome>? _refreshOutcomeInFlight;
 
   static http.Client _defaultClient(bool allowSelfSigned) {
     if (allowSelfSigned && kDebugMode) {
@@ -284,6 +301,15 @@ class ApiClient {
       if (isRetry) {
         // Retry depth limit reached: a second 401 goes to forced-logout.
         if (_claimLogout()) await forceLogout?.call();
+      } else if (refreshWithOutcome != null) {
+        final outcome = await _refreshOnceWithOutcome();
+        if (outcome == RefreshOutcome.success) return retry();
+        if (outcome == RefreshOutcome.permanentFailure) {
+          // Definitive refresh failure: exactly one caller of this round
+          // reports the logout, the rest just surface the 401.
+          if (_claimLogout()) await forceLogout?.call();
+        }
+        // Transient failure: no logout; the original 401 surfaces below.
       } else if (refreshTokens != null) {
         final ok = await _refreshOnce();
         if (ok) return retry();
@@ -335,6 +361,25 @@ class ApiClient {
     _refreshInFlight = future;
     return future.whenComplete(() {
       if (identical(_refreshInFlight, future)) _refreshInFlight = null;
+    });
+  }
+
+  /// Outcome-sharing twin of [_refreshOnce] for [refreshWithOutcome]. A
+  /// throwing refresh reads as transient (no logout), never as permanent,
+  /// so an unexpected callback error cannot end the session.
+  Future<RefreshOutcome> _refreshOnceWithOutcome() {
+    final inFlight = _refreshOutcomeInFlight;
+    if (inFlight != null) return inFlight;
+    _logoutClaimed = false;
+    final future = refreshWithOutcome!.call().then<RefreshOutcome>(
+      (outcome) => outcome,
+      onError: (_) => RefreshOutcome.transientFailure,
+    );
+    _refreshOutcomeInFlight = future;
+    return future.whenComplete(() {
+      if (identical(_refreshOutcomeInFlight, future)) {
+        _refreshOutcomeInFlight = null;
+      }
     });
   }
 
