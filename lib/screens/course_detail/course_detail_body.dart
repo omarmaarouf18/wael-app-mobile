@@ -58,7 +58,7 @@ class CourseDetailBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SubjectHeroBanner(
-            imageAsset: AppConstants.imgCatalogComposure,
+            imageAsset: AppConstants.imgSubjectBanner,
             fallbackAsset: AppConstants.imgCharacterArt,
             tag: detail.hasTerm ? l10n.termLabel(detail.term) : null,
           ),

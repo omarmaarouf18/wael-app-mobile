@@ -20,8 +20,10 @@ class AppConstants {
   static const double posterAspectRatio = 548 / 871;
 
   static const String imgHomeHero = 'assets/images/home_hero.png';
-  static const String imgCatalogComposure =
-      'assets/images/catalog_composure.jpg';
+
+  /// The subject-screen banner (owner-supplied EL METR banner, 2026-10-08,
+  /// 1242 x 649 JPEG), the same on every subject.
+  static const String imgSubjectBanner = 'assets/images/elmetr_banner.jpg';
 
   /// The director's photo (owner-supplied, 2026-10-08), 800 x 800, head and
   /// shoulders.
