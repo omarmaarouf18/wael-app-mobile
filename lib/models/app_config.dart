@@ -69,20 +69,26 @@ class AppConfigData {
 
 /// Tutoring-center info from `GET /academy/app-config` (owner amendment
 /// 2026-10-08, F-UX6): name, address, localized working hours and an
-/// optional map link, shown in Settings > Help. All fields are plain
-/// display strings from the server; the map link keeps the same
-/// https-only rule as every other external URL.
+/// optional map link, shown in Settings > Help. `name`, `address` and
+/// `hours` each arrive either as an `{ar, en}` object (picked by UI
+/// language with fallback to the other side) or, for backward
+/// compatibility, as a plain string (shown in both languages). The map
+/// link keeps the same https-only rule as every other external URL.
 class CenterInfo {
   const CenterInfo({
-    this.name = '',
-    this.address = '',
+    this.nameAr = '',
+    this.nameEn = '',
+    this.addressAr = '',
+    this.addressEn = '',
     this.hoursAr = '',
     this.hoursEn = '',
     this.mapUrl = '',
   });
 
-  final String name;
-  final String address;
+  final String nameAr;
+  final String nameEn;
+  final String addressAr;
+  final String addressEn;
   final String hoursAr;
   final String hoursEn;
 
@@ -92,18 +98,42 @@ class CenterInfo {
   /// True when there is info text worth showing (the map link is
   /// independent: a map-only object still offers "open map").
   bool get hasContent =>
-      name.isNotEmpty ||
-      address.isNotEmpty ||
+      nameAr.isNotEmpty ||
+      nameEn.isNotEmpty ||
+      addressAr.isNotEmpty ||
+      addressEn.isNotEmpty ||
       hoursAr.isNotEmpty ||
       hoursEn.isNotEmpty;
 
-  /// Working hours in the UI language, falling back to the other side.
-  String hoursFor(bool isArabic) {
-    if (isArabic) return hoursAr.isNotEmpty ? hoursAr : hoursEn;
-    return hoursEn.isNotEmpty ? hoursEn : hoursAr;
+  /// Picks the UI-language side, falling back to the other language.
+  static String _localized(String ar, String en, bool isArabic) {
+    if (isArabic) return ar.isNotEmpty ? ar : en;
+    return en.isNotEmpty ? en : ar;
   }
 
+  /// Center name in the UI language, falling back to the other side.
+  String nameFor(bool isArabic) => _localized(nameAr, nameEn, isArabic);
+
+  /// Center address in the UI language, falling back to the other side.
+  String addressFor(bool isArabic) =>
+      _localized(addressAr, addressEn, isArabic);
+
+  /// Working hours in the UI language, falling back to the other side.
+  String hoursFor(bool isArabic) => _localized(hoursAr, hoursEn, isArabic);
+
   static String _text(Object? value) => (value ?? '').toString().trim();
+
+  /// Reads either an `{ar, en}` object or a plain string (shown in both
+  /// languages); anything else is empty.
+  static (String, String) _localizedPair(Object? value) {
+    if (value is Map) {
+      return (_text(value['ar']), _text(value['en']));
+    }
+    if (value is! String) return ('', '');
+    final plain = value.trim();
+    if (plain.isEmpty) return ('', '');
+    return (plain, plain);
+  }
 
   /// Null unless [json] is a map (a missing or malformed `center` field
   /// means "show nothing", never a crash).
@@ -112,9 +142,13 @@ class CenterInfo {
     final hours = json['hours'];
     final hoursAr = hours is Map ? _text(hours['ar']) : '';
     final hoursEn = hours is Map ? _text(hours['en']) : '';
+    final (nameAr, nameEn) = _localizedPair(json['name']);
+    final (addressAr, addressEn) = _localizedPair(json['address']);
     return CenterInfo(
-      name: _text(json['name']),
-      address: _text(json['address']),
+      nameAr: nameAr,
+      nameEn: nameEn,
+      addressAr: addressAr,
+      addressEn: addressEn,
       hoursAr: hoursAr,
       hoursEn: hoursEn,
       mapUrl: AppConfigData._httpsUrl(json['map_url']),
@@ -122,8 +156,8 @@ class CenterInfo {
   }
 
   Map<String, dynamic> toJson() => {
-    'name': name,
-    'address': address,
+    'name': {'ar': nameAr, 'en': nameEn},
+    'address': {'ar': addressAr, 'en': addressEn},
     'hours': {'ar': hoursAr, 'en': hoursEn},
     'map_url': mapUrl,
   };

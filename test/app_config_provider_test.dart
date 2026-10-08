@@ -100,18 +100,62 @@ void main() {
     test('center keeps display strings and an https map link only', () {
       final parsed = AppConfigData.fromJson({
         'center': {
-          'name': '  El Metr Center  ',
-          'address': 'Nasr City, Cairo',
+          'name': {'ar': '  السنتر  ', 'en': 'El Metr Center'},
+          'address': {'ar': 'مدينة نصر، القاهرة', 'en': 'Nasr City, Cairo'},
           'hours': {'ar': 'يوميًا ١٠ص-١٠م', 'en': 'Daily 10am-10pm'},
           'map_url': 'https://maps.example/center',
         },
       });
       final center = parsed.center!;
-      expect(center.name, 'El Metr Center');
-      expect(center.address, 'Nasr City, Cairo');
+      expect(center.nameFor(true), 'السنتر');
+      expect(center.nameFor(false), 'El Metr Center');
+      expect(center.addressFor(true), 'مدينة نصر، القاهرة');
+      expect(center.addressFor(false), 'Nasr City, Cairo');
       expect(center.hoursFor(true), 'يوميًا ١٠ص-١٠م');
       expect(center.hoursFor(false), 'Daily 10am-10pm');
       expect(center.mapUrl, 'https://maps.example/center');
+      expect(center.hasContent, isTrue);
+    });
+
+    test('center name and address fall back to the other language', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {
+          'name': {'ar': 'السنتر'},
+          'address': {'en': 'Nasr City, Cairo'},
+        },
+      });
+      final center = parsed.center!;
+      expect(center.nameFor(true), 'السنتر');
+      expect(center.nameFor(false), 'السنتر');
+      expect(center.addressFor(true), 'Nasr City, Cairo');
+      expect(center.addressFor(false), 'Nasr City, Cairo');
+      expect(center.hasContent, isTrue);
+    });
+
+    test('center name and address still accept a plain string', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {'name': 'El Metr Center', 'address': 'Nasr City, Cairo'},
+      });
+      final center = parsed.center!;
+      expect(center.nameFor(true), 'El Metr Center');
+      expect(center.nameFor(false), 'El Metr Center');
+      expect(center.addressFor(true), 'Nasr City, Cairo');
+      expect(center.addressFor(false), 'Nasr City, Cairo');
+      expect(center.hasContent, isTrue);
+    });
+
+    test('center name and address ignore malformed values', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {
+          'name': 42,
+          'address': ['Cairo'],
+          'hours': {'ar': 'يوميًا ١٠ص-١٠م'},
+        },
+      });
+      final center = parsed.center!;
+      expect(center.nameFor(true), isEmpty);
+      expect(center.nameFor(false), isEmpty);
+      expect(center.addressFor(true), isEmpty);
       expect(center.hasContent, isTrue);
     });
 
@@ -142,7 +186,7 @@ void main() {
       final parsed = AppConfigData.fromJson({
         'show_prices': true,
         'center': {
-          'name': 'El Metr Center',
+          'name': {'ar': 'السنتر', 'en': 'El Metr Center'},
           'address': 'Nasr City, Cairo',
           'hours': {'ar': 'يوميًا ١٠ص-١٠م', 'en': 'Daily 10am-10pm'},
           'map_url': 'https://maps.example/center',
@@ -150,7 +194,9 @@ void main() {
       });
       final reparsed = AppConfigData.fromJson(parsed.toJson());
       expect(reparsed.showPrices, isTrue);
-      expect(reparsed.center?.name, 'El Metr Center');
+      expect(reparsed.center?.nameFor(true), 'السنتر');
+      expect(reparsed.center?.nameFor(false), 'El Metr Center');
+      expect(reparsed.center?.addressFor(false), 'Nasr City, Cairo');
       expect(reparsed.center?.hoursFor(false), 'Daily 10am-10pm');
       expect(reparsed.center?.mapUrl, 'https://maps.example/center');
     });

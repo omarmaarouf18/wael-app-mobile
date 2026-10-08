@@ -189,17 +189,17 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (center!.name.isNotEmpty)
+                      if (center!.nameFor(l10n.isArabic).isNotEmpty)
                         Text(
-                          center.name,
+                          center.nameFor(l10n.isArabic),
                           style: AppTypography.headlineSm(
                             isArabic: l10n.isArabic,
                           ).copyWith(fontWeight: FontWeight.w700),
                         ),
-                      if (center.address.isNotEmpty) ...[
+                      if (center.addressFor(l10n.isArabic).isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.spaceXs),
                         Text(
-                          center.address,
+                          center.addressFor(l10n.isArabic),
                           style: AppTypography.bodyMd(isArabic: l10n.isArabic),
                         ),
                       ],

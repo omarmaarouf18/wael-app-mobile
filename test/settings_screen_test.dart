@@ -301,8 +301,10 @@ void main() {
         Future<List<Uri>> pumpCenter(
           WidgetTester tester, {
           CenterInfo? center = const CenterInfo(
-            name: centerName,
-            address: centerAddress,
+            nameAr: 'السنتر',
+            nameEn: centerName,
+            addressAr: 'مدينة نصر، القاهرة',
+            addressEn: centerAddress,
             hoursAr: 'يوميًا ١٠ص-١٠م',
             hoursEn: 'Daily 10am-10pm',
             mapUrl: centerMap,
@@ -330,8 +332,14 @@ void main() {
 
         testWidgets('shows name, address and localized hours', (tester) async {
           await pumpCenter(tester);
-          expect(find.text(centerName), findsOneWidget);
-          expect(find.text(centerAddress), findsOneWidget);
+          expect(
+            find.text(l10n.isArabic ? 'السنتر' : centerName),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.isArabic ? 'مدينة نصر، القاهرة' : centerAddress),
+            findsOneWidget,
+          );
           expect(
             find.text(l10n.isArabic ? 'يوميًا ١٠ص-١٠م' : 'Daily 10am-10pm'),
             findsOneWidget,
