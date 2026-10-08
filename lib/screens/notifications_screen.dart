@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/haptics.dart';
+import '../core/notification_time.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/notifications_provider.dart';
@@ -218,7 +219,10 @@ class NotificationsScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    item.localizedTimestamp(l10n.isArabic),
+                                    formatNotificationTime(
+                                      item.localizedTimestamp(l10n.isArabic),
+                                      isArabic: l10n.isArabic,
+                                    ),
                                     style: AppTypography.caption(
                                       isArabic: l10n.isArabic,
                                     ),

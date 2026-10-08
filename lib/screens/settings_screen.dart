@@ -371,11 +371,25 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.spaceLg),
 
             Center(
-              child: Text(
-                l10n.allRightsReserved,
-                style: AppTypography.caption(
-                  isArabic: l10n.isArabic,
-                ).copyWith(color: AppColors.textPlaceholder),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.brandLine,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.caption(
+                      isArabic: l10n.isArabic,
+                    ).copyWith(color: AppColors.textPlaceholder),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.appCreditLine,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.caption(
+                      isArabic: l10n.isArabic,
+                    ).copyWith(color: AppColors.textPlaceholder),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.space3xl),

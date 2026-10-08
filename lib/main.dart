@@ -13,6 +13,7 @@ import 'core/app_config_cache.dart';
 import 'core/catalog_cache.dart';
 import 'core/constants.dart';
 import 'core/error_messages.dart';
+import 'core/notification_time.dart';
 import 'core/secure_store.dart';
 import 'l10n/app_localizations.dart';
 import 'widgets/app_shell.dart';
@@ -64,6 +65,8 @@ void main() async {
   // The single saved playback speed (1x when nothing was chosen yet).
   final speedProvider = PlaybackSpeedProvider(store: tokenStore);
   await speedProvider.load();
+  // intl date symbols for notification timestamps (bundled, offline-safe).
+  await ensureNotificationTimeInitialized();
   runApp(
     WaelApp(
       localeProvider: localeProvider,

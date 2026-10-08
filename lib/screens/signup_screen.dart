@@ -133,13 +133,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       l10n.signUp,
                       style: AppTypography.headlineLg(isArabic: l10n.isArabic),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.admissionsNote,
-                      style: AppTypography.bodySm(
-                        isArabic: l10n.isArabic,
-                      ).copyWith(color: AppColors.textMuted),
-                    ),
                     const SizedBox(height: AppSpacing.spaceXl),
 
                     // Full Name

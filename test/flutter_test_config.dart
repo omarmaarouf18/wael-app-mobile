@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wael_app/core/notification_time.dart';
 
 /// Global test bootstrap.
 ///
@@ -14,6 +15,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// inject [MemoryTokenStore] and [MemoryCatalogCache] explicitly.
 Future<void> testExecutable(Future<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // intl date symbols, so notification timestamps format in widget tests
+  // exactly as in the app.
+  await ensureNotificationTimeInitialized();
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
         const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),

@@ -75,9 +75,6 @@ class AppLocalizations {
   String get academyMotto => isArabic
       ? 'الانضباط • الفكر • السيادة'
       : 'DISCIPLINE • INTELLECT • SOVEREIGNTY';
-  String get admissionsNote => isArabic
-      ? 'القبول قائم حصراً على الاستحقاق والكفاءة.'
-      : 'Admissions are strictly merit-based.';
 
   // Common Actions
   String get exploreCourses => isArabic ? 'استكشف الدورات' : 'EXPLORE COURSES';
@@ -209,8 +206,11 @@ class AppLocalizations {
   String languageSwitched(bool toArabic) => toArabic
       ? 'تم تحويل اللغة إلى العربية (RTL)'
       : 'Switched language to English (LTR)';
-  String get allRightsReserved =>
-      isArabic ? 'جميع الحقوق محفوظة © 2026' : 'All rights reserved © 2026';
+  String get brandLine => isArabic
+      ? 'EL METR علامة مملوكة للأستاذ وائل السعيد.'
+      : 'EL METR is a brand of Ustaz Wael Al-Saeed.';
+  String get appCreditLine =>
+      isArabic ? 'التطبيق © ٢٠٢٦ عمر معروف.' : 'App © 2026 Omar Maarouf.';
 
   // Settings: my account (name, phone, email, password).
   String get myAccount => isArabic ? 'حسابي' : 'My account';

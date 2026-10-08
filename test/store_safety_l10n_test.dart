@@ -360,6 +360,8 @@ void main() {
             l10n.emailChangedMessage,
             l10n.accessActive,
             l10n.openMap,
+            l10n.brandLine,
+            l10n.appCreditLine,
           ];
 
           for (final str in strings) {

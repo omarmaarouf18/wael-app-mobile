@@ -69,12 +69,20 @@ void main() {
       'Law lecturer',
       'مدرس قانون',
     ];
+    // Owner decision 2026-10-08 (CONTENT-GAPS #28): the Settings footer
+    // brand line names the owner verbatim. This exact literal is allowed
+    // in app_localizations.dart and nowhere else.
+    const footerBrandLine = 'EL METR علامة مملوكة للأستاذ وائل السعيد.';
     final hits = <String>[];
     for (final f in lib) {
       if (f.path.endsWith('lib/content/director_profile.dart')) continue;
-      final text = f.readAsStringSync();
-      for (final needle in onlyInContent) {
-        if (text.contains(needle)) hits.add('${f.path}: $needle');
+      final allowFooter = f.path.endsWith('lib/l10n/app_localizations.dart');
+      for (final line in f.readAsLinesSync()) {
+        for (final needle in onlyInContent) {
+          if (!line.contains(needle)) continue;
+          if (allowFooter && line.contains(footerBrandLine)) continue;
+          hits.add('${f.path}: $needle');
+        }
       }
     }
     expect(hits, isEmpty);
