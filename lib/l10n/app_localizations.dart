@@ -320,16 +320,19 @@ class AppLocalizations {
   String get priceLabel => isArabic ? 'السعر' : 'Price';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
+  // Locked/pending wording (owner decision 2026-10-08): the subject is
+  // activated by the center/support after the student contacts support on
+  // WhatsApp. No payment action is ever named.
   String get contactSupportToActivate => isArabic
-      ? 'تواصل مع الدعم لتفعيل هذه المادة.'
-      : 'Contact support to activate this subject.';
+      ? 'المادة دي بتتفعّل من خلال السنتر. تواصل مع الدعم لتفعيلها.'
+      : 'This subject is activated by the center. Contact support to activate it.';
   String get sendingAccessRequest =>
       isArabic ? 'جارٍ إرسال طلبك…' : 'Sending your request…';
   String get copySupportLink =>
       isArabic ? 'نسخ رابط الدعم' : 'Copy support link';
   String get supportLinkCopied =>
       isArabic ? 'تم نسخ رابط الدعم' : 'Support link copied';
-  String get openWhatsApp => isArabic ? 'تواصل على واتساب' : 'Chat on WhatsApp';
+  String get openWhatsApp => isArabic ? 'تواصل مع الدعم' : 'Contact support';
 
   /// Prefilled WhatsApp message for an access request: subject + student.
   String whatsappRequestText(String subject, String email) => isArabic
