@@ -15,9 +15,10 @@ abstract class NotificationRepository {
 
 NotificationModel _fromJson(Map<String, dynamic> json) {
   final title = (json['title'] ?? '').toString();
-  // The backend sends no subject id today; parsed defensively so subject
-  // notifications deep-link once it does (see Backend follow-ups).
-  final subjectId = json['subject_id']?.toString();
+  // Subject notifications carry `subject_id` (S4) and deep-link to the
+  // subject. Only a string id deep-links; any other shape is ignored.
+  final rawSubject = json['subject_id'];
+  final subjectId = rawSubject is String ? rawSubject : null;
   return NotificationModel(
     id: (json['id'] ?? '').toString(),
     title: title,

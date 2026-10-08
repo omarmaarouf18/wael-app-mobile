@@ -40,6 +40,22 @@ class NotificationsScreen extends StatelessWidget {
     return allowedRoutes.contains(route);
   }
 
+  /// Allowlisted routes this build actually registers (`buildAppRoutes` plus
+  /// `/course-details` from `onGenerateRoute`). `/courses` and
+  /// `/device-management` stay on the allowlist for a later build but are
+  /// not routes yet: pushing them would throw, so a tap on such a
+  /// notification only marks it read.
+  static const Set<String> openableRoutes = {
+    '/course-details',
+    '/notifications',
+    '/settings',
+    '/ebooks',
+  };
+
+  /// True when tapping a notification may open [route].
+  static bool canOpenTargetRoute(String? route) =>
+      isValidTargetRoute(route) && openableRoutes.contains(route);
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -159,8 +175,7 @@ class NotificationsScreen extends StatelessWidget {
                         Navigator.of(
                           context,
                         ).pushNamed('/course-details', arguments: subjectId);
-                      } else if (item.targetRoute != null &&
-                          isValidTargetRoute(item.targetRoute) &&
+                      } else if (canOpenTargetRoute(item.targetRoute) &&
                           item.targetRoute != '/notifications') {
                         Navigator.of(context).pushNamed(item.targetRoute!);
                       }

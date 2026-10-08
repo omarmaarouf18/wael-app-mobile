@@ -202,11 +202,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// [backendMessage] is accepted for the callers' signature but never
+  /// shown: the notice is always the app's own localized text (the server
+  /// sends the same owner wording today), so server text cannot reach the
+  /// screen.
   Future<void> handleSessionReplaced([String? backendMessage]) async {
     _sessionReplacedActive = true;
-    _errorMessage = (backendMessage != null && backendMessage.isNotEmpty)
-        ? backendMessage
-        : ErrorMessages.sessionReplaced(_isArabic);
+    _errorMessage = ErrorMessages.sessionReplaced(_isArabic);
     await _logoutLocal();
     _navigateToLogin();
   }

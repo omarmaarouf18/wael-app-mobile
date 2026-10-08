@@ -397,7 +397,8 @@ class AppLocalizations {
   String fileKind(String kind) => switch (kind) {
     'book' => isArabic ? 'كتاب' : 'Book',
     'note' => isArabic ? 'مذكرة' : 'Note',
-    _ => kind,
+    // Unknown kinds from a newer server: a generic label, never raw text.
+    _ => isArabic ? 'ملف' : 'File',
   };
 
   // Notes & books (SPEC Phase 5 client, behind the server's features.files)

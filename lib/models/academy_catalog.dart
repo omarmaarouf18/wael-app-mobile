@@ -48,6 +48,16 @@ List<Object?> _list(Map<String, dynamic> json, String key) {
   throw AcademyParseException('missing list "$key"');
 }
 
+/// A list the server may omit or send as `null` (Go serialises a nil slice
+/// as `null`; an older or newer server may drop the key): both mean empty.
+/// Any other non-list value is still a contract error.
+List<Object?> _optionalList(Map<String, dynamic> json, String key) {
+  final v = json[key];
+  if (v == null) return const [];
+  if (v is List) return v;
+  throw AcademyParseException('"$key" is not a list');
+}
+
 /// Go serialises an unset `time.Time` as `0001-01-01T00:00:00Z`; that and
 /// anything unparsable mean "no expiry set" (null).
 DateTime? _parseExpiry(Object? v) {
@@ -370,6 +380,11 @@ class AcademyFile {
   bool get isBook => kind == 'book';
   bool get isNote => kind == 'note';
 
+  /// A kind this build does not know (a later server may add one): it is
+  /// listed nowhere on the subject screen (books and notes only) and labelled
+  /// generically elsewhere, never with the raw server value.
+  bool get isKnownKind => isBook || isNote;
+
   factory AcademyFile.fromJson(Object? json) {
     final m = _map(json, 'file');
     return AcademyFile(
@@ -445,8 +460,8 @@ class AcademySubjectDetail extends AcademySubject {
   // `m` is also read by the initialisers, so it cannot be a super parameter.
   // ignore: use_super_parameters
   AcademySubjectDetail.fromJson(Map<String, dynamic> m)
-    : videos = _list(m, 'videos').map(AcademyVideo.fromJson).toList(),
-      files = _list(m, 'files').map(AcademyFile.fromJson).toList(),
+    : videos = _optionalList(m, 'videos').map(AcademyVideo.fromJson).toList(),
+      files = _optionalList(m, 'files').map(AcademyFile.fromJson).toList(),
       request = m['request'] == null
           ? null
           : SubjectRequest.fromJson(m['request']),
