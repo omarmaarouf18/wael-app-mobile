@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
 import 'app_badge.dart';
+import 'subject_price.dart';
 import 'themed_card.dart';
 import 'themed_panel.dart';
 
@@ -84,6 +85,17 @@ class CatalogSubjectCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyXs(isArabic: isArabic),
+            ),
+          ],
+          // Compact server-sent price, locked subjects only: owned
+          // subjects and a null price render nothing (and no gap).
+          if (!subject.owned && subject.price != null) ...[
+            const SizedBox(height: AppSpacing.spaceXs),
+            SubjectPriceTag(
+              amount: subject.price!,
+              currency: subject.currency,
+              isArabic: isArabic,
+              compact: true,
             ),
           ],
           const SizedBox(height: AppSpacing.spaceMd),

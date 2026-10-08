@@ -687,16 +687,15 @@ void main() {
         expect(find.text(l10n.supportLinkCopied), findsOneWidget);
       });
 
-      testWidgets(
-        'no price or payment wording, even when the API sends a price',
-        (tester) async {
-          await pump(tester, lockedBody);
-          expect(find.textContaining('1800'), findsNothing);
-          expect(find.textContaining('EGP'), findsNothing);
-          expect(find.textContaining('route:/payment'), findsNothing);
-          expect(stubRouteArguments, isEmpty);
-        },
-      );
+      testWidgets('a locked subject shows its price when the API sends it', (
+        tester,
+      ) async {
+        await pump(tester, lockedBody);
+        expect(find.text(l10n.priceLabel), findsOneWidget);
+        expect(find.text(title('1800 ج.م', 'EGP 1800')), findsOneWidget);
+        expect(find.textContaining('route:/payment'), findsNothing);
+        expect(stubRouteArguments, isEmpty);
+      });
 
       testWidgets('rebuilding the screen does not send the request again', (
         tester,

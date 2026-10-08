@@ -5,15 +5,14 @@ import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
 
 void main() {
+  // Price words (سعر، ج.م، جنيه، price) are NOT forbidden: the owner
+  // decision 2026-10-08 allows showing the server-sent subject price. The
+  // dedicated allowlist rule for where they may appear lands separately.
   const forbiddenWords = [
     'دفع',
-    'سعر',
-    'ج.م',
-    'جنيه',
     'شراء',
     'استرداد',
     'payment',
-    'price',
     'refund',
     'purchase',
   ];
@@ -120,14 +119,7 @@ void main() {
             }
 
             // Arabic forbidden words must not appear anywhere in code lines
-            for (final arWord in [
-              'دفع',
-              'سعر',
-              'ج.م',
-              'جنيه',
-              'شراء',
-              'استرداد',
-            ]) {
+            for (final arWord in ['دفع', 'شراء', 'استرداد']) {
               if (line.contains(arWord)) {
                 violations.add(
                   '$relPath:${i + 1}: Arabic text contains "$arWord" -> "$line"',

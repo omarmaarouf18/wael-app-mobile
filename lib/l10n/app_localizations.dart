@@ -314,6 +314,10 @@ class AppLocalizations {
   String get termSecond => isArabic ? 'الفصل الدراسي الثاني' : 'Second Term';
 
   String get accessActive => isArabic ? 'الوصول مفعّل' : 'Access active';
+
+  /// Neutral price label (owner decision 2026-10-08): the app may show a
+  /// subject's price, never a payment action.
+  String get priceLabel => isArabic ? 'السعر' : 'Price';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
   String get contactSupportToActivate => isArabic

@@ -16,6 +16,7 @@ import '../../widgets/owned_subject_tile.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/secondary_button.dart';
 import '../../widgets/subject_hero_banner.dart';
+import '../../widgets/subject_price.dart';
 import '../../widgets/themed_error_banner.dart';
 import '../../widgets/themed_panel.dart';
 import 'subject_content_section.dart';
@@ -94,6 +95,17 @@ class CourseDetailBody extends StatelessWidget {
                     style: AppTypography.bodyMd(
                       isArabic: isArabic,
                     ).copyWith(height: 1.5),
+                  ),
+                ],
+                // The server-sent price, locked subjects only: owned
+                // subjects and a null price render nothing (and no gap).
+                // It stays in the header, never in the support panel below.
+                if (!detail.owned && detail.price != null) ...[
+                  const SizedBox(height: AppSpacing.spaceMd),
+                  SubjectPriceTag(
+                    amount: detail.price!,
+                    currency: detail.currency,
+                    isArabic: isArabic,
                   ),
                 ],
                 const SizedBox(height: AppSpacing.spaceLg),
