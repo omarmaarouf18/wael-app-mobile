@@ -53,10 +53,15 @@ class AppConfigProvider extends ChangeNotifier {
   CenterInfo? get center => _config.center;
 
   /// Notes and books downloads (`features.files`, client contract
-  /// 2026-10-08, server pending). False until the server sends a real
-  /// boolean `true`; a fresh install that never reached the server keeps it
-  /// false. The last fetched value is reused from the 5-minute cache, so
-  /// already-downloaded files stay reachable offline.
+  /// 2026-10-08, server pending). The last value the server sent is
+  /// persisted on disk with the rest of the config ([SecureAppConfigCache],
+  /// never cleared, kept past the 5-minute freshness window), so:
+  ///
+  /// - cold start with app-config unreachable: the persisted value, so
+  ///   downloaded files still open and share offline;
+  /// - a server answer replaces it: an explicit `false` (or a reachable
+  ///   server that omits the field, fail closed) turns it off;
+  /// - never fetched and nothing persisted: off.
   bool get filesEnabled => _config.filesEnabled;
 
   /// Loads the config unless a fresh copy is already in hand. Concurrent
@@ -86,6 +91,10 @@ class AppConfigProvider extends ChangeNotifier {
           notifyListeners();
           return;
         }
+        // Stale copy: show its values (the persisted features.files among
+        // them) right away, so a cold start on a hanging network does not
+        // wait for the fetch to time out before downloaded files appear.
+        notifyListeners();
       }
       final repo = _repo;
       if (repo == null) {

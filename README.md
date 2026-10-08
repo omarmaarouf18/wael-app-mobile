@@ -127,7 +127,8 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   (`lib/services/file_opener.dart`, a method channel in `MainActivity.kt` with the app's
   own `PdfFileProvider`: `content://` URI, read grant per intent, no storage permission, no
   in-app viewer). No PDF app shows a message with Share. Downloaded files open and share
-  offline; sign-out, another account, or a fresh server answer that the subject is no
+  offline (the last server value of `features.files` is persisted on disk and used on a cold
+  start without app-config; an explicit server `false` turns it off); sign-out, another account, or a fresh server answer that the subject is no
   longer owned or the file is gone deletes the copy. `path_provider` 2.1.6 (BSD-3-Clause)
   is pinned for the cache directory.
 - **Fonts**: Cairo, Syne and Plus Jakarta Sans are bundled assets (`assets/fonts/`);
