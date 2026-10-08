@@ -316,13 +316,13 @@ class AppLocalizations {
   String get accessActive => isArabic ? 'الوصول مفعّل' : 'Access active';
 
   /// Neutral price label (owner decision 2026-10-08): the app may show a
-  /// subject's price, never a payment action.
+  /// subject's price, and nothing else.
   String get priceLabel => isArabic ? 'السعر' : 'Price';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
   // Locked/pending wording (owner decision 2026-10-08): the subject is
   // activated by the center/support after the student contacts support on
-  // WhatsApp. No payment action is ever named.
+  // WhatsApp.
   String get contactSupportToActivate => isArabic
       ? 'المادة دي بتتفعّل من خلال السنتر. تواصل مع الدعم لتفعيلها.'
       : 'This subject is activated by the center. Contact support to activate it.';
