@@ -116,9 +116,14 @@ class AppLocalizations {
       isArabic ? 'لديك حساب بالفعل؟' : 'Already have an account?';
   String get createAccountPrompt => isArabic ? 'أنشئ حسابك' : 'Create account';
   String get signInPrompt => isArabic ? 'سجّل دخولك' : 'Sign In';
-  String get agreeToTerms => isArabic
-      ? 'أوافق على ميثاق الشرف الأكاديمي وشروط الخدمة'
-      : 'I agree to the Academy Honor Code & Terms';
+  // Signup consent (owner decision 2026-10-08): a checkbox plus "I agree
+  // to the Terms and Privacy Policy", where the two names are tappable
+  // links opening the summary sheet. Built as prefix + links + joiner so
+  // each language reads naturally.
+  String get agreeToTermsPrefix => isArabic ? 'أوافق على ' : 'I agree to the ';
+  String get agreeToTermsJoiner => isArabic ? ' و' : ' and ';
+  String get termsLinkLabel => isArabic ? 'الشروط' : 'Terms';
+  String get privacyLinkLabel => isArabic ? 'سياسة الخصوصية' : 'Privacy Policy';
   String get verifyCode =>
       isArabic ? 'تأكيد البريد الإلكتروني' : 'Verify Email';
   String get verificationCode => isArabic ? 'رمز التأكيد' : 'Verification Code';
@@ -292,8 +297,50 @@ class AppLocalizations {
   String get termsTitle => isArabic ? 'الشروط والأحكام' : 'Terms & Conditions';
   String get privacyTitle => isArabic ? 'سياسة الخصوصية' : 'Privacy Policy';
   String get appVersion => isArabic ? 'إصدار التطبيق' : 'App version';
-  String get readTerms =>
-      isArabic ? 'اقرأ الشروط والأحكام' : 'Read the Terms & Conditions';
+
+  // Legal summary sheet at signup (owner decision 2026-10-08). Short
+  // bullets matching the website legal pages v2.0; nothing invented.
+  String get legalSheetTitle =>
+      isArabic ? 'الشروط وسياسة الخصوصية' : 'Terms and Privacy Policy';
+  String get termsSummaryTitle =>
+      isArabic ? 'الشروط باختصار' : 'Terms in short';
+  String get privacySummaryTitle =>
+      isArabic ? 'الخصوصية باختصار' : 'Privacy in short';
+  List<String> get termsSummaryBullets => isArabic
+      ? const [
+          'الحساب شخصي ولا يُشارك.',
+          'جهازين كحد أقصى في نفس الوقت.',
+          'المحتوى للمذاكرة الشخصية فقط، وممنوع تسجيل الشاشة أو نسخه أو نشره.',
+          'اسمك ورقم هاتفك يظهران كعلامة مائية على الفيديو.',
+          'تفعيل المواد يتم من خلال السنتر.',
+          'مخالفة الشروط قد تؤدي لإيقاف الحساب.',
+        ]
+      : const [
+          'Your account is personal and must not be shared.',
+          'At most two devices may be signed in at the same time.',
+          'Content is for personal study only; recording the screen, copying it or publishing it is forbidden.',
+          'Your name and phone number appear as a watermark on videos.',
+          'Subjects are activated through the center.',
+          'Breaking these terms may suspend your account.',
+        ];
+  List<String> get privacySummaryBullets => isArabic
+      ? const [
+          'نجمع الاسم والهاتف والبريد وكلمة المرور (مُعمّاة) وبيانات أجهزتك.',
+          'لا نبيع بياناتك، ولا إعلانات، ولا أدوات تتبع.',
+          'الفيديو يعمل عبر YouTube.',
+          'تقدر تحذف حسابك من الإعدادات مع فترة سماح ٣٠ يومًا.',
+        ]
+      : const [
+          'We collect your name, phone, email, hashed password and device data.',
+          'We do not sell your data; no ads and no tracking tools.',
+          'Videos play through YouTube.',
+          'You can delete your account from Settings with a 30-day grace period.',
+        ];
+  String get readTermsFull =>
+      isArabic ? 'اقرأ الشروط كاملة' : 'Read the full terms';
+  String get readPrivacyFull =>
+      isArabic ? 'اقرأ سياسة الخصوصية كاملة' : 'Read the full privacy policy';
+  String get legalAgree => isArabic ? 'موافق' : 'I agree';
   String get updateAvailable => isArabic ? 'تحديث متاح' : 'Update available';
   String get updateNow => isArabic ? 'تحديث الآن' : 'Update now';
   String get updateRequiredTitle =>

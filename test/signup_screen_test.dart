@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
-import 'package:wael_app/core/app_config_cache.dart';
 import 'package:wael_app/core/error_messages.dart';
-import 'package:wael_app/models/app_config.dart';
-import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/screens/signup_screen.dart';
 import 'package:wael_app/widgets/app_shell.dart';
 import 'package:wael_app/widgets/primary_button.dart';
@@ -65,7 +61,8 @@ void main() {
         expect(find.text('ACADEMY'), findsOneWidget);
         expect(find.byType(TextFormField), findsNWidgets(5));
         expect(find.text(l10n.phoneNumber), findsOneWidget);
-        expect(find.text(l10n.agreeToTerms), findsOneWidget);
+        expect(find.text(l10n.termsLinkLabel), findsOneWidget);
+        expect(find.text(l10n.privacyLinkLabel), findsOneWidget);
         expect(find.byType(ThemedErrorBanner), findsNothing);
       });
 
@@ -89,12 +86,12 @@ void main() {
         } else {
           expect(tester.getTopRight(heading).dx, greaterThan(width - 40));
         }
-        // Terms checkbox precedes its text.
+        // Terms checkbox precedes its label links.
         expect(
           startsBefore(
             tester,
             find.byType(Checkbox),
-            find.text(l10n.agreeToTerms),
+            find.text(l10n.termsLinkLabel),
             direction,
           ),
           isTrue,
@@ -295,58 +292,9 @@ void main() {
         expect(repo.signupCalls, 2);
       });
 
-      testWidgets('terms link opens the server terms URL', (tester) async {
-        final launched = <Uri>[];
-        final appConfig = AppConfigProvider(cache: MemoryAppConfigCache())
-          ..setForTesting(
-            const AppConfigData(
-              termsUrl: 'https://legal.elmetracademy.app/terms',
-            ),
-          );
-        await pumpScreen(
-          tester,
-          locale,
-          SignupScreen(
-            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
-              launched.add(uri);
-              return true;
-            },
-          ),
-          appConfig: appConfig,
-          size: _tall,
-        );
-        await tester.tap(find.text(l10n.readTerms));
-        await tester.pump();
-        // English UI appends #en (the pages switch language on that hash).
-        final expected = isArabic
-            ? 'https://legal.elmetracademy.app/terms'
-            : 'https://legal.elmetracademy.app/terms#en';
-        expect(launched.map((u) => u.toString()), [expected]);
-      });
-
-      testWidgets('terms link falls back when the server configures nothing', (
-        tester,
-      ) async {
-        final launched = <Uri>[];
-        await pumpScreen(
-          tester,
-          locale,
-          SignupScreen(
-            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
-              launched.add(uri);
-              return true;
-            },
-          ),
-          size: _tall,
-        );
-        expect(find.text(l10n.readTerms), findsOneWidget);
-        await tester.tap(find.text(l10n.readTerms));
-        await tester.pump();
-        final expected = isArabic
-            ? 'https://legal.elmetracademy.app/terms'
-            : 'https://legal.elmetracademy.app/terms#en';
-        expect(launched.map((u) => u.toString()), [expected]);
-      });
+      // The consent links open the summary sheet (test/legal_summary_test.dart
+      // covers the sheet, its agree button and its full-page links); the
+      // always-working fallback URLs are covered in test/legal_links_test.dart.
     });
   }
 }

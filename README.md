@@ -119,6 +119,7 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   `GoogleFonts.config.allowRuntimeFetching` is `false`, so no font is downloaded.
 - **Support links**: a pending request, the Settings Help section, and the session-replaced notice on the login screen open the support WhatsApp chat with `url_launcher` (external app with browser fallback; only `https://wa.me` links are ever opened).
 - **Public config & update gating**: the app reads `GET /api/v1/academy/app-config` via `AppConfigProvider` (terms/privacy URLs, support WhatsApp link, update metadata). If the installed version is strictly below `min_version`, a blocking update gate is shown at launch (`/update-gate`); if below `latest_version`, an inline update row is shown in Settings About section. Fails soft if unreachable, timeout, or malformed.
+- **Legal pages**: the full terms, privacy policy and how-to-delete pages live on the website (`https://legal.elmetracademy.app`, English UI appends `#en`). The app links to them from signup (a short in-app summary sheet behind the consent checkbox), Settings > About and the delete-account screen; bundled fallback URLs (`lib/core/legal_links.dart`) keep every link working even with empty app-config or offline. Only `https` pages are ever opened.
 
 ## Quality gates
 

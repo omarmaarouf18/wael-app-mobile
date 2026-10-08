@@ -3,12 +3,11 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/external_links.dart';
 import '../core/field_validators.dart';
-import '../core/legal_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/legal_summary_sheet.dart';
 import '../widgets/password_rules.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/themed_error_banner.dart';
@@ -17,7 +16,7 @@ import '../widgets/themed_text_field.dart';
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key, this.launchUrl});
 
-  /// Opens the terms link under the consent checkbox. Tests inject a mock.
+  /// Opens the full legal pages from the summary sheet. Tests inject a mock.
   final LaunchUrl? launchUrl;
 
   @override
@@ -56,6 +55,18 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordFocus.dispose();
     _confirmFocus.dispose();
     super.dispose();
+  }
+
+  /// Opens the summary sheet. Tapping its agree button ticks the checkbox;
+  /// any other dismissal leaves it as it was.
+  Future<void> _openLegalSummary() async {
+    final agreed = await showLegalSummarySheet(
+      context,
+      launchUrl: widget.launchUrl,
+    );
+    if (agreed && mounted) {
+      setState(() => _agreeToTerms = true);
+    }
   }
 
   Future<void> _handleSignup() async {
@@ -258,56 +269,20 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
 
-                    // Honor Code Checkbox
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _agreeToTerms,
-                            activeColor: AppColors.crimson,
-                            checkColor: AppColors.textPrimary,
-                            side: const BorderSide(
-                              color: AppColors.prominentBorder,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.xs),
-                            ),
-                            onChanged: (val) {
-                              setState(() {
-                                _agreeToTerms = val ?? true;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.spaceSm),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _agreeToTerms = !_agreeToTerms;
-                              });
-                            },
-                            child: Text(
-                              l10n.agreeToTerms,
-                              style:
-                                  AppTypography.bodySm(
-                                    isArabic: l10n.isArabic,
-                                  ).copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.3,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Consent checkbox: the two names are tappable links
+                    // opening the summary sheet. Only the checkbox ticks
+                    // it (or the sheet's agree button); tapping a link
+                    // never toggles it.
+                    _ConsentRow(
+                      agreed: _agreeToTerms,
+                      onTermsTap: _openLegalSummary,
+                      onPrivacyTap: _openLegalSummary,
+                      onChanged: (val) {
+                        setState(() {
+                          _agreeToTerms = val ?? true;
+                        });
+                      },
                     ),
-                    // Read the terms the checkbox agrees to (same server
-                    // URL as the settings tile; hidden until configured).
-                    _TermsLink(launchUrl: widget.launchUrl),
                     const SizedBox(height: AppSpacing.spaceLg),
 
                     // Server / validation error
@@ -375,38 +350,109 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-/// Link under the consent checkbox to the terms page (CONTENT-GAPS row 26).
-/// The URL always works: the server value when valid, else the bundled
-/// fallback, so the link never disappears. Tests inject [launchUrl].
-class _TermsLink extends StatelessWidget {
-  const _TermsLink({this.launchUrl});
+/// Consent row: checkbox plus rich label with two tappable legal links.
+/// Link taps open the summary sheet; they never toggle the checkbox.
+///
+/// The links are inline [WidgetSpan] buttons (not span recognizers): span
+/// hit-testing does not resolve every RTL fragment, while box hit-testing
+/// always lands, so every name stays tappable in both directions.
+class _ConsentRow extends StatelessWidget {
+  const _ConsentRow({
+    required this.agreed,
+    required this.onTermsTap,
+    required this.onPrivacyTap,
+    required this.onChanged,
+  });
 
-  final LaunchUrl? launchUrl;
+  final bool agreed;
+  final VoidCallback onTermsTap;
+  final VoidCallback onPrivacyTap;
+  final ValueChanged<bool?> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final url = withUiLanguage(
-      legalTermsUrl(context.watch<AppConfigProvider>().termsUrl),
+    final bodyStyle = AppTypography.bodySm(
       isArabic: l10n.isArabic,
+    ).copyWith(color: AppColors.textSecondary, height: 1.3);
+    final linkStyle = bodyStyle.copyWith(
+      color: AppColors.textPrimary,
+      decoration: TextDecoration.underline,
     );
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: TextButton(
-        onPressed: () =>
-            openLegalPage(url, launch: launchUrl ?? defaultLaunchUrl),
-        style: TextButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: AppSpacing.spaceXs,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: agreed,
+            activeColor: AppColors.crimson,
+            checkColor: AppColors.textPrimary,
+            side: const BorderSide(
+              color: AppColors.prominentBorder,
+              width: 1.5,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+            ),
+            onChanged: onChanged,
           ),
         ),
-        child: Text(
-          l10n.readTerms,
-          style: AppTypography.bodySm(
-            isArabic: l10n.isArabic,
-          ).copyWith(color: AppColors.textPrimary),
+        const SizedBox(width: AppSpacing.spaceSm),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              text: l10n.agreeToTermsPrefix,
+              style: bodyStyle,
+              children: [
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: _InlineLink(
+                    label: l10n.termsLinkLabel,
+                    style: linkStyle,
+                    onTap: onTermsTap,
+                  ),
+                ),
+                TextSpan(text: l10n.agreeToTermsJoiner, style: bodyStyle),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: _InlineLink(
+                    label: l10n.privacyLinkLabel,
+                    style: linkStyle,
+                    onTap: onPrivacyTap,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      ],
+    );
+  }
+}
+
+class _InlineLink extends StatelessWidget {
+  const _InlineLink({
+    required this.label,
+    required this.style,
+    required this.onTap,
+  });
+
+  final String label;
+  final TextStyle style;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Text(label, style: style),
       ),
     );
   }

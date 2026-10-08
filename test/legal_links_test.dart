@@ -116,27 +116,26 @@ void main() {
     String en(String url) => isArabic ? url : '$url#en';
 
     group('legal links always work [$name]', () {
-      testWidgets('signup shows the terms link with empty app-config', (
+      testWidgets('signup shows the consent links with empty app-config', (
         tester,
       ) async {
-        final launched = <Uri>[];
         await pumpScreen(
           tester,
           locale,
-          SignupScreen(
-            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
-              launched.add(uri);
-              return true;
-            },
-          ),
+          const SignupScreen(),
           size: const Size(390, 1400),
         );
-        expect(find.text(l10n.readTerms), findsOneWidget);
-        await tester.tap(find.text(l10n.readTerms));
-        await tester.pump();
-        expect(launched.map((u) => u.toString()), [
-          en('https://legal.elmetracademy.app/terms'),
-        ]);
+        // The consent names stay visible and open the summary sheet
+        // (test/legal_summary_test.dart); the always-working fallback URLs
+        // back the sheet's full-page buttons.
+        expect(find.text(l10n.termsLinkLabel), findsOneWidget);
+        expect(find.text(l10n.privacyLinkLabel), findsOneWidget);
+        await tester.tap(find.text(l10n.termsLinkLabel));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.legalSheetTitle), findsOneWidget);
+        // Close it so no route leaks into the next test's tree.
+        await tester.tap(find.text(l10n.legalAgree));
+        await tester.pumpAndSettle();
       });
 
       testWidgets('settings shows terms and privacy with empty app-config', (

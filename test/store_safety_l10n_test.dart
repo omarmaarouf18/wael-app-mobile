@@ -376,6 +376,44 @@ void main() {
       },
     );
 
+    test('legal summary and consent strings name no price and no payment', () {
+      for (final locale in [const Locale('ar'), const Locale('en')]) {
+        final l10n = AppLocalizations(locale);
+        final strings = [
+          l10n.agreeToTermsPrefix,
+          l10n.agreeToTermsJoiner,
+          l10n.termsLinkLabel,
+          l10n.privacyLinkLabel,
+          l10n.legalSheetTitle,
+          l10n.termsSummaryTitle,
+          l10n.privacySummaryTitle,
+          ...l10n.termsSummaryBullets,
+          ...l10n.privacySummaryBullets,
+          l10n.readTermsFull,
+          l10n.readPrivacyFull,
+          l10n.legalAgree,
+          l10n.deleteAccountWebHelp,
+        ];
+
+        for (final str in strings) {
+          expect(
+            hasPaymentWord(str),
+            isFalse,
+            reason: 'String "$str" names a payment action',
+          );
+          expect(
+            hasPriceWord(str),
+            isFalse,
+            reason: 'String "$str" names a price',
+          );
+        }
+
+        // The summaries stay short: six terms bullets, four privacy bullets.
+        expect(l10n.termsSummaryBullets, hasLength(6));
+        expect(l10n.privacySummaryBullets, hasLength(4));
+      }
+    });
+
     test('accessActive and courseLocked use access-based wording', () {
       final l10nAr = AppLocalizations(const Locale('ar'));
       final l10nEn = AppLocalizations(const Locale('en'));
