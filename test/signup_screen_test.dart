@@ -317,16 +317,35 @@ void main() {
         );
         await tester.tap(find.text(l10n.readTerms));
         await tester.pump();
-        expect(launched.map((u) => u.toString()), [
-          'https://legal.elmetracademy.app/terms',
-        ]);
+        // English UI appends #en (the pages switch language on that hash).
+        final expected = isArabic
+            ? 'https://legal.elmetracademy.app/terms'
+            : 'https://legal.elmetracademy.app/terms#en';
+        expect(launched.map((u) => u.toString()), [expected]);
       });
 
-      testWidgets('terms link hides until the server configures it', (
+      testWidgets('terms link falls back when the server configures nothing', (
         tester,
       ) async {
-        await pump(tester);
-        expect(find.text(l10n.readTerms), findsNothing);
+        final launched = <Uri>[];
+        await pumpScreen(
+          tester,
+          locale,
+          SignupScreen(
+            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
+              launched.add(uri);
+              return true;
+            },
+          ),
+          size: _tall,
+        );
+        expect(find.text(l10n.readTerms), findsOneWidget);
+        await tester.tap(find.text(l10n.readTerms));
+        await tester.pump();
+        final expected = isArabic
+            ? 'https://legal.elmetracademy.app/terms'
+            : 'https://legal.elmetracademy.app/terms#en';
+        expect(launched.map((u) => u.toString()), [expected]);
       });
     });
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/external_links.dart' show LaunchUrl, defaultLaunchUrl;
+import '../../core/legal_links.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/academy_catalog_provider.dart';
@@ -16,7 +18,10 @@ import '../../widgets/themed_text_field.dart';
 /// typed word "حذف". The button stays disabled until both are valid.
 /// Success shows the purge date, then returns to login (all sessions end).
 class DeleteAccountScreen extends StatefulWidget {
-  const DeleteAccountScreen({super.key});
+  const DeleteAccountScreen({super.key, this.launchUrl});
+
+  /// Opens the how-to-delete web page. Tests inject a mock.
+  final LaunchUrl? launchUrl;
 
   @override
   State<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
@@ -87,6 +92,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 busy: _busy,
                 valid: valid,
                 error: _error,
+                launchUrl: widget.launchUrl,
                 subjectNames: [
                   for (final s in subjects) s.title.resolve(l10n.isArabic),
                 ],
@@ -106,6 +112,7 @@ class _RequestForm extends StatelessWidget {
     required this.busy,
     required this.valid,
     required this.error,
+    required this.launchUrl,
     required this.subjectNames,
     required this.onChanged,
     required this.onSubmit,
@@ -116,6 +123,7 @@ class _RequestForm extends StatelessWidget {
   final bool busy;
   final bool valid;
   final String? error;
+  final LaunchUrl? launchUrl;
   final List<String> subjectNames;
   final VoidCallback onChanged;
   final VoidCallback onSubmit;
@@ -166,6 +174,28 @@ class _RequestForm extends StatelessWidget {
         Text(
           l10n.deleteAccountGrace,
           style: AppTypography.bodyMd(isArabic: l10n.isArabic),
+        ),
+        // The web how-to page (always available, like terms/privacy).
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton(
+            onPressed: () => openLegalPage(
+              withUiLanguage(legalDeleteAccountUrl(), isArabic: l10n.isArabic),
+              launch: launchUrl ?? defaultLaunchUrl,
+            ),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: AppSpacing.spaceXs,
+              ),
+            ),
+            child: Text(
+              l10n.deleteAccountWebHelp,
+              style: AppTypography.bodySm(
+                isArabic: l10n.isArabic,
+              ).copyWith(color: AppColors.textPrimary),
+            ),
+          ),
         ),
         const SizedBox(height: AppSpacing.spaceLg),
         ThemedTextField(

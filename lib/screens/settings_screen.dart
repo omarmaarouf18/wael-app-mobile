@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../core/external_links.dart'
     show LaunchUrl, defaultLaunchUrl, openSupportChat;
+import '../core/legal_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/app_config_provider.dart';
@@ -172,27 +172,37 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.spaceXl),
             ],
 
-            // 6. ABOUT (server-provided pages + installed version)
+            // 6. ABOUT (terms + privacy pages with fallbacks, installed version)
             ThemedSectionHeader(title: l10n.aboutApp),
             ThemedCard(
               padding: EdgeInsets.zero,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (appConfig.termsUrl.isNotEmpty)
-                    _buildNavigationTile(
-                      icon: Icons.description_outlined,
-                      title: l10n.termsTitle,
-                      onTap: () =>
-                          _openExternal(context, launch, appConfig.termsUrl),
+                  _buildNavigationTile(
+                    icon: Icons.description_outlined,
+                    title: l10n.termsTitle,
+                    onTap: () => _openExternal(
+                      context,
+                      launch,
+                      withUiLanguage(
+                        legalTermsUrl(appConfig.termsUrl),
+                        isArabic: l10n.isArabic,
+                      ),
                     ),
-                  if (appConfig.privacyUrl.isNotEmpty)
-                    _buildNavigationTile(
-                      icon: Icons.privacy_tip_outlined,
-                      title: l10n.privacyTitle,
-                      onTap: () =>
-                          _openExternal(context, launch, appConfig.privacyUrl),
+                  ),
+                  _buildNavigationTile(
+                    icon: Icons.privacy_tip_outlined,
+                    title: l10n.privacyTitle,
+                    onTap: () => _openExternal(
+                      context,
+                      launch,
+                      withUiLanguage(
+                        legalPrivacyUrl(appConfig.privacyUrl),
+                        isArabic: l10n.isArabic,
+                      ),
                     ),
+                  ),
                   FutureBuilder<String>(
                     future: appConfig.currentVersion(),
                     builder: (context, snapshot) {
@@ -383,15 +393,12 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// Opens an `https` page from the server config in the browser. Anything
-  /// else is never opened.
+  /// Opens a legal page in the browser ([legal_links] guarantees `https`).
   Future<void> _openExternal(
     BuildContext context,
     LaunchUrl launch,
     String url,
   ) async {
-    final uri = Uri.tryParse(url.trim());
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launch(uri, mode: LaunchMode.externalApplication);
+    await openLegalPage(url, launch: launch);
   }
 }

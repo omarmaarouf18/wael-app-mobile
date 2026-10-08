@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../core/error_messages.dart';
 import '../core/external_links.dart';
 import '../core/field_validators.dart';
+import '../core/legal_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/app_config_provider.dart';
@@ -376,7 +376,8 @@ class _SignupScreenState extends State<SignupScreen> {
 }
 
 /// Link under the consent checkbox to the terms page (CONTENT-GAPS row 26).
-/// Hidden until the server configures the URL. Tests inject [launchUrl].
+/// The URL always works: the server value when valid, else the bundled
+/// fallback, so the link never disappears. Tests inject [launchUrl].
 class _TermsLink extends StatelessWidget {
   const _TermsLink({this.launchUrl});
 
@@ -385,19 +386,15 @@ class _TermsLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final termsUrl = context.watch<AppConfigProvider>().termsUrl;
-    if (termsUrl.isEmpty) return const SizedBox.shrink();
+    final url = withUiLanguage(
+      legalTermsUrl(context.watch<AppConfigProvider>().termsUrl),
+      isArabic: l10n.isArabic,
+    );
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: TextButton(
-        onPressed: () async {
-          final uri = Uri.tryParse(termsUrl);
-          if (uri == null || uri.scheme != 'https') return;
-          await (launchUrl ?? defaultLaunchUrl)(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-        },
+        onPressed: () =>
+            openLegalPage(url, launch: launchUrl ?? defaultLaunchUrl),
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 48),
           padding: const EdgeInsetsDirectional.symmetric(

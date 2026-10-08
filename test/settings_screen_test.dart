@@ -85,14 +85,14 @@ void main() {
       ) async {
         await pump(tester);
         // Two sections (language, about), the sign-out button, and the
-        // version row. Terms/privacy tiles hide until configured.
+        // version row. Terms/privacy tiles always show (fallback links).
         expect(find.byType(ThemedSectionHeader), findsNWidgets(4));
         expect(find.text(upper(l10n.languageAndPreferences)), findsOneWidget);
         expect(find.text(l10n.languageAndSubtitles), findsOneWidget);
         expect(find.text(upper(l10n.aboutApp)), findsOneWidget);
         expect(find.text(l10n.appVersion), findsOneWidget);
-        expect(find.text(l10n.termsTitle), findsNothing);
-        expect(find.text(l10n.privacyTitle), findsNothing);
+        expect(find.text(l10n.termsTitle), findsOneWidget);
+        expect(find.text(l10n.privacyTitle), findsOneWidget);
         expect(find.byType(OutlinedButton), findsNWidgets(2));
         expect(find.text(upper(l10n.signOut)), findsOneWidget);
         expect(find.text(upper(l10n.deleteAccount)), findsOneWidget);

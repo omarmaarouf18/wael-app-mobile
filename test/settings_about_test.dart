@@ -26,6 +26,8 @@ AppConfigProvider configWith({
 void main() {
   for (final (name, locale, _) in kLocales) {
     final l10n = l10nFor(locale);
+    final isArabic = locale.languageCode == 'ar';
+    String en(String url) => isArabic ? url : '$url#en';
 
     group('SettingsScreen about [$name]', () {
       testWidgets('terms and privacy open the server URLs', (tester) async {
@@ -47,24 +49,38 @@ void main() {
         await tester.tap(find.text(l10n.privacyTitle));
         await tester.pump();
         expect(launched.map((u) => u.toString()), [
-          'https://legal.elmetracademy.app/terms',
-          'https://legal.elmetracademy.app/privacy',
+          en('https://legal.elmetracademy.app/terms'),
+          en('https://legal.elmetracademy.app/privacy'),
         ]);
       });
 
-      testWidgets('tiles hide until the server configures them', (
+      testWidgets('tiles fall back when the server configures nothing', (
         tester,
       ) async {
+        final launched = <Uri>[];
         await pumpScreen(
           tester,
           locale,
-          const SettingsScreen(),
+          SettingsScreen(
+            launchUrl: (uri, {mode = LaunchMode.externalApplication}) async {
+              launched.add(uri);
+              return true;
+            },
+          ),
           appConfig: configWith(data: const AppConfigData()),
           size: _tall,
         );
-        expect(find.text(l10n.termsTitle), findsNothing);
-        expect(find.text(l10n.privacyTitle), findsNothing);
+        expect(find.text(l10n.termsTitle), findsOneWidget);
+        expect(find.text(l10n.privacyTitle), findsOneWidget);
         expect(find.text(l10n.appVersion), findsOneWidget);
+        await tester.tap(find.text(l10n.termsTitle));
+        await tester.pump();
+        await tester.tap(find.text(l10n.privacyTitle));
+        await tester.pump();
+        expect(launched.map((u) => u.toString()), [
+          en('https://legal.elmetracademy.app/terms'),
+          en('https://legal.elmetracademy.app/privacy'),
+        ]);
       });
 
       testWidgets('shows the installed version', (tester) async {
