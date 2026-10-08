@@ -41,6 +41,11 @@ class SettingsScreen extends StatelessWidget {
     final user = auth.currentUser;
     final name = user.fullName.trim();
     final phone = user.phone.trim();
+    // Owner amendment 2026-10-08 (F-UX6): optional tutoring-center info.
+    // A missing center (or one with nothing to show) renders nothing.
+    final center = appConfig.center;
+    final centerInfoVisible = center?.hasContent ?? false;
+    final centerMapVisible = center?.mapUrl.isNotEmpty ?? false;
 
     return AppShell(
       showHeader: false,
@@ -144,31 +149,83 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.spaceXl),
 
-            // 5. HELP (server-provided WhatsApp chat)
-            if (appConfig.supportWhatsappUrl.isNotEmpty) ...[
+            // 5. HELP (server-provided WhatsApp chat + tutoring center)
+            if (appConfig.supportWhatsappUrl.isNotEmpty ||
+                centerInfoVisible ||
+                centerMapVisible) ...[
               ThemedSectionHeader(title: l10n.helpTitle),
-              ThemedCard(
-                padding: EdgeInsets.zero,
-                child: _buildNavigationTile(
-                  icon: Icons.support_agent_outlined,
-                  title: l10n.contactWhatsApp,
-                  onTap: () async {
-                    final ok = await openSupportChat(
-                      supportUrl: appConfig.supportWhatsappUrl,
-                      messageText: l10n.whatsappHelpText,
-                      launch: launch,
-                    );
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppColors.surfaceElevated,
-                          content: Text(l10n.supportOpenFailed),
-                        ),
+              if (appConfig.supportWhatsappUrl.isNotEmpty)
+                ThemedCard(
+                  padding: EdgeInsets.zero,
+                  child: _buildNavigationTile(
+                    icon: Icons.support_agent_outlined,
+                    title: l10n.contactWhatsApp,
+                    onTap: () async {
+                      final ok = await openSupportChat(
+                        supportUrl: appConfig.supportWhatsappUrl,
+                        messageText: l10n.whatsappHelpText,
+                        launch: launch,
                       );
-                    }
-                  },
+                      if (!ok && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppColors.surfaceElevated,
+                            content: Text(l10n.supportOpenFailed),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ),
-              ),
+              // Owner amendment 2026-10-08 (F-UX6): optional center
+              // info from app-config. Absent renders nothing. No price
+              // or payment wording here, ever.
+              if (appConfig.supportWhatsappUrl.isNotEmpty &&
+                  (centerInfoVisible || centerMapVisible))
+                const SizedBox(height: AppSpacing.spaceMd),
+              if (centerInfoVisible)
+                ThemedCard(
+                  padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (center!.name.isNotEmpty)
+                        Text(
+                          center.name,
+                          style: AppTypography.headlineSm(
+                            isArabic: l10n.isArabic,
+                          ).copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      if (center.address.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.spaceXs),
+                        Text(
+                          center.address,
+                          style: AppTypography.bodyMd(isArabic: l10n.isArabic),
+                        ),
+                      ],
+                      if (center.hoursFor(l10n.isArabic).isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.spaceXs),
+                        Text(
+                          center.hoursFor(l10n.isArabic),
+                          style: AppTypography.bodySm(
+                            isArabic: l10n.isArabic,
+                          ).copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              if (centerMapVisible) ...[
+                const SizedBox(height: AppSpacing.spaceMd),
+                ThemedCard(
+                  padding: EdgeInsets.zero,
+                  child: _buildNavigationTile(
+                    icon: Icons.map_outlined,
+                    title: l10n.openMap,
+                    onTap: () => _openExternal(context, launch, center!.mapUrl),
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.spaceXl),
             ],
 

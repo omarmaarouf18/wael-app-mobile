@@ -5,6 +5,7 @@ import '../core/external_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
+import '../providers/app_config_provider.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_panel.dart';
@@ -48,6 +49,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final l10n = AppLocalizations.of(context);
     final catalog = Provider.of<AcademyCatalogProvider>(context);
     final state = catalog.detailOf(widget.courseId);
+    // Owner amendment 2026-10-08 (F-UX6): prices render only when the
+    // public app-config flag allows it (fail closed when offline/empty).
+    final showPrices = Provider.of<AppConfigProvider>(context).showPrices;
 
     Future<void> onRefresh() =>
         catalog.openSubject(widget.courseId, force: true);
@@ -63,6 +67,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         child: CourseDetailBody(
           detail: state.detail!,
           launchUrl: widget.launchUrl,
+          showPrice: showPrices,
         ),
       );
     } else if (state.status == LoadStatus.error) {

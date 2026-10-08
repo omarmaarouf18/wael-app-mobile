@@ -12,7 +12,9 @@ import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/core/external_links.dart';
 import 'package:wael_app/models/academy_catalog.dart';
+import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/course_detail/subject_content_section.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
@@ -55,14 +57,18 @@ void main() {
       Size size = const Size(390, 2400),
       bool settle = true,
       DirectorProfile director = testDirector,
+      bool showPrices = false,
     }) async {
       final repository = repo ?? fake();
       if (detail.isNotEmpty) repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
+      final appConfig = AppConfigProvider()
+        ..setForTesting(AppConfigData(showPrices: showPrices));
       await pumpScreen(
         tester,
         locale,
         const CourseDetailScreen(courseId: 'd1'),
+        appConfig: appConfig,
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
@@ -690,11 +696,19 @@ void main() {
       testWidgets('a locked subject shows its price when the API sends it', (
         tester,
       ) async {
-        await pump(tester, lockedBody);
+        await pump(tester, lockedBody, showPrices: true);
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(title('1800 ج.م', 'EGP 1800')), findsOneWidget);
         expect(find.textContaining('route:/payment'), findsNothing);
         expect(stubRouteArguments, isEmpty);
+      });
+
+      testWidgets('the price stays hidden when show_prices is off', (
+        tester,
+      ) async {
+        await pump(tester, lockedBody, showPrices: false);
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(title('1800 ج.م', 'EGP 1800')), findsNothing);
       });
 
       testWidgets('rebuilding the screen does not send the request again', (

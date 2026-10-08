@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../../core/constants.dart';
 import '../../core/error_messages.dart';
 import '../../core/external_links.dart';
+import '../../core/price_format.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/academy_catalog.dart';
@@ -29,12 +30,18 @@ class CourseDetailBody extends StatelessWidget {
     super.key,
     required this.detail,
     this.launchUrl = defaultLaunchUrl,
+    this.showPrice = false,
   });
 
   final AcademySubjectDetail detail;
 
   /// Opens the support WhatsApp chat. Injected in widget tests.
   final LaunchUrl launchUrl;
+
+  /// Owner amendment 2026-10-08 (F-UX6): the price renders only when the
+  /// public app-config flag `show_prices` is true (the screen passes it
+  /// down). Defaults to hidden (fail closed).
+  final bool showPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +104,15 @@ class CourseDetailBody extends StatelessWidget {
                     ).copyWith(height: 1.5),
                   ),
                 ],
-                // The server-sent price, locked subjects only: owned
-                // subjects and a null price render nothing (and no gap).
-                // It stays in the header, never in the support panel below.
-                if (!detail.owned && detail.price != null) ...[
+                // The server-sent price, locked subjects only and only when
+                // the app-config flag allows it: anything else renders
+                // nothing (and no gap). It stays in the header, never in
+                // the support panel below.
+                if (shouldShowSubjectPrice(
+                  owned: detail.owned,
+                  price: detail.price,
+                  showPrices: showPrice,
+                )) ...[
                   const SizedBox(height: AppSpacing.spaceMd),
                   SubjectPriceTag(
                     amount: detail.price!,

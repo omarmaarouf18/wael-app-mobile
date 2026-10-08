@@ -22,3 +22,14 @@ String formatSubjectPrice({
   if (code.isEmpty) return '$amount';
   return isArabic ? '$amount $code' : '$code $amount';
 }
+
+/// Whether a subject's price may render (owner amendment 2026-10-08,
+/// F-UX6): only for locked subjects that carry a server-sent price AND
+/// only when the public app-config flag `show_prices` is true. Owned
+/// subjects, a null price, or a missing/false/offline flag all hide the
+/// price (fail closed, no gap).
+bool shouldShowSubjectPrice({
+  required bool owned,
+  required int? price,
+  required bool showPrices,
+}) => !owned && price != null && showPrices;

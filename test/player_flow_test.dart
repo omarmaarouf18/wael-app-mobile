@@ -5,6 +5,7 @@ import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/player/player_engine.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/playback_speed_provider.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
@@ -39,6 +40,9 @@ Future<void> _pumpSubject(
         ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => PlaybackSpeedProvider()),
+        // CourseDetailScreen reads the price-visibility flag from here
+        // (owner amendment 2026-10-08, F-UX6); absent means hidden.
+        ChangeNotifierProvider(create: (_) => AppConfigProvider()),
         Provider<PlayerDependencies>.value(
           value: PlayerDependencies(
             engineFactory: () => engine,

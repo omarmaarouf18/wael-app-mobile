@@ -65,11 +65,12 @@ bool hasPaymentWord(String text) {
 
 /// Files whose string literals may name a price word, and which words each
 /// may use: the l10n price label, the format helper, and the API wire keys
-/// the model parses (not user-facing).
+/// the models parse (not user-facing).
 const _priceLiteralAllowlist = {
   'lib/l10n/app_localizations.dart': {'سعر', 'price'},
   'lib/core/price_format.dart': {'ج.م', 'EGP'},
   'lib/models/academy_catalog.dart': {'price'},
+  'lib/models/app_config.dart': {'price'},
 };
 
 /// Lines that are never user-facing (imports, exports, parts): file names
@@ -358,6 +359,7 @@ void main() {
             l10n.emailCodeSent,
             l10n.emailChangedMessage,
             l10n.accessActive,
+            l10n.openMap,
           ];
 
           for (final str in strings) {

@@ -2,6 +2,10 @@
 /// Phase 2.2 A7): the support WhatsApp link, the terms/privacy page URLs
 /// and the optional update metadata. Empty means absent (no prompt, no
 /// tile action); only `https` URLs are ever kept.
+///
+/// Unknown or malformed fields fail closed: [`showPrices`] is true only
+/// when the server sends a real boolean `true`, and [`center`] is null
+/// unless the server sends a usable object.
 class AppConfigData {
   const AppConfigData({
     this.supportWhatsappUrl = '',
@@ -10,6 +14,8 @@ class AppConfigData {
     this.minVersion = '',
     this.latestVersion = '',
     this.updateUrl = '',
+    this.showPrices = false,
+    this.center,
   });
 
   final String supportWhatsappUrl;
@@ -18,6 +24,15 @@ class AppConfigData {
   final String minVersion;
   final String latestVersion;
   final String updateUrl;
+
+  /// Owner amendment 2026-10-08 (F-UX6): subject prices render only when
+  /// this is true AND the subject carries a non-null price. Missing,
+  /// false, failed or offline config hides every price (fail closed).
+  final bool showPrices;
+
+  /// Optional tutoring-center info for Settings > Help. Null when the
+  /// server omits it; the Help section then shows nothing extra.
+  final CenterInfo? center;
 
   /// Parses defensively: the route is public and the JSON may be partial or
   /// malformed after a deploy. Non-https URLs are dropped, never opened.
@@ -28,6 +43,8 @@ class AppConfigData {
     minVersion: (json['min_version'] ?? '').toString().trim(),
     latestVersion: (json['latest_version'] ?? '').toString().trim(),
     updateUrl: _httpsUrl(json['update_url']),
+    showPrices: json['show_prices'] == true,
+    center: CenterInfo.fromJson(json['center']),
   );
 
   static String _httpsUrl(Object? value) {
@@ -45,6 +62,70 @@ class AppConfigData {
     'min_version': minVersion,
     'latest_version': latestVersion,
     'update_url': updateUrl,
+    'show_prices': showPrices,
+    'center': center?.toJson(),
+  };
+}
+
+/// Tutoring-center info from `GET /academy/app-config` (owner amendment
+/// 2026-10-08, F-UX6): name, address, localized working hours and an
+/// optional map link, shown in Settings > Help. All fields are plain
+/// display strings from the server; the map link keeps the same
+/// https-only rule as every other external URL.
+class CenterInfo {
+  const CenterInfo({
+    this.name = '',
+    this.address = '',
+    this.hoursAr = '',
+    this.hoursEn = '',
+    this.mapUrl = '',
+  });
+
+  final String name;
+  final String address;
+  final String hoursAr;
+  final String hoursEn;
+
+  /// Map link, kept only when it is a valid `https` URL, else empty.
+  final String mapUrl;
+
+  /// True when there is info text worth showing (the map link is
+  /// independent: a map-only object still offers "open map").
+  bool get hasContent =>
+      name.isNotEmpty ||
+      address.isNotEmpty ||
+      hoursAr.isNotEmpty ||
+      hoursEn.isNotEmpty;
+
+  /// Working hours in the UI language, falling back to the other side.
+  String hoursFor(bool isArabic) {
+    if (isArabic) return hoursAr.isNotEmpty ? hoursAr : hoursEn;
+    return hoursEn.isNotEmpty ? hoursEn : hoursAr;
+  }
+
+  static String _text(Object? value) => (value ?? '').toString().trim();
+
+  /// Null unless [json] is a map (a missing or malformed `center` field
+  /// means "show nothing", never a crash).
+  static CenterInfo? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final hours = json['hours'];
+    final hoursAr = hours is Map ? _text(hours['ar']) : '';
+    final hoursEn = hours is Map ? _text(hours['en']) : '';
+    return CenterInfo(
+      name: _text(json['name']),
+      address: _text(json['address']),
+      hoursAr: hoursAr,
+      hoursEn: hoursEn,
+      mapUrl: AppConfigData._httpsUrl(json['map_url']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'address': address,
+    'hours': {'ar': hoursAr, 'en': hoursEn},
+    'map_url': mapUrl,
   };
 }
 

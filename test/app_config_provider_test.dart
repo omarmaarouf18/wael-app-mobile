@@ -69,6 +69,91 @@ void main() {
     test('tolerates a missing or partial body', () {
       expect(AppConfigData.fromJson({}).termsUrl, isEmpty);
     });
+
+    test('show_prices is true only for a real boolean true', () {
+      expect(AppConfigData.fromJson({'show_prices': true}).showPrices, isTrue);
+      expect(AppConfigData.fromJson({}).showPrices, isFalse);
+      expect(
+        AppConfigData.fromJson({'show_prices': false}).showPrices,
+        isFalse,
+      );
+      for (final junk in [1, 'true', 'yes', <Object?>[], <String, Object?>{}]) {
+        expect(
+          AppConfigData.fromJson({'show_prices': junk}).showPrices,
+          isFalse,
+          reason: 'show_prices: $junk',
+        );
+      }
+      expect(const AppConfigData().showPrices, isFalse);
+    });
+
+    test('center parses both shapes: absent and present', () {
+      expect(AppConfigData.fromJson({}).center, isNull);
+      expect(AppConfigData.fromJson({'center': 'Cairo'}).center, isNull);
+      expect(AppConfigData.fromJson({'center': 42}).center, isNull);
+      expect(
+        AppConfigData.fromJson({'center': <String, Object?>{}}).center,
+        isNotNull,
+      );
+    });
+
+    test('center keeps display strings and an https map link only', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {
+          'name': '  El Metr Center  ',
+          'address': 'Nasr City, Cairo',
+          'hours': {'ar': 'يوميًا ١٠ص-١٠م', 'en': 'Daily 10am-10pm'},
+          'map_url': 'https://maps.example/center',
+        },
+      });
+      final center = parsed.center!;
+      expect(center.name, 'El Metr Center');
+      expect(center.address, 'Nasr City, Cairo');
+      expect(center.hoursFor(true), 'يوميًا ١٠ص-١٠م');
+      expect(center.hoursFor(false), 'Daily 10am-10pm');
+      expect(center.mapUrl, 'https://maps.example/center');
+      expect(center.hasContent, isTrue);
+    });
+
+    test('center hours fall back to the other language', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {
+          'name': 'El Metr Center',
+          'hours': {'ar': 'يوميًا ١٠ص-١٠م'},
+        },
+      });
+      final center = parsed.center!;
+      expect(center.hoursFor(true), 'يوميًا ١٠ص-١٠م');
+      expect(center.hoursFor(false), 'يوميًا ١٠ص-١٠م');
+      expect(center.mapUrl, isEmpty);
+      expect(center.hasContent, isTrue);
+    });
+
+    test('center drops a non-https map link, bare objects show nothing', () {
+      final parsed = AppConfigData.fromJson({
+        'center': {'map_url': 'http://plain.example/map'},
+      });
+      final center = parsed.center!;
+      expect(center.mapUrl, isEmpty);
+      expect(center.hasContent, isFalse);
+    });
+
+    test('toJson round-trips the new fields through the cache shape', () {
+      final parsed = AppConfigData.fromJson({
+        'show_prices': true,
+        'center': {
+          'name': 'El Metr Center',
+          'address': 'Nasr City, Cairo',
+          'hours': {'ar': 'يوميًا ١٠ص-١٠م', 'en': 'Daily 10am-10pm'},
+          'map_url': 'https://maps.example/center',
+        },
+      });
+      final reparsed = AppConfigData.fromJson(parsed.toJson());
+      expect(reparsed.showPrices, isTrue);
+      expect(reparsed.center?.name, 'El Metr Center');
+      expect(reparsed.center?.hoursFor(false), 'Daily 10am-10pm');
+      expect(reparsed.center?.mapUrl, 'https://maps.example/center');
+    });
   });
 
   group('compareAppVersions and parseAppVersion', () {

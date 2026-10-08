@@ -5,6 +5,7 @@ import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
 import '../providers/academy_catalog_provider.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/home_provider.dart';
 import '../widgets/accent_title.dart';
 import '../widgets/app_shell.dart';
@@ -58,6 +59,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
     final instructor = Provider.of<HomeProvider>(
       context,
     ).director.localizedName(l10n.isArabic);
+    // Owner amendment 2026-10-08 (F-UX6): card prices render only when
+    // the public app-config flag allows it (fail closed when
+    // offline/empty).
+    final showPrices = Provider.of<AppConfigProvider>(context).showPrices;
 
     return AppShell(
       showHeader: false,
@@ -89,7 +94,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   },
                 ),
               ),
-              ..._body(context, l10n, catalog, instructor),
+              ..._body(context, l10n, catalog, instructor, showPrices),
               const SizedBox(height: AppSpacing.space3xl),
             ],
           ),
@@ -103,6 +108,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     AppLocalizations l10n,
     AcademyCatalogProvider catalog,
     String instructor,
+    bool showPrices,
   ) {
     if (catalog.hasError) {
       return [
@@ -298,6 +304,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     child: CatalogSubjectCard(
                       subject: subject,
                       instructorName: instructor,
+                      showPrice: showPrices,
                       onTap: () => Navigator.of(
                         context,
                       ).pushNamed('/course-details', arguments: subject.id),

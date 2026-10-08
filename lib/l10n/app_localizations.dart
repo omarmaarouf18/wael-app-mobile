@@ -284,6 +284,7 @@ class AppLocalizations {
   String get supportOpenFailed => isArabic
       ? 'تعذر فتح واتساب، يرجى المحاولة لاحقًا.'
       : 'Could not open WhatsApp, please try again later.';
+  String get openMap => isArabic ? 'افتح الخريطة' : 'Open map';
   String get emailCodeSent => isArabic
       ? 'تم إرسال رمز إلى بريدك الجديد. أدخله أدناه.'
       : 'A code was sent to your new email. Enter it below.';

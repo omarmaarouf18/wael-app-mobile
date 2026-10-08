@@ -7,7 +7,9 @@ import 'package:wael_app/core/price_format.dart';
 import 'package:wael_app/core/theme.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
 import 'package:wael_app/models/academy_catalog.dart';
+import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
+import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/providers/locale_provider.dart';
 import 'package:wael_app/providers/notifications_provider.dart';
@@ -42,6 +44,7 @@ Future<void> pumpScaled(
   Locale locale,
   Widget screen, {
   AcademyCatalogProvider? catalog,
+  AppConfigProvider? appConfig,
   Size size = const Size(390, 844),
 }) async {
   tester.view.physicalSize = size;
@@ -53,6 +56,7 @@ Future<void> pumpScaled(
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider.value(value: makeAuth()),
         ChangeNotifierProvider.value(value: NotificationsProvider()),
+        ChangeNotifierProvider.value(value: appConfig ?? AppConfigProvider()),
         if (catalog != null)
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
         ChangeNotifierProvider.value(
@@ -140,6 +144,25 @@ void main() {
         'EGP 25000',
       );
     });
+
+    test('shouldShowSubjectPrice needs unlocked, priced and flag on', () {
+      expect(
+        shouldShowSubjectPrice(owned: false, price: 350, showPrices: true),
+        isTrue,
+      );
+      expect(
+        shouldShowSubjectPrice(owned: true, price: 350, showPrices: true),
+        isFalse,
+      );
+      expect(
+        shouldShowSubjectPrice(owned: false, price: null, showPrices: true),
+        isFalse,
+      );
+      expect(
+        shouldShowSubjectPrice(owned: false, price: 350, showPrices: false),
+        isFalse,
+      );
+    });
   });
 
   for (final (name, locale, _) in kLocales) {
@@ -149,15 +172,19 @@ void main() {
 
     Future<void> pumpDetail(
       WidgetTester tester,
-      Map<String, dynamic> detail,
-    ) async {
+      Map<String, dynamic> detail, {
+      bool showPrices = false,
+    }) async {
       final repository = fake();
       repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
+      final appConfig = AppConfigProvider()
+        ..setForTesting(AppConfigData(showPrices: showPrices));
       await pumpScreen(
         tester,
         locale,
         const CourseDetailScreen(courseId: 'd1'),
+        appConfig: appConfig,
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
@@ -168,19 +195,37 @@ void main() {
       );
     }
 
+    AppConfigProvider pricesOn() =>
+        AppConfigProvider()
+          ..setForTesting(const AppConfigData(showPrices: true));
+
     group('subject price [$name]', () {
       testWidgets('locked subject with price shows label and value', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody(price: 350));
+        await pumpDetail(tester, detailBody(price: 350), showPrices: true);
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(priced(350)), findsOneWidget);
+      });
+
+      testWidgets('flag off hides the price even when sent', (tester) async {
+        await pumpDetail(tester, detailBody(price: 350), showPrices: false);
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(priced(350)), findsNothing);
+      });
+
+      testWidgets('missing flag (offline default) hides the price', (
+        tester,
+      ) async {
+        await pumpDetail(tester, detailBody(price: 350));
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(priced(350)), findsNothing);
       });
 
       testWidgets('locked subject without price shows nothing, no gap', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody());
+        await pumpDetail(tester, detailBody(), showPrices: true);
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.textContaining('EGP'), findsNothing);
         expect(find.textContaining('ج.م'), findsNothing);
@@ -189,7 +234,11 @@ void main() {
       testWidgets('owned subject shows no price even when sent', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody(owned: true, price: 350));
+        await pumpDetail(
+          tester,
+          detailBody(owned: true, price: 350),
+          showPrices: true,
+        );
         expect(find.text(l10n.accessActive), findsOneWidget);
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.text(priced(350)), findsNothing);
@@ -201,10 +250,42 @@ void main() {
         await pumpLocalized(
           tester,
           locale,
-          CatalogSubjectCard(subject: cardSubject(), onTap: () {}),
+          CatalogSubjectCard(
+            subject: cardSubject(),
+            showPrice: true,
+            onTap: () {},
+          ),
         );
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(priced(350)), findsOneWidget);
+      });
+
+      testWidgets('list card hides the price when the flag is off', (
+        tester,
+      ) async {
+        await pumpLocalized(
+          tester,
+          locale,
+          CatalogSubjectCard(
+            subject: cardSubject(),
+            showPrice: false,
+            onTap: () {},
+          ),
+        );
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(priced(350)), findsNothing);
+      });
+
+      testWidgets('list card hides the price when the flag is missing', (
+        tester,
+      ) async {
+        await pumpLocalized(
+          tester,
+          locale,
+          CatalogSubjectCard(subject: cardSubject(), onTap: () {}),
+        );
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(priced(350)), findsNothing);
       });
 
       testWidgets('list card hides the price when owned or absent', (
@@ -237,6 +318,7 @@ void main() {
           locale,
           CatalogSubjectCard(
             subject: cardSubject(price: 400, currency: 'USD'),
+            showPrice: true,
             onTap: () {},
           ),
         );
@@ -253,6 +335,7 @@ void main() {
           locale,
           const CourseDetailScreen(courseId: 'd1'),
           catalog: await pricedCatalog(),
+          appConfig: pricesOn(),
         );
         expect(tester.takeException(), isNull);
         expect(find.text(priced(25000)), findsOneWidget);
@@ -264,7 +347,11 @@ void main() {
         await pumpScaled(
           tester,
           locale,
-          CatalogSubjectCard(subject: cardSubject(price: 25000), onTap: () {}),
+          CatalogSubjectCard(
+            subject: cardSubject(price: 25000),
+            showPrice: true,
+            onTap: () {},
+          ),
         );
         expect(tester.takeException(), isNull);
         expect(find.text(priced(25000)), findsOneWidget);

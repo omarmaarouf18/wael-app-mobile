@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/price_format.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
@@ -20,11 +21,17 @@ class CatalogSubjectCard extends StatelessWidget {
     required this.subject,
     this.instructorName = '',
     required this.onTap,
+    this.showPrice = false,
   });
 
   final AcademySubject subject;
   final String instructorName;
   final VoidCallback onTap;
+
+  /// Owner amendment 2026-10-08 (F-UX6): the price renders only when the
+  /// public app-config flag `show_prices` is true (the screen passes it
+  /// down). Defaults to hidden (fail closed).
+  final bool showPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -87,9 +94,14 @@ class CatalogSubjectCard extends StatelessWidget {
               style: AppTypography.bodyXs(isArabic: isArabic),
             ),
           ],
-          // Compact server-sent price, locked subjects only: owned
-          // subjects and a null price render nothing (and no gap).
-          if (!subject.owned && subject.price != null) ...[
+          // Compact server-sent price, locked subjects only and only when
+          // the app-config flag allows it: anything else renders nothing
+          // (and no gap).
+          if (shouldShowSubjectPrice(
+            owned: subject.owned,
+            price: subject.price,
+            showPrices: showPrice,
+          )) ...[
             const SizedBox(height: AppSpacing.spaceXs),
             SubjectPriceTag(
               amount: subject.price!,

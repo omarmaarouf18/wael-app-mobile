@@ -43,6 +43,15 @@ class AppConfigProvider extends ChangeNotifier {
   String get privacyUrl => _config.privacyUrl;
   String get supportWhatsappUrl => _config.supportWhatsappUrl;
 
+  /// Owner amendment 2026-10-08 (F-UX6): subject prices render only when
+  /// this is true AND the subject carries a non-null price. False until
+  /// the server sends a real boolean `true` (fail closed).
+  bool get showPrices => _config.showPrices;
+
+  /// Optional tutoring-center info for Settings > Help, null when the
+  /// server omits it.
+  CenterInfo? get center => _config.center;
+
   /// Loads the config unless a fresh copy is already in hand. Concurrent
   /// callers share one fetch.
   Future<void> load({bool force = false}) async {

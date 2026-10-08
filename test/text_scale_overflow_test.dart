@@ -215,6 +215,13 @@ void main() {
           ..setForTesting(
             const AppConfigData(
               supportWhatsappUrl: 'https://wa.me/201000000000',
+              center: CenterInfo(
+                name: 'El Metr Center',
+                address: 'Nasr City, Cairo — a long address line for wrapping',
+                hoursAr: 'يوميًا من العاشرة صباحًا حتى العاشرة مساءً',
+                hoursEn: 'Daily from 10 in the morning until 10 at night',
+                mapUrl: 'https://maps.example/center',
+              ),
             ),
           );
         await pumpScaled(

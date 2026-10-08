@@ -293,6 +293,123 @@ void main() {
         expect(find.text(l10n.supportOpenFailed), findsOneWidget);
       });
 
+      group('Help center card [$name]', () {
+        const centerName = 'El Metr Center';
+        const centerAddress = 'Nasr City, Cairo';
+        const centerMap = 'https://maps.example/center';
+
+        Future<List<Uri>> pumpCenter(
+          WidgetTester tester, {
+          CenterInfo? center = const CenterInfo(
+            name: centerName,
+            address: centerAddress,
+            hoursAr: 'يوميًا ١٠ص-١٠م',
+            hoursEn: 'Daily 10am-10pm',
+            mapUrl: centerMap,
+          ),
+        }) async {
+          final launched = <Uri>[];
+          final configProvider = AppConfigProvider()
+            ..setForTesting(AppConfigData(center: center));
+          final auth = await signedInAuth();
+          await pumpScreen(
+            tester,
+            locale,
+            SettingsScreen(
+              launchUrl: (uri, {mode = LaunchMode.platformDefault}) async {
+                launched.add(uri);
+                return true;
+              },
+            ),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+          return launched;
+        }
+
+        testWidgets('shows name, address and localized hours', (tester) async {
+          await pumpCenter(tester);
+          expect(find.text(centerName), findsOneWidget);
+          expect(find.text(centerAddress), findsOneWidget);
+          expect(
+            find.text(l10n.isArabic ? 'يوميًا ١٠ص-١٠م' : 'Daily 10am-10pm'),
+            findsOneWidget,
+          );
+        });
+
+        testWidgets('open-map tile launches the https map URL', (tester) async {
+          final launched = await pumpCenter(tester);
+          expect(find.text(l10n.openMap), findsOneWidget);
+          await tester.tap(find.text(l10n.openMap));
+          await tester.pumpAndSettle();
+          expect(launched.map((u) => u.toString()), [centerMap]);
+        });
+
+        testWidgets('absent center shows nothing extra', (tester) async {
+          await pumpCenter(tester, center: null);
+          expect(find.text(centerName), findsNothing);
+          expect(find.text(l10n.openMap), findsNothing);
+        });
+
+        testWidgets('malformed center shows nothing extra', (tester) async {
+          final configProvider = AppConfigProvider()
+            ..setForTesting(
+              AppConfigData.fromJson({
+                'support_whatsapp_url': 'https://wa.me/201000000000',
+                'center': 'Cairo',
+              }),
+            );
+          final auth = await signedInAuth();
+          await pumpScreen(
+            tester,
+            locale,
+            const SettingsScreen(),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+          expect(find.text(l10n.contactWhatsApp), findsOneWidget);
+          expect(find.text(centerName), findsNothing);
+          expect(find.text(l10n.openMap), findsNothing);
+        });
+
+        testWidgets('non-https map link shows info but no map tile', (
+          tester,
+        ) async {
+          // Built through fromJson like the real server path, so the
+          // https-only rule applies.
+          final configProvider = AppConfigProvider()
+            ..setForTesting(
+              AppConfigData.fromJson({
+                'center': {
+                  'name': centerName,
+                  'address': centerAddress,
+                  'map_url': 'http://plain.example/map',
+                },
+              }),
+            );
+          final auth = await signedInAuth();
+          final launched = <Uri>[];
+          await pumpScreen(
+            tester,
+            locale,
+            SettingsScreen(
+              launchUrl: (uri, {mode = LaunchMode.platformDefault}) async {
+                launched.add(uri);
+                return true;
+              },
+            ),
+            auth: auth,
+            appConfig: configProvider,
+            size: _tall,
+          );
+          expect(find.text(centerName), findsOneWidget);
+          expect(find.text(l10n.openMap), findsNothing);
+          expect(launched, isEmpty);
+        });
+      });
+
       testWidgets('does not overflow on a small phone', (tester) async {
         final auth = await signedInAuth(
           name: 'A very long student name that keeps going and going',
