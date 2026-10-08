@@ -22,3 +22,10 @@
 
 # package_info_plus
 -keep class dev.fluttercommunity.plus.packageinfo.** { *; }
+
+# Flutter engine references Play Core (deferred components / split install).
+# The app does not use deferred components, so the library is not bundled;
+# tell R8 the classes are intentionally absent.
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
