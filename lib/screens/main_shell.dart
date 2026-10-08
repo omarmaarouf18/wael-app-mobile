@@ -4,6 +4,7 @@ import '../core/error_messages.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
+import '../providers/app_config_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../repositories/notification_repository.dart';
@@ -119,6 +120,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       (c) => c.isStale,
     );
     final showOffline = offline || catalogStale;
+    // Notes & books downloads (server flag `features.files`) rename the tab.
+    final filesEnabled = context.select<AppConfigProvider, bool>(
+      (c) => c.filesEnabled,
+    );
 
     final screens = [
       HomeScreen(onExploreCourses: () => _onTabSelected(1)),
@@ -168,7 +173,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         items: [
           AppNavItem(icon: Icons.home, label: l10n.navHome),
           AppNavItem(icon: Icons.school_outlined, label: l10n.navCourses),
-          AppNavItem(icon: Icons.edit_note, label: l10n.navNotes),
+          AppNavItem(
+            icon: Icons.edit_note,
+            label: filesEnabled ? l10n.navNotesAndBooks : l10n.navNotes,
+          ),
           AppNavItem(icon: Icons.tune, label: l10n.navSettings),
         ],
       ),

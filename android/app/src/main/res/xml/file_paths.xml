@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The only folder the PdfFileProvider exposes: downloaded subject PDFs in
+     the app-private cache (<cache>/pdfs). Nothing else can get a content URI. -->
+<paths>
+    <cache-path name="pdfs" path="pdfs/" />
+</paths>

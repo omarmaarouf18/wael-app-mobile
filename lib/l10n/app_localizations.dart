@@ -400,6 +400,28 @@ class AppLocalizations {
     _ => kind,
   };
 
+  // Notes & books (SPEC Phase 5 client, behind the server's features.files)
+  String get navNotesAndBooks => isArabic ? 'المذكرات والكتب' : 'Notes & books';
+  String get fileDownload => isArabic ? 'تحميل' : 'Download';
+  String get fileOpen => isArabic ? 'فتح' : 'Open';
+  String get fileShare => isArabic ? 'مشاركة' : 'Share';
+  String get fileDownloaded => isArabic ? 'محفوظ على الجهاز' : 'On this phone';
+  String fileDownloading(int? percent) => percent == null
+      ? (isArabic ? 'جارٍ التحميل…' : 'Downloading…')
+      : (isArabic ? 'جارٍ التحميل… $percent٪' : 'Downloading… $percent%');
+  String get filesEmpty => isArabic
+      ? 'لا توجد مذكرات أو كتب بعد. تظهر هنا ملفات المواد المفعّلة لك.'
+      : 'No notes or books yet. Files of your activated subjects appear here.';
+  String get filesLockedTitlesOnly => isArabic
+      ? 'تُتاح الملفات للتحميل بعد تفعيل المادة.'
+      : 'Files can be downloaded once the subject is activated.';
+  String get noPdfApp => isArabic
+      ? 'لا يوجد تطبيق لفتح ملفات PDF على هذا الجهاز. يمكنك مشاركة الملف بدلاً من ذلك.'
+      : 'No app on this phone can open PDF files. You can share the file instead.';
+  String get fileOpenFailed => isArabic
+      ? 'تعذر فتح الملف. حمّله مرة أخرى.'
+      : 'Could not open the file. Please download it again.';
+
   // Video player
   String get playLabel => isArabic ? 'تشغيل' : 'Play';
   String get pauseLabel => isArabic ? 'إيقاف مؤقت' : 'Pause';

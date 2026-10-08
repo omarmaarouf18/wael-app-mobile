@@ -407,6 +407,62 @@ class ApiClient {
     );
   }
 
+  /// Opens an authenticated binary download (a subject PDF) and returns the
+  /// streamed body once the server answered 2xx. A 401 runs the same
+  /// refresh-once-then-logout flow as [get]; any other non-2xx surfaces as
+  /// [ApiException] (status, `code`, `Retry-After`) like the JSON calls.
+  ///
+  /// [timeout] bounds only the wait for the response headers; the caller
+  /// times the body itself. Completing [abortTrigger] cancels the request
+  /// (the body stream then errors with `RequestAbortedException`).
+  Future<DownloadResponse> download(
+    String path, {
+    Future<void>? abortTrigger,
+    bool isRetry = false,
+  }) async {
+    final sw = Stopwatch()..start();
+    int statusCode = -1;
+    try {
+      final token = await _token();
+      final req = http.AbortableRequest(
+        'GET',
+        Uri.parse('$baseUrl$path'),
+        abortTrigger: abortTrigger,
+      );
+      req.headers.addAll(_headers(token));
+      req.headers['Accept'] = 'application/pdf';
+      req.headers.remove('Content-Type');
+      final streamed = await _client.send(req).timeout(timeout);
+      statusCode = streamed.statusCode;
+      if (statusCode >= 200 && statusCode < 300) {
+        return DownloadResponse(
+          stream: streamed.stream,
+          contentLength: streamed.contentLength,
+        );
+      }
+      // Error bodies are small JSON; read them like any other call.
+      final res = await http.Response.fromStream(streamed).timeout(timeout);
+      var retried = false;
+      await _handle(res, () async {
+        retried = true;
+        return const <String, dynamic>{};
+      }, isRetry: isRetry);
+      if (retried) {
+        return download(path, abortTrigger: abortTrigger, isRetry: true);
+      }
+      // _handle only returns without throwing for a retry or a 2xx.
+      throw ApiException(statusCode: statusCode, message: 'Request failed');
+    } on TimeoutException {
+      throw _timedOut();
+    } catch (e) {
+      if (e is ApiException) statusCode = e.statusCode;
+      rethrow;
+    } finally {
+      sw.stop();
+      _record('GET', path, statusCode, sw.elapsedMilliseconds);
+    }
+  }
+
   /// Opens a server-sent-events stream. Each `data:` line carrying a JSON
   /// object is yielded as a decoded map. The caller cancels the subscription
   /// on logout.
@@ -487,4 +543,13 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException: [$statusCode] $message';
+}
+
+/// Streamed body of a successful [ApiClient.download]. [contentLength] is
+/// null when the server did not send one.
+class DownloadResponse {
+  const DownloadResponse({required this.stream, this.contentLength});
+
+  final Stream<List<int>> stream;
+  final int? contentLength;
 }

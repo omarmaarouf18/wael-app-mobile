@@ -9,10 +9,12 @@ import '../../widgets/app_badge.dart';
 import '../../widgets/catalog_file_tile.dart';
 import '../../widgets/catalog_video_tile.dart';
 import '../../widgets/file_details_sheet.dart';
+import '../../widgets/file_download_tile.dart';
 import '../../widgets/selectable_chip.dart';
 import '../../widgets/themed_empty_state.dart';
 import '../../widgets/themed_panel.dart';
 import '../../providers/academy_catalog_provider.dart';
+import '../../providers/app_config_provider.dart';
 import '../video_player_screen.dart';
 
 enum _Section { videos, books, notes }
@@ -23,7 +25,10 @@ enum _Section { videos, books, notes }
 ///
 /// - a video is locked unless the server marked it `playable` (the YouTube id
 ///   is never part of this data; it comes from a separate play request);
-/// - files are locked unless the subject is owned.
+/// - files are locked unless the subject is owned. With the server's
+///   `features.files` on, an owned subject's files can be downloaded,
+///   opened and shared ([FileDownloadTile]); a locked subject still shows
+///   titles only (D4). With it off, files show the "later update" sheet.
 class SubjectContentSection extends StatefulWidget {
   const SubjectContentSection({super.key, required this.detail});
 
@@ -197,6 +202,9 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
     String emptyMessage,
   ) {
     if (files.isEmpty) return _empty(emptyIcon, emptyMessage);
+    final downloads =
+        detail.owned &&
+        context.select<AppConfigProvider, bool>((c) => c.filesEnabled);
     return Column(
       children: [
         for (final file in files)
@@ -204,15 +212,17 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
             padding: const EdgeInsetsDirectional.only(
               bottom: AppSpacing.spaceSm,
             ),
-            child: CatalogFileTile(
-              file: file,
-              locked: !detail.owned,
-              onTap: () => showFileDetailsSheet(
-                context,
-                file: file,
-                locked: !detail.owned,
-              ),
-            ),
+            child: downloads
+                ? FileDownloadTile(subject: detail, file: file)
+                : CatalogFileTile(
+                    file: file,
+                    locked: !detail.owned,
+                    onTap: () => showFileDetailsSheet(
+                      context,
+                      file: file,
+                      locked: !detail.owned,
+                    ),
+                  ),
           ),
       ],
     );

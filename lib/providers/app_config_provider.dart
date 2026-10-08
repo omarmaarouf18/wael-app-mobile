@@ -52,6 +52,13 @@ class AppConfigProvider extends ChangeNotifier {
   /// server omits it.
   CenterInfo? get center => _config.center;
 
+  /// Notes and books downloads (`features.files`, client contract
+  /// 2026-10-08, server pending). False until the server sends a real
+  /// boolean `true`; a fresh install that never reached the server keeps it
+  /// false. The last fetched value is reused from the 5-minute cache, so
+  /// already-downloaded files stay reachable offline.
+  bool get filesEnabled => _config.filesEnabled;
+
   /// Loads the config unless a fresh copy is already in hand. Concurrent
   /// callers share one fetch.
   Future<void> load({bool force = false}) async {

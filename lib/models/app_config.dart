@@ -16,6 +16,7 @@ class AppConfigData {
     this.updateUrl = '',
     this.showPrices = false,
     this.center,
+    this.filesEnabled = false,
   });
 
   final String supportWhatsappUrl;
@@ -34,6 +35,12 @@ class AppConfigData {
   /// server omits it; the Help section then shows nothing extra.
   final CenterInfo? center;
 
+  /// Server flag `features.files` (client contract 2026-10-08, server
+  /// pending): notes and books download only when the server sends a real
+  /// boolean `true`. Missing, false, malformed, or never-fetched config
+  /// keeps the notes tab in its coming-soon state (fail closed).
+  final bool filesEnabled;
+
   /// Parses defensively: the route is public and the JSON may be partial or
   /// malformed after a deploy. Non-https URLs are dropped, never opened.
   factory AppConfigData.fromJson(Map<String, dynamic> json) => AppConfigData(
@@ -45,7 +52,13 @@ class AppConfigData {
     updateUrl: _httpsUrl(json['update_url']),
     showPrices: json['show_prices'] == true,
     center: CenterInfo.fromJson(json['center']),
+    filesEnabled: _feature(json['features'], 'files'),
   );
+
+  /// A feature is on only for a real boolean `true` inside a `features`
+  /// object; anything else (missing, string, number, wrong shape) is off.
+  static bool _feature(Object? features, String name) =>
+      features is Map && features[name] == true;
 
   static String _httpsUrl(Object? value) {
     final raw = (value ?? '').toString().trim();
@@ -64,6 +77,7 @@ class AppConfigData {
     'update_url': updateUrl,
     'show_prices': showPrices,
     'center': center?.toJson(),
+    'features': {'files': filesEnabled},
   };
 }
 

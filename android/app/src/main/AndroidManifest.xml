@@ -29,6 +29,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Downloaded subject PDFs are handed to the phone's PDF app or the
+             share sheet as content:// URIs with a per-intent read grant. Not
+             exported; only <cache>/pdfs is exposed. No storage permission. -->
+        <provider
+            android:name=".PdfFileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -1,4 +1,5 @@
 import '../models/academy_catalog.dart';
+import '../services/file_downloads.dart';
 import 'api_client.dart';
 
 /// Standardized Error Messages supporting localized resolution
@@ -126,6 +127,57 @@ class ErrorMessages {
       return requestFailed(isArabic);
     }
     if (e is AcademyParseException) return requestFailed(isArabic);
+    return networkError(isArabic);
+  }
+
+  static String fileNotActivated(bool isArabic) => isArabic
+      ? 'هذا الملف متاح بعد تفعيل المادة فقط.'
+      : 'This file is available only after the subject is activated.';
+
+  static String fileUnavailable(bool isArabic) => isArabic
+      ? 'هذا الملف لم يعد متاحًا.'
+      : 'This file is no longer available.';
+
+  static String fileTooLarge(bool isArabic) => isArabic
+      ? 'هذا الملف أكبر من أن يُحمَّل على الجهاز.'
+      : 'This file is too large to download.';
+
+  static String fileIncomplete(bool isArabic) => isArabic
+      ? 'لم يصل الملف كاملًا. يرجى المحاولة مرة أخرى.'
+      : 'The file did not arrive complete. Please try again.';
+
+  static String fileStorage(bool isArabic) => isArabic
+      ? 'تعذر حفظ الملف على الجهاز. تأكد من وجود مساحة كافية.'
+      : 'Could not save the file on this phone. Check there is free space.';
+
+  /// Message for a failed notes/books download (SPEC Section 6 download
+  /// route). 403 is "not activated" (never payment wording), 404 a removed
+  /// file, 413 too large, 429 a wait (with `Retry-After` when sent);
+  /// timeouts and connection failures are network errors. Unknown statuses
+  /// and codes get the generic message, never the server's text.
+  static String forFileDownload(Object e, {bool isArabic = false}) {
+    if (e is ApiException) {
+      if (e.code == 'timeout' || e.statusCode <= 0) {
+        return networkError(isArabic);
+      }
+      if (e.statusCode == 403) return fileNotActivated(isArabic);
+      if (e.statusCode == 404) return fileUnavailable(isArabic);
+      if (e.statusCode == 413) return fileTooLarge(isArabic);
+      if (e.isRateLimited) {
+        return tooManyAttempts(isArabic, e.retryAfterSeconds);
+      }
+      if (e.statusCode == 503) return serviceUnavailable(isArabic);
+      return requestFailed(isArabic);
+    }
+    if (e is DownloadException) {
+      return switch (e.failure) {
+        DownloadFailure.notPdf ||
+        DownloadFailure.incomplete => fileIncomplete(isArabic),
+        DownloadFailure.tooLarge => fileTooLarge(isArabic),
+        DownloadFailure.storage => fileStorage(isArabic),
+        DownloadFailure.invalidId => requestFailed(isArabic),
+      };
+    }
     return networkError(isArabic);
   }
 

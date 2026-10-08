@@ -48,6 +48,10 @@ dependencies:
   youtube_player_iframe: ^6.0.2
   # Reads installed app version for update gating. BSD-3-Clause (Flutter Authors).
   package_info_plus: ^10.2.2
+  # Pinned exact: the app-private cache directory for downloaded notes and
+  # books (Android getCacheDir(), no storage permission). Was already a
+  # transitive dependency at this version. BSD-3-Clause (Flutter Authors).
+  path_provider: 2.1.6
 
 dev_dependencies:
   flutter_test:

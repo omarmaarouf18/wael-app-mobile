@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nested/nested.dart' show SingleChildWidget;
+import 'package:path_provider/path_provider.dart'
+    show getApplicationCacheDirectory;
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
@@ -26,6 +28,7 @@ import 'providers/app_config_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'repositories/account_repository.dart';
+import 'providers/files_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/playback_speed_provider.dart';
@@ -34,6 +37,7 @@ import 'providers/playback_speed_provider.dart';
 import 'player/player_engine.dart';
 import 'player/youtube_iframe_engine.dart';
 import 'repositories/academy_repository.dart';
+import 'services/file_downloads.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
@@ -188,6 +192,31 @@ class WaelApp extends StatelessWidget {
                   catalog!.reset(notify: false);
                 }
                 return catalog!;
+              },
+            ),
+            // Notes and books downloads (server flag `features.files`):
+            // per-student copies in the app-private cache, bound to the
+            // signed-in user and wiped on sign-out.
+            ChangeNotifierProxyProvider2<
+              AuthProvider,
+              AcademyCatalogProvider,
+              FilesProvider
+            >(
+              create: (ctx) => FilesProvider(
+                store: FileDownloadStore(
+                  cacheRoot: getApplicationCacheDirectory,
+                  fetcher: httpPdfFetcher(ctx.read<AuthProvider>().authedApi),
+                ),
+              ),
+              update: (_, auth, catalog, files) {
+                files!.attachCatalog(catalog);
+                // Runs during build: both calls notify asynchronously.
+                if (auth.isAuthenticated) {
+                  files.bindUser(auth.currentUser.id);
+                } else if (files.isBound) {
+                  files.clearAll();
+                }
+                return files;
               },
             ),
             // The protected player's real engine and Android channel.

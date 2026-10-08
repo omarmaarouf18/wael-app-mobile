@@ -4,7 +4,8 @@ Real auth against the wael-app gateway. Academy content is read through
 `AcademyRepository` (`lib/repositories/academy_repository.dart`: levels,
 subjects, subject detail over `/api/v1/academy/`, models in
 `lib/models/academy_catalog.dart`). Home, courses and course detail are on it;
-the ebooks tab is an empty state until its backend phase (SPEC Phase 5). No
+the notes tab stays a coming-soon state until the server turns on
+`features.files` (see "Notes & books" below, SPEC Phase 5). No
 screen shows mock or demo data: anything a student sees as real comes from the
 API, or from `lib/content/director_profile.dart` (the director card: the
 owner's own name, verified 2026-10-02, and titles and photo supplied by the
@@ -115,7 +116,20 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   offline banner and a retry action; a global banner shows while the session or the
   catalog is offline and clears on the next success or when the app resumes. Lists show
   skeleton placeholders while loading, and subject detail, notifications and the e-book
-  tab support pull-to-refresh (a no-op on the e-book tab until SPEC Phase 5).
+  tab support pull-to-refresh (a no-op on the e-book tab while `features.files` is off).
+- **Notes & books** (SPEC Phase 5 client, behind the app-config flag `features.files`;
+  missing, false or never fetched means off): the notes tab ("المذكرات والكتب" / "Notes &
+  books") lists the files of owned subjects grouped by subject, and subject detail offers
+  Download on an owned subject's files (locked subjects show titles only, D4). A download
+  streams `GET /api/v1/academy/subjects/{id}/files/{fileId}/download` into the app-private
+  cache (`<cache>/pdfs`, `lib/services/file_downloads.dart`) with progress and cancel; then
+  "Open" hands it to the phone's PDF app and "Share" opens the system share sheet
+  (`lib/services/file_opener.dart`, a method channel in `MainActivity.kt` with the app's
+  own `PdfFileProvider`: `content://` URI, read grant per intent, no storage permission, no
+  in-app viewer). No PDF app shows a message with Share. Downloaded files open and share
+  offline; sign-out, another account, or a fresh server answer that the subject is no
+  longer owned or the file is gone deletes the copy. `path_provider` 2.1.6 (BSD-3-Clause)
+  is pinned for the cache directory.
 - **Fonts**: Cairo, Syne and Plus Jakarta Sans are bundled assets (`assets/fonts/`);
   `GoogleFonts.config.allowRuntimeFetching` is `false`, so no font is downloaded.
 - **Support links**: a pending request, the Settings Help section, and the session-replaced notice on the login screen open the support WhatsApp chat with `url_launcher` (external app with browser fallback; only `https://wa.me` links are ever opened).
