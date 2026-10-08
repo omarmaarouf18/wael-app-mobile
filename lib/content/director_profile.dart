@@ -1,10 +1,12 @@
 /// The academy director's profile, shown on Home and as a strip on each
 /// subject. This file is the only place to change it.
 ///
-/// The content is the owner's own, taken from the owner's business card and
-/// verified by the owner on 2026-10-02: the name and four titles, in Arabic
-/// and English. There is deliberately no biography. The card is hidden when
-/// the profile has no name, and every part with no text is simply not drawn.
+/// The content is the owner's own. Name: from the owner's business card,
+/// verified by the owner on 2026-10-02. Titles and portrait: supplied by the
+/// owner on 2026-10-08, replacing the 2026-10-02 business-card titles and the
+/// character art; the photo is used with the director's consent. There is
+/// deliberately no biography. The card is hidden when the profile has no
+/// name, and every part with no text is simply not drawn.
 library;
 
 import '../core/constants.dart';
@@ -56,17 +58,7 @@ class DirectorProfile {
 const DirectorProfile kDirectorProfile = DirectorProfile(
   name: 'Wael El Saeed',
   nameAr: 'وائل السعيد',
-  titles: [
-    'Lawyer',
-    'Law lecturer',
-    'International and regional arbitrator',
-    'Member of the Arab Lawyers Union',
-  ],
-  titlesAr: [
-    'محامٍ',
-    'مدرس قانون',
-    'محكم دولي وإقليمي',
-    'عضو اتحاد المحامين العرب',
-  ],
-  portraitAsset: AppConstants.imgCharacterArt,
+  titles: ['Lawyer', 'Legal lecturer', 'Arbitrator', 'Contracts expert'],
+  titlesAr: ['محامٍ', 'محاضر قانوني', 'محكّم', 'خبير عقود'],
+  portraitAsset: AppConstants.imgDirectorPortrait,
 );

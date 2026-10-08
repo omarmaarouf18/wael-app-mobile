@@ -39,10 +39,12 @@ class DirectorStrip extends StatelessWidget {
               image: imageAsset.isEmpty
                   ? null
                   : DecorationImage(
-                      // The art is 1024 x 1536; decode it small.
+                      // The photo is 800 x 800; decode it at about 3x the box.
                       image: ResizeImage(AssetImage(imageAsset), width: 144),
                       fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
+                      // Square photo, square box: nothing is cropped. A taller
+                      // portrait keeps its upper part, where the face is.
+                      alignment: const Alignment(0, -0.3),
                     ),
             ),
             child: imageAsset.isEmpty

@@ -161,8 +161,18 @@ void main() {
             .single;
         expect(
           (image.imageProvider as AssetImage).assetName,
-          AppConstants.imgCharacterArt,
+          AppConstants.imgDirectorPortrait,
         );
+        final decoration = tester
+            .widgetList<Container>(
+              find.descendant(of: strip, matching: find.byType(Container)),
+            )
+            .map((c) => c.decoration)
+            .whereType<BoxDecoration>()
+            .map((d) => d.image)
+            .whereType<DecorationImage>()
+            .single;
+        expect(decoration.fit, BoxFit.cover); // never stretched
       });
 
       testWidgets('no director strip while the director profile is empty', (

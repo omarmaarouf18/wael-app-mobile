@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wael_app/content/director_profile.dart';
 import 'package:wael_app/core/constants.dart';
@@ -10,28 +12,25 @@ void main() {
       const p = kDirectorProfile;
       expect(p.nameAr, 'وائل السعيد');
       expect(p.name, 'Wael El Saeed');
-      expect(p.titlesAr, [
-        'محامٍ',
-        'مدرس قانون',
-        'محكم دولي وإقليمي',
-        'عضو اتحاد المحامين العرب',
-      ]);
+      // Titles: owner decision 2026-10-08, in this order.
+      expect(p.titlesAr, ['محامٍ', 'محاضر قانوني', 'محكّم', 'خبير عقود']);
       expect(p.titles, [
         'Lawyer',
-        'Law lecturer',
-        'International and regional arbitrator',
-        'Member of the Arab Lawyers Union',
+        'Legal lecturer',
+        'Arbitrator',
+        'Contracts expert',
       ]);
       expect(p.hasContent, isTrue);
     });
 
-    test('has no biography; the portrait is the character art', () {
+    test('has no biography; the portrait is the director photo', () {
       const p = kDirectorProfile;
       expect(p.bio, isEmpty);
       expect(p.bioAr, isEmpty);
       expect(p.localizedBio(true), isEmpty);
       expect(p.localizedBio(false), isEmpty);
-      expect(p.portraitAsset, AppConstants.imgCharacterArt);
+      expect(p.portraitAsset, AppConstants.imgDirectorPortrait);
+      expect(p.portraitAsset, isNot(AppConstants.imgCharacterArt));
       expect(p.hasPortrait, isTrue);
     });
 
@@ -41,9 +40,41 @@ void main() {
       expect(p.localizedName(false), 'Wael El Saeed');
       expect(p.localizedTitles(true), hasLength(4));
       expect(p.localizedTitles(false), hasLength(4));
-      expect(p.localizedTagline(false), startsWith('Lawyer • Law lecturer'));
-      expect(p.localizedTagline(true), startsWith('محامٍ • مدرس قانون'));
+      expect(
+        p.localizedTagline(false),
+        'Lawyer • Legal lecturer • Arbitrator • Contracts expert',
+      );
+      expect(
+        p.localizedTagline(true),
+        'محامٍ • محاضر قانوني • محكّم • خبير عقود',
+      );
     });
+  });
+
+  test('the portrait asset is bundled: 800 x 800 JPEG, listed in pubspec', () {
+    final file = File(AppConstants.imgDirectorPortrait);
+    expect(file.existsSync(), isTrue);
+    final bytes = file.readAsBytesSync();
+    expect(bytes.sublist(0, 3), [0xFF, 0xD8, 0xFF]); // JPEG
+    // Width and height from the first SOF marker (baseline or progressive).
+    var i = 2;
+    int? width, height;
+    while (i + 9 < bytes.length) {
+      if (bytes[i] != 0xFF) break;
+      final marker = bytes[i + 1];
+      final length = (bytes[i + 2] << 8) | bytes[i + 3];
+      if (marker == 0xC0 || marker == 0xC2) {
+        height = (bytes[i + 5] << 8) | bytes[i + 6];
+        width = (bytes[i + 7] << 8) | bytes[i + 8];
+        break;
+      }
+      i += 2 + length;
+    }
+    expect([width, height], [800, 800]);
+    expect(
+      File('pubspec.yaml').readAsStringSync(),
+      contains('- ${AppConstants.imgDirectorPortrait}'),
+    );
   });
 
   group('DirectorProfile', () {

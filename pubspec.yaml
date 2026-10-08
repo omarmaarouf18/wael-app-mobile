@@ -78,6 +78,7 @@ flutter:
     - assets/branding/el_metr_poster.jpg
     - assets/images/home_hero.png
     - assets/images/catalog_composure.jpg
+    - assets/images/director_portrait.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -51,13 +51,15 @@ class InstructorDossierCard extends StatelessWidget {
                   ),
                   image: profile.hasPortrait
                       ? DecorationImage(
-                          // The art is 1024 x 1536; decode it small.
+                          // 800 x 800 photo; decode it at about 3x the box.
                           image: ResizeImage(
                             AssetImage(profile.portraitAsset),
                             width: 204,
                           ),
                           fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
+                          // Square photo, square box: nothing cropped. A taller
+                          // portrait keeps its upper part, where the face is.
+                          alignment: const Alignment(0, -0.3),
                         )
                       : null,
                 ),

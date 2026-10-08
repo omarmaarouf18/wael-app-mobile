@@ -22,4 +22,9 @@ class AppConstants {
   static const String imgHomeHero = 'assets/images/home_hero.png';
   static const String imgCatalogComposure =
       'assets/images/catalog_composure.jpg';
+
+  /// The director's photo (owner-supplied, 2026-10-08), 800 x 800, head and
+  /// shoulders.
+  static const String imgDirectorPortrait =
+      'assets/images/director_portrait.jpg';
 }

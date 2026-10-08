@@ -128,16 +128,18 @@ void main() {
           findsNWidgets(4),
         );
         expect(find.text(l10n.readMore), findsNothing);
-        // The portrait is the character art.
+        // The portrait is the director photo, covering its box.
         final portrait = find.descendant(
           of: card,
           matching: find.byWidgetPredicate((w) {
             if (w is! Container || w.decoration is! BoxDecoration) return false;
             final image = (w.decoration! as BoxDecoration).image?.image;
+            final d = (w.decoration! as BoxDecoration).image;
             return image is ResizeImage &&
+                d?.fit == BoxFit.cover &&
                 image.imageProvider is AssetImage &&
                 (image.imageProvider as AssetImage).assetName ==
-                    AppConstants.imgCharacterArt;
+                    AppConstants.imgDirectorPortrait;
           }),
         );
         expect(portrait, findsOneWidget);

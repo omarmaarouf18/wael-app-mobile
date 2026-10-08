@@ -60,14 +60,15 @@ void main() {
   });
 
   test('the director\'s name and titles appear only in the content file', () {
-    // Owner-verified (2026-10-02), and allowed in exactly one place.
+    // Owner-verified (name 2026-10-02, titles 2026-10-08), and allowed in
+    // exactly one place.
     const onlyInContent = [
       'Wael El Saeed',
       'وائل السعيد',
-      'Arab Lawyers Union',
-      'اتحاد المحامين العرب',
-      'Law lecturer',
-      'مدرس قانون',
+      'Legal lecturer',
+      'محاضر قانوني',
+      'Contracts expert',
+      'خبير عقود',
     ];
     // Owner decision 2026-10-08 (CONTENT-GAPS #28): the Settings footer
     // brand line names the owner verbatim. This exact literal is allowed
