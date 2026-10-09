@@ -639,9 +639,25 @@ void main() {
       expect(await opener.open('/p.pdf'), OpenResult.failed);
     });
 
-    test('is a no-op off Android', () async {
-      final opener = FileOpener(platform: TargetPlatform.linux);
-      expect(await opener.open('/p.pdf'), OpenResult.failed);
+    test('calls the channel on iOS too', () async {
+      final opener = FileOpener(platform: TargetPlatform.iOS);
+      expect(opener.isSupported, isTrue);
+      answer((_) => 'opened');
+      expect(await opener.open('/p.pdf'), OpenResult.opened);
+      expect(await opener.share('/p.pdf', 'T'), OpenResult.opened);
+    });
+
+    test('is a no-op off Android and iOS', () async {
+      for (final platform in [
+        TargetPlatform.linux,
+        TargetPlatform.macOS,
+        TargetPlatform.windows,
+        TargetPlatform.fuchsia,
+      ]) {
+        final opener = FileOpener(platform: platform);
+        expect(opener.isSupported, isFalse, reason: '$platform');
+        expect(await opener.open('/p.pdf'), OpenResult.failed);
+      }
     });
   });
 

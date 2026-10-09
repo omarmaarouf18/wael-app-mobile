@@ -14,16 +14,19 @@ enum OpenResult {
 }
 
 /// Opens or shares a cached PDF with the phone's own apps, through a small
-/// method channel implemented in `MainActivity.kt` (no extra package):
+/// method channel (no extra package):
 ///
-/// - [open]: `ACTION_VIEW` on a `content://` URI from the app's
-///   FileProvider, with read permission granted to the receiving app only;
-/// - [share]: the system share sheet (`ACTION_SEND`) with the same URI.
+/// - Android (`MainActivity.kt`): [open] is `ACTION_VIEW` on a `content://`
+///   URI from the app's FileProvider, with read permission granted to the
+///   receiving app only; [share] is the system share sheet (`ACTION_SEND`)
+///   with the same URI.
+/// - iOS (`AppDelegate.swift`, 2026-10-09 after TestFlight showed "could not
+///   open"): [open] shows the system Quick Look viewer (which has its own
+///   share button); [share] is the system share sheet.
 ///
-/// Only files under `<cache>/pdfs` can be exposed (the provider's single
-/// path, checked again natively). No storage permission is used. Android is
-/// the only supported platform for now (owner decision); elsewhere both
-/// calls answer [OpenResult.failed].
+/// Only files under `<cache>/pdfs` can be exposed (checked again natively).
+/// No storage permission is used. On other platforms both calls answer
+/// [OpenResult.failed].
 class FileOpener {
   FileOpener({MethodChannel? channel, this.platform})
     : _channel = channel ?? const MethodChannel(channelName);
@@ -35,8 +38,11 @@ class FileOpener {
   /// Overrides the detected platform (tests).
   final TargetPlatform? platform;
 
-  bool get isSupported =>
-      !kIsWeb && (platform ?? defaultTargetPlatform) == TargetPlatform.android;
+  bool get isSupported {
+    if (kIsWeb) return false;
+    final p = platform ?? defaultTargetPlatform;
+    return p == TargetPlatform.android || p == TargetPlatform.iOS;
+  }
 
   Future<OpenResult> open(String path) => _call('open', {'path': path});
 
