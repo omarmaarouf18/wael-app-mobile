@@ -80,12 +80,23 @@ class _NavButton extends StatelessWidget {
             children: [
               Icon(item.icon, size: 22, color: color),
               const SizedBox(height: 3),
-              Text(
-                AppTypography.uppercaseLabel(item.label),
-                style: AppTypography.labelSm().copyWith(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: 1.2,
-                  color: color,
+              // One centred line: a long label ("NOTES & BOOKS") shrinks to
+              // fit its slot instead of wrapping into two start-aligned lines.
+              Padding(
+                padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    AppTypography.uppercaseLabel(item.label),
+                    maxLines: 1,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.labelSm().copyWith(
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      letterSpacing: 1.2,
+                      color: color,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 3),
