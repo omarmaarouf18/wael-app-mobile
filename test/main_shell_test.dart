@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:wael_app/models/notification_model.dart';
@@ -186,6 +187,35 @@ void main() {
           await tester.pump();
           expect(tabIndex(tester), i);
         }
+      });
+
+      testWidgets('system back on another tab returns to Home', (tester) async {
+        await pump(tester, initialTab: 2);
+        expect(tabIndex(tester), 2);
+        // The Android back button, as the platform sends it.
+        await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/navigation',
+          const JSONMethodCodec().encodeMethodCall(
+            const MethodCall('popRoute'),
+          ),
+          (_) {},
+        );
+        await tester.pump();
+        expect(tabIndex(tester), 0);
+        expect(find.byType(MainShell), findsOneWidget);
+      });
+
+      testWidgets('on Home, system back is not held by the shell', (
+        tester,
+      ) async {
+        await pump(tester);
+        final scope = tester.widget<PopScope<Object?>>(
+          find.descendant(
+            of: find.byType(MainShell),
+            matching: find.byType(PopScope<Object?>),
+          ),
+        );
+        expect(scope.canPop, isTrue);
       });
 
       testWidgets('initialTab is honoured', (tester) async {

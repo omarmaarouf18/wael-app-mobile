@@ -163,7 +163,17 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               retryAfterSeconds: retryAfter,
             ),
           Expanded(
-            child: IndexedStack(index: _currentIndex, children: screens),
+            // System back on a tab other than Home returns to Home instead
+            // of leaving the app; on Home it exits as usual. Pushed screens
+            // (course detail, player, notifications) still pop first: this
+            // only applies while the shell is the top route.
+            child: PopScope<Object?>(
+              canPop: _currentIndex == 0,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop) _onTabSelected(0);
+              },
+              child: IndexedStack(index: _currentIndex, children: screens),
+            ),
           ),
         ],
       ),
