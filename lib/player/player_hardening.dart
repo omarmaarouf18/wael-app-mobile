@@ -13,8 +13,9 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 /// - make the whole embed ignore touches (`pointer-events: none`), so the
 ///   title link, YouTube logo, share, watch-later, "watch on YouTube" and the
 ///   end-screen cards cannot be tapped, long-pressed or selected;
-/// - refuse every navigation the page attempts, so nothing leaves the embed
-///   and no other video can be loaded from inside it;
+/// - refuse every navigation the page attempts other than loading the player
+///   page and YouTube's own frames, so nothing leaves the embed and no other
+///   video can be loaded from inside it;
 /// - turn off WebView debugging (done by the package) and context menus.
 ///
 /// What it CANNOT do:
@@ -38,12 +39,39 @@ YoutubePlayerParams protectedPlayerParams() => const YoutubePlayerParams(
   privacyEnhancedMode: true,
 );
 
-/// The WebView must never navigate: the embed is loaded once from a string, so
-/// any main-frame navigation request is a link the user (or YouTube's UI)
-/// triggered. The package's own policy would open some of them in the
-/// browser or load another video id from the URL; this replaces it.
-NavigationDecision decidePlayerNavigation(NavigationRequest request) =>
-    NavigationDecision.prevent;
+/// The WebView must never leave the embed. Allowed, and nothing else:
+/// - the main frame loading the player page itself (the package loads it
+///   from a string with `baseUrl` = the embed host, or as `about:blank`);
+/// - sub-frames (YouTube's own cross-origin iframe and what it nests) over
+///   https or `about:`. iOS (WKWebView) asks the navigation delegate for
+///   every frame load, so refusing sub-frames there means the video never
+///   loads (TestFlight 2026-10-09). Android only asks for main-frame
+///   navigations, so this changes nothing there. Sub-frames cannot take the
+///   app anywhere: the page ignores touches (`pointer-events: none`).
+/// Every other main-frame request is a link the user (or YouTube's UI)
+/// triggered and is refused; so is any non-https scheme (intent:, market:,
+/// javascript:, data:) in any frame. The package's own policy would open
+/// some links in the browser or load another video id; this replaces it.
+NavigationDecision decidePlayerNavigation(NavigationRequest request) {
+  final uri = Uri.tryParse(request.url);
+  if (uri == null) return NavigationDecision.prevent;
+  if (uri.scheme == 'about') return NavigationDecision.navigate;
+  if (uri.scheme != 'https') return NavigationDecision.prevent;
+  if (!request.isMainFrame) return NavigationDecision.navigate;
+  return _isPlayerPage(uri)
+      ? NavigationDecision.navigate
+      : NavigationDecision.prevent;
+}
+
+/// The page the package loads with `loadHtmlString(baseUrl: host)`: the
+/// embed host's root, with no path, query or fragment.
+bool _isPlayerPage(Uri uri) {
+  final host = Uri.parse(protectedPlayerParams().host);
+  return uri.host == host.host &&
+      (uri.path.isEmpty || uri.path == '/') &&
+      !uri.hasQuery &&
+      !uri.hasFragment;
+}
 
 /// Run after the page loads: no text selection, callouts, context menu, drag,
 /// copy or cut anywhere in the page, and no pointer events (defence in depth

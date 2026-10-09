@@ -46,22 +46,26 @@ void main() {
     NavigationRequest request(String url, {bool main = true}) =>
         NavigationRequest(url: url, isMainFrame: main);
 
-    test('prevents every navigation, whatever the URL', () {
+    test('prevents main-frame navigations away from the player page', () {
       for (final url in [
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=emb_rel_end',
         'https://youtu.be/dQw4w9WgXcQ',
         'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        'https://www.youtube-nocookie.com/watch?v=dQw4w9WgXcQ',
+        'https://www.youtube-nocookie.com/?v=dQw4w9WgXcQ',
+        'https://www.youtube-nocookie.com/#x',
         'https://www.youtube.com/channel/UC123?feature=emb_title',
         'https://www.youtube.com/watch?v=x&feature=emb_logo',
+        'https://www.youtube.com/',
         'https://www.facebook.com/sharer.php?u=x',
         'https://twitter.com/intent/tweet',
         'https://example.com/',
+        'http://www.youtube-nocookie.com/',
         'intent://youtube.com/#Intent;scheme=https;end',
         'market://details?id=com.google.android.youtube',
         'javascript:alert(1)',
         'data:text/html,<h1>x</h1>',
-        'about:blank',
         '',
       ]) {
         expect(
@@ -72,13 +76,51 @@ void main() {
       }
     });
 
-    test('sub-frame navigations are prevented too', () {
-      expect(
-        decidePlayerNavigation(
-          request('https://www.youtube.com/', main: false),
-        ),
-        NavigationDecision.prevent,
-      );
+    test('allows the player page itself (iOS asks for the initial load)', () {
+      for (final url in [
+        'https://www.youtube-nocookie.com',
+        'https://www.youtube-nocookie.com/',
+        'about:blank',
+      ]) {
+        expect(
+          decidePlayerNavigation(request(url)),
+          NavigationDecision.navigate,
+          reason: url,
+        );
+      }
+    });
+
+    test('allows https sub-frames (YouTube iframe on iOS)', () {
+      for (final url in [
+        'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?enablejsapi=1',
+        'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        'https://www.google.com/recaptcha/api2/anchor',
+        'about:blank',
+        'about:srcdoc',
+      ]) {
+        expect(
+          decidePlayerNavigation(request(url, main: false)),
+          NavigationDecision.navigate,
+          reason: url,
+        );
+      }
+    });
+
+    test('non-https sub-frames are prevented', () {
+      for (final url in [
+        'http://www.youtube.com/embed/x',
+        'intent://youtube.com/#Intent;scheme=https;end',
+        'market://details?id=com.google.android.youtube',
+        'javascript:alert(1)',
+        'data:text/html,<h1>x</h1>',
+        '',
+      ]) {
+        expect(
+          decidePlayerNavigation(request(url, main: false)),
+          NavigationDecision.prevent,
+          reason: url,
+        );
+      }
     });
   });
 
