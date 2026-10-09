@@ -1,0 +1,238 @@
+name: Build iOS
+
+# Lives in wael-app/frontend/.github/ and runs only in wael-app-mobile
+# (the subtree mirror), where this folder is the repository root.
+# Guide: wael-app docs/frontend/IOS-RELEASE.md (no Mac needed).
+#
+# Manual only (workflow_dispatch): macOS minutes cost 10x Linux minutes on
+# private repositories, so nothing runs on push.
+#
+# - API_BASE_URL (repo variable) is required, https only, same as Android.
+# - With the three IOS_* signing secrets: builds a signed App Store IPA
+#   (manual signing; ios/ci/configure_signing.rb edits the runner's copy of
+#   the project only) and keeps it with its symbols as a workflow artifact.
+# - With upload=true it also needs the three APPSTORE_API_* secrets and sends
+#   the IPA to App Store Connect, where it appears in TestFlight. Submitting
+#   for App Store review stays a manual step in App Store Connect.
+# - Without signing secrets: an unsigned build that only proves the app
+#   compiles for iOS; nothing is produced for distribution.
+# Fails closed: a missing secret, a profile that is not an App Store profile,
+# a profile for another bundle id, or an expired profile stops the run.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload the signed IPA to App Store Connect (TestFlight)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-ios
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      # Must match the App ID registered at developer.apple.com and the app
+      # record in App Store Connect. It cannot change after the first upload.
+      IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'com.wael.app' }}
+      # Optional: a newer Xcode installed on the image, e.g. "26.1".
+      IOS_XCODE_VERSION: ${{ vars.IOS_XCODE_VERSION }}
+      # Optional: the app's numeric Apple ID from App Store Connect (App
+      # Information > Apple ID); passed to altool to avoid its bundle-id lookup.
+      IOS_APPLE_APP_ID: ${{ vars.IOS_APPLE_APP_ID }}
+      # Build numbers must only grow; raise the offset if an upload was made
+      # outside this workflow.
+      IOS_BUILD_NUMBER_OFFSET: ${{ vars.IOS_BUILD_NUMBER_OFFSET || '0' }}
+      RUN_NUMBER: ${{ github.run_number }}
+      UPLOAD: ${{ inputs.upload }}
+      HAS_SIGNING: ${{ secrets.IOS_DIST_CERT_P12_BASE64 != '' && secrets.IOS_DIST_CERT_PASSWORD != '' && secrets.IOS_PROFILE_BASE64 != '' }}
+      HAS_ASC_KEY: ${{ secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPSTORE_API_KEY_P8_BASE64 != '' }}
+    steps:
+      - name: Check configuration
+        run: |
+          case "$API_BASE_URL" in
+            https://*) echo "API_BASE_URL=$API_BASE_URL" ;;
+            *) echo "::error::Set repository variable API_BASE_URL to the https production URL"; exit 1 ;;
+          esac
+          case "$IOS_BUILD_NUMBER_OFFSET" in
+            ''|*[!0-9]*) echo "::error::IOS_BUILD_NUMBER_OFFSET must be a whole number"; exit 1 ;;
+          esac
+          if [ "$UPLOAD" = "true" ]; then
+            [ "$HAS_SIGNING" = "true" ] || { echo "::error::upload needs IOS_DIST_CERT_P12_BASE64, IOS_DIST_CERT_PASSWORD and IOS_PROFILE_BASE64"; exit 1; }
+            [ "$HAS_ASC_KEY" = "true" ] || { echo "::error::upload needs APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID and APPSTORE_API_KEY_P8_BASE64"; exit 1; }
+          fi
+          if [ "$HAS_SIGNING" != "true" ]; then
+            echo "::warning::No iOS signing secrets: unsigned compile check only, nothing to distribute"
+          fi
+          echo "BUILD_NUMBER=$((RUN_NUMBER + IOS_BUILD_NUMBER_OFFSET))" >> "$GITHUB_ENV"
+
+      - name: Select Xcode
+        run: |
+          if [ -n "$IOS_XCODE_VERSION" ]; then
+            sudo xcode-select -s "/Applications/Xcode_${IOS_XCODE_VERSION}.app"
+          fi
+          xcodebuild -version
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter (same pin as wael-app CI)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.44.6'
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Unsigned compile check
+        if: env.HAS_SIGNING != 'true'
+        run: flutter build ios --release --no-codesign --dart-define=API_BASE_URL="$API_BASE_URL" --build-number="$BUILD_NUMBER"
+
+      - name: Install certificate and provisioning profile
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          dir="$RUNNER_TEMP/ios-signing"
+          mkdir -p "$dir"
+          keychain="$dir/signing.keychain-db"
+          kc_pass="$(openssl rand -hex 24)"
+
+          # Temporary keychain holding only the distribution identity.
+          security create-keychain -p "$kc_pass" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$kc_pass" "$keychain"
+          printf '%s' "$P12_B64" | base64 --decode > "$dir/dist.p12"
+          security import "$dir/dist.p12" -k "$keychain" -f pkcs12 -P "$P12_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productbuild
+          rm -f "$dir/dist.p12"
+          # Apple WWDR G3 intermediate, so the identity's chain is complete.
+          curl -fsSL --retry 3 https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o "$dir/wwdr.cer"
+          security import "$dir/wwdr.cer" -k "$keychain" || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$kc_pass" "$keychain" > /dev/null
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$keychain" | grep -q '"Apple Distribution' \
+            || { echo "::error::The p12 has no valid Apple Distribution identity"; exit 1; }
+
+          # Provisioning profile: must be an App Store profile for IOS_BUNDLE_ID.
+          printf '%s' "$PROFILE_B64" | base64 --decode > "$dir/profile.mobileprovision"
+          security cms -D -i "$dir/profile.mobileprovision" > "$dir/profile.plist"
+          pb() { /usr/libexec/PlistBuddy -c "Print :$1" "$dir/profile.plist"; }
+          uuid="$(pb UUID)"
+          team="$(pb TeamIdentifier:0)"
+          app_id="$(pb Entitlements:application-identifier)"
+          expires="$(plutil -extract ExpirationDate raw -o - "$dir/profile.plist")"
+          if pb ProvisionedDevices > /dev/null 2>&1 || pb ProvisionsAllDevices > /dev/null 2>&1; then
+            echo "::error::The profile is a development/ad hoc/enterprise profile; create an App Store Connect distribution profile"; exit 1
+          fi
+          [ "$(pb Entitlements:get-task-allow)" = "false" ] || { echo "::error::The profile allows debugging (get-task-allow); not an App Store profile"; exit 1; }
+          [ "$app_id" = "$team.$IOS_BUNDLE_ID" ] || { echo "::error::The profile is for $app_id, expected $team.$IOS_BUNDLE_ID"; exit 1; }
+          now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          [[ "$expires" > "$now" ]] || { echo "::error::The profile expired on $expires"; exit 1; }
+          for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"
+            cp "$dir/profile.mobileprovision" "$d/$uuid.mobileprovision"
+          done
+          echo "Profile $uuid, team $team, app $app_id, expires $expires"
+          {
+            echo "IOS_TEAM_ID=$team"
+            echo "IOS_PROFILE_UUID=$uuid"
+            echo "IOS_KEYCHAIN=$keychain"
+          } >> "$GITHUB_ENV"
+
+      - name: Configure manual signing (runner copy only)
+        if: env.HAS_SIGNING == 'true'
+        run: ruby ios/ci/configure_signing.rb ios/Runner.xcodeproj
+
+      - name: Write ExportOptions.plist
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          plist="$RUNNER_TEMP/ExportOptions.plist"
+          pb() { /usr/libexec/PlistBuddy -c "$1" "$plist" > /dev/null; }
+          pb "Add :method string app-store-connect"
+          pb "Add :destination string export"
+          pb "Add :teamID string $IOS_TEAM_ID"
+          pb "Add :signingStyle string manual"
+          plutil -insert signingCertificate -string "Apple Distribution" "$plist"
+          pb "Add :provisioningProfiles dict"
+          pb "Add :provisioningProfiles:$IOS_BUNDLE_ID string $IOS_PROFILE_UUID"
+          pb "Add :uploadSymbols bool true"
+          pb "Add :manageAppVersionAndBuildNumber bool false"
+          plutil -lint "$plist"
+          echo "EXPORT_OPTIONS=$plist" >> "$GITHUB_ENV"
+
+      - name: Build signed IPA
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          flutter build ipa --release \
+            --obfuscate --split-debug-info=build/ios/symbols \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist="$EXPORT_OPTIONS"
+          ls -l build/ios/ipa
+
+      - name: Version
+        id: v
+        run: |
+          echo "version=$(sed -n 's/^version: *//p' pubspec.yaml | cut -d+ -f1)" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to App Store Connect (TestFlight)
+        if: env.HAS_SIGNING == 'true' && env.UPLOAD == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          ASC_KEY_B64: ${{ secrets.APPSTORE_API_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "$ASC_KEY_B64" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          ipas=(build/ios/ipa/*.ipa)
+          ipa="${ipas[0]}"
+          [ -f "$ipa" ] || { echo "::error::no IPA under build/ios/ipa"; exit 1; }
+          extra=()
+          if [ -n "$IOS_APPLE_APP_ID" ]; then extra=(--apple-id "$IOS_APPLE_APP_ID"); fi
+          xcrun altool --validate-app --type ios --file "$ipa" \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" ${extra[@]+"${extra[@]}"}
+          xcrun altool --upload-app --type ios --file "$ipa" \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" ${extra[@]+"${extra[@]}"}
+          echo "::notice::Uploaded build $BUILD_NUMBER; it appears in App Store Connect > TestFlight after processing (usually 5-30 minutes)"
+
+      - name: Keep IPA and symbols
+        if: env.HAS_SIGNING == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wael-app-ios-${{ steps.v.outputs.version }}-${{ env.BUILD_NUMBER }}-${{ steps.v.outputs.short }}
+          retention-days: 30
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/symbols
+            build/ios/archive/Runner.xcarchive/dSYMs
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          if [ -n "${IOS_KEYCHAIN:-}" ]; then security delete-keychain "$IOS_KEYCHAIN" || true; fi
+          rm -rf "$RUNNER_TEMP/ios-signing" "$HOME/.appstoreconnect/private_keys"
+          if [ -n "${IOS_PROFILE_UUID:-}" ]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$IOS_PROFILE_UUID.mobileprovision" \
+              "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$IOS_PROFILE_UUID.mobileprovision"
+          fi
