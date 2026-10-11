@@ -126,7 +126,10 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   "Open" hands it to the phone's PDF app and "Share" opens the system share sheet
   (`lib/services/file_opener.dart`, a method channel in `MainActivity.kt` with the app's
   own `PdfFileProvider`: `content://` URI, read grant per intent, no storage permission, no
-  in-app viewer). No PDF app shows a message with Share. Downloaded files open and share
+  in-app viewer). No PDF app shows a message with Share. *(Added 2026-10-11, recording
+  `b0de4d4` (2026-10-09): on iOS the same channel goes to `AppDelegate.swift` — "Open"
+  shows the system Quick Look viewer (which has its own share button) and "Share" is
+  the system share sheet; added after TestFlight showed "could not open".)* Downloaded files open and share
   offline (the last server value of `features.files` is persisted on disk and used on a cold
   start without app-config; an explicit server `false` turns it off); sign-out, another account, or a fresh server answer that the subject is no
   longer owned or the file is gone deletes the copy. `path_provider` 2.1.6 (BSD-3-Clause)
