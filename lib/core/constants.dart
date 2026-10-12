@@ -25,8 +25,8 @@ class AppConstants {
   /// 1242 x 649 JPEG), the same on every subject.
   static const String imgSubjectBanner = 'assets/images/elmetr_banner.jpg';
 
-  /// The director's photo (owner-supplied, 2026-10-08), 800 x 800, head and
-  /// shoulders.
+  /// The director's photo (owner-supplied, 2026-10-08; v3 2026-10-12: a
+  /// 720 x 720 head-and-shoulders crop of the owner's studio photo).
   static const String imgDirectorPortrait =
       'assets/images/director_portrait.jpg';
 }

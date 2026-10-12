@@ -39,7 +39,7 @@ class DirectorStrip extends StatelessWidget {
               image: imageAsset.isEmpty
                   ? null
                   : DecorationImage(
-                      // The photo is 800 x 800; decode it at about 3x the box.
+                      // The photo is 720 x 720; decode it at about 3x the box.
                       image: ResizeImage(AssetImage(imageAsset), width: 144),
                       fit: BoxFit.cover,
                       // Square photo, square box: nothing is cropped. A taller

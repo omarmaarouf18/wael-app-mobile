@@ -10,18 +10,21 @@ import 'widget_layer_harness.dart';
 
 /// Director portrait v2 (owner, 2026-10-08): `director_portrait_v2.jpg`
 /// replaces the photo in place under the same asset path; the four titles
-/// are unchanged.
+/// are unchanged. Amended 2026-10-12 (owner decision): v3, a 720 x 720
+/// head-and-shoulders crop of the owner's studio photo, replaces v2 at the
+/// same path.
 void main() {
-  test('the bundled portrait is v2 (800 x 800 JPEG, same path)', () {
+  test('the bundled portrait is v3 (720 x 720 JPEG, same path)', () {
     expect(
       AppConstants.imgDirectorPortrait,
       'assets/images/director_portrait.jpg',
     );
     final bytes = File(AppConstants.imgDirectorPortrait).readAsBytesSync();
     expect(bytes.sublist(0, 3), [0xFF, 0xD8, 0xFF]);
-    // v2 as supplied in "Claude outputs/director/director_portrait_v2.jpg"
-    // is 73836 bytes (v1 was 70391).
-    expect(bytes.length, 73836);
+    // v3 (2026-10-12, crop 720 x 720 at (180, 17) of the owner's 1280 x 1920
+    // studio photo, metadata stripped) is 51506 bytes; v2 was 73836 and v1
+    // 70391.
+    expect(bytes.length, 51506);
   });
 
   for (final (name, locale, _) in kLocales) {

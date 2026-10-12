@@ -51,7 +51,7 @@ void main() {
     });
   });
 
-  test('the portrait asset is bundled: 800 x 800 JPEG, listed in pubspec', () {
+  test('the portrait asset is bundled: 720 x 720 JPEG, listed in pubspec', () {
     final file = File(AppConstants.imgDirectorPortrait);
     expect(file.existsSync(), isTrue);
     final bytes = file.readAsBytesSync();
@@ -70,7 +70,7 @@ void main() {
       }
       i += 2 + length;
     }
-    expect([width, height], [800, 800]);
+    expect([width, height], [720, 720]);
     expect(
       File('pubspec.yaml').readAsStringSync(),
       contains('- ${AppConstants.imgDirectorPortrait}'),
