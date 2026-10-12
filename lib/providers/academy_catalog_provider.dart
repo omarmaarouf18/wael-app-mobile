@@ -193,8 +193,13 @@ class AcademyCatalogProvider extends ChangeNotifier {
     return null;
   }
 
-  /// Loads the catalog once. Does nothing while loading or after success.
+  /// Loads the catalog once; a caller arriving while a load runs waits for
+  /// it (the shell mounts every tab at once, and a tab that returned early
+  /// here saw no owned subjects and never loaded its files). Does nothing
+  /// after success.
   Future<void> ensureLoaded() async {
+    final running = _inflight;
+    if (running != null) return running;
     if (_status == LoadStatus.idle) await reload();
   }
 
@@ -205,13 +210,48 @@ class AcademyCatalogProvider extends ChangeNotifier {
   /// their `owned`/`access_expires_at` entitlements) is shown with the
   /// offline banner ([isStale]) instead of an error; anything else, or no
   /// cache, is an error with retry.
-  Future<void> reload() async {
-    if (_status == LoadStatus.loading) return;
+  ///
+  /// With data already on screen the reload runs in the background: the
+  /// status stays ready (cached first, nothing blanks) and [isRefreshing]
+  /// is true until it ends (stable-release pass 2026-10-12).
+  Future<void> reload() {
+    final running = _inflight;
+    if (running != null) return running;
+    final future = _runReload();
+    _inflight = future;
+    return future.whenComplete(() {
+      if (identical(_inflight, future)) _inflight = null;
+    });
+  }
+
+  /// The reload in flight; concurrent callers share it.
+  Future<void>? _inflight;
+
+  Future<void> _runReload() async {
     final generation = _generation;
-    final hadData = _levels != null;
-    _status = LoadStatus.loading;
-    _error = null;
+    final hadData = _levels != null && _status == LoadStatus.ready;
+    if (hadData) {
+      _refreshing = true;
+    } else {
+      _status = LoadStatus.loading;
+      _error = null;
+    }
     notifyListeners();
+    try {
+      await _reload(generation, hadData);
+    } finally {
+      if (generation == _generation && _refreshing) {
+        _refreshing = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// A background [reload] is running over data already shown.
+  bool get isRefreshing => _refreshing;
+  bool _refreshing = false;
+
+  Future<void> _reload(int generation, bool hadData) async {
     try {
       final levels = await _repository.levels();
       final lists = await Future.wait(
@@ -500,6 +540,8 @@ class AcademyCatalogProvider extends ChangeNotifier {
   void reset({bool notify = true}) {
     _generation++;
     _status = LoadStatus.idle;
+    _refreshing = false;
+    _inflight = null;
     _error = null;
     _isStale = false;
     _lastUpdated = null;

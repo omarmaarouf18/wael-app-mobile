@@ -117,6 +117,14 @@ Navigate to `/debug` (or use the debug button in development builds) to access t
   catalog is offline and clears on the next success or when the app resumes. Lists show
   skeleton placeholders while loading, and subject detail, notifications and the e-book
   tab support pull-to-refresh (a no-op on the e-book tab while `features.files` is off).
+  *(Added 2026-10-12, stable-release pass: Home, Courses, the notes tab and Notifications
+  also refresh in the background when they become visible (tab selected, screen opened)
+  and when the app resumes on them, at most every 30 seconds — one shared mechanism,
+  `lib/core/refresh_when_visible.dart`. What is on screen stays while it runs (cached
+  first); the notes tab shows a thin progress bar. The notes tab also re-reads app-config
+  (a late `features.files` flip turns it on) and fetches every owned subject's file list,
+  whatever the cached file counts say, so a file the admin adds shows without a reload.
+  Concurrent catalog loads share one request. Tests: `test/refresh_freshness_test.dart`.)*
 - **Notes & books** (SPEC Phase 5 client, behind the app-config flag `features.files`;
   missing, false or never fetched means off): the notes tab ("المذكرات والكتب" / "Notes &
   books") lists the files of owned subjects grouped by subject, and subject detail offers

@@ -13,6 +13,7 @@ import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
 import '../widgets/themed_panel.dart';
+import '../widgets/themed_refresh_bar.dart';
 import '../widgets/themed_section_header.dart';
 
 /// Visual catalogue of the shared widget layer, with a language toggle to
@@ -95,6 +96,9 @@ class _ComponentLibraryScreenState extends State<ComponentLibraryScreen> {
           const SizedBox(height: AppSpacing.spaceXl),
           const ThemedSectionHeader(title: 'Loading'),
           const ThemedPanel(child: ThemedLoadingIndicator()),
+          const SizedBox(height: AppSpacing.spaceXl),
+          const ThemedSectionHeader(title: 'Background refresh bar'),
+          const ThemedRefreshBar(active: true),
           const SizedBox(height: AppSpacing.spaceXl),
           const ThemedSectionHeader(title: 'Confirm dialog'),
           SecondaryButton(

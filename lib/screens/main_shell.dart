@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
+import '../core/refresh_when_visible.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
@@ -172,7 +173,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
               onPopInvokedWithResult: (didPop, _) {
                 if (!didPop) _onTabSelected(0);
               },
-              child: IndexedStack(index: _currentIndex, children: screens),
+              // Every tab stays mounted; TabVisibility tells each one when
+              // it is on screen so it can refresh (RefreshWhenVisible).
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  for (final (i, screen) in screens.indexed)
+                    TabVisibility(visible: i == _currentIndex, child: screen),
+                ],
+              ),
             ),
           ),
         ],

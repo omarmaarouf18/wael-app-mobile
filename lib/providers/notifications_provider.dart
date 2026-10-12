@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
+import '../core/refresh_when_visible.dart';
 import '../models/notification_model.dart';
 import '../repositories/notification_repository.dart';
 
@@ -25,7 +26,7 @@ class NotificationsProvider extends ChangeNotifier {
   bool get hasError => _hasError;
 
   /// Binds the real HTTP repository after login.
-  void attachRemote(HttpNotificationRepository repository) {
+  void attachRemote(NotificationRepository repository) {
     _repository = repository;
     _remote = true;
   }
@@ -34,6 +35,7 @@ class NotificationsProvider extends ChangeNotifier {
   /// the screen shows the error state instead of anything stale.
   Future<void> loadRemote() async {
     if (!_remote) return;
+    _fetchedAt = RefreshWhenVisible.now();
     try {
       final items = await _repository.list();
       _notifications
@@ -47,6 +49,34 @@ class NotificationsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Background refresh (screen opened / app resumed, stable-release pass
+  /// 2026-10-12): a fresh answer replaces the list; a failure keeps what is
+  /// on screen. [loadRemote] stays the explicit load whose failure clears.
+  ///
+  /// Skipped when the list was fetched less than
+  /// [RefreshWhenVisible.minInterval] ago (the shell has just loaded it).
+  Future<void> refreshInBackground() async {
+    if (!_remote) return;
+    final last = _fetchedAt;
+    final now = RefreshWhenVisible.now();
+    if (last != null && now.difference(last) < RefreshWhenVisible.minInterval) {
+      return;
+    }
+    _fetchedAt = now;
+    try {
+      final items = await _repository.list();
+      _notifications
+        ..clear()
+        ..addAll(items);
+      _hasError = false;
+      notifyListeners();
+    } catch (_) {
+      // Keep the shown list; the next refresh or pull-to-refresh retries.
+    }
+  }
+
+  DateTime? _fetchedAt;
 
   void markAllAsRead() {
     for (int i = 0; i < _notifications.length; i++) {

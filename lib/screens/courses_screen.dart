@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
+import '../core/refresh_when_visible.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
@@ -35,7 +36,8 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen> {
+class _CoursesScreenState extends State<CoursesScreen>
+    with RefreshWhenVisible<CoursesScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -45,6 +47,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
       if (mounted) context.read<AcademyCatalogProvider>().ensureLoaded();
     });
   }
+
+  /// Background catalog refresh (tab visible again / app resume).
+  @override
+  Future<void> onRefreshWhenVisible() =>
+      context.read<AcademyCatalogProvider>().reload();
 
   @override
   void dispose() {

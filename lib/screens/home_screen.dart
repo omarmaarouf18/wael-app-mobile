@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
+import '../core/refresh_when_visible.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
@@ -31,7 +32,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with RefreshWhenVisible<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -39,6 +41,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) context.read<AcademyCatalogProvider>().ensureLoaded();
     });
   }
+
+  /// Background catalog refresh (tab visible again / app resume): owned
+  /// subjects stay on screen while it runs.
+  @override
+  Future<void> onRefreshWhenVisible() =>
+      context.read<AcademyCatalogProvider>().reload();
 
   void _explore() {
     final callback = widget.onExploreCourses;

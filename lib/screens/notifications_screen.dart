@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/haptics.dart';
 import '../core/notification_time.dart';
+import '../core/refresh_when_visible.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/notifications_provider.dart';
@@ -13,7 +14,7 @@ import '../widgets/themed_card.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   /// Client-side allowlist for routes pushed via server-supplied notification
@@ -55,6 +56,23 @@ class NotificationsScreen extends StatelessWidget {
   /// True when tapping a notification may open [route].
   static bool canOpenTargetRoute(String? route) =>
       isValidTargetRoute(route) && openableRoutes.contains(route);
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+/// The list lives in [NotificationsProvider] (loaded by the shell, kept live
+/// by the SSE stream). Opening the screen and resuming the app on it also
+/// refetch it in the background, so items missed while the stream was down
+/// show up (RefreshWhenVisible, stable-release pass 2026-10-12).
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with RefreshWhenVisible<NotificationsScreen> {
+  @override
+  bool get refreshOnFirstShow => true;
+
+  @override
+  Future<void> onRefreshWhenVisible() =>
+      context.read<NotificationsProvider>().refreshInBackground();
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +193,9 @@ class NotificationsScreen extends StatelessWidget {
                         Navigator.of(
                           context,
                         ).pushNamed('/course-details', arguments: subjectId);
-                      } else if (canOpenTargetRoute(item.targetRoute) &&
+                      } else if (NotificationsScreen.canOpenTargetRoute(
+                            item.targetRoute,
+                          ) &&
                           item.targetRoute != '/notifications') {
                         Navigator.of(context).pushNamed(item.targetRoute!);
                       }

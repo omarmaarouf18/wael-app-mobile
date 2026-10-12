@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/error_messages.dart';
+import '../core/refresh_when_visible.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
@@ -14,6 +15,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/file_download_tile.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
+import '../widgets/themed_refresh_bar.dart';
 import '../widgets/themed_section_header.dart';
 import '../widgets/themed_skeleton.dart';
 
@@ -28,8 +30,29 @@ import '../widgets/themed_skeleton.dart';
 ///   subject, each with Download / Open / Share ([FileDownloadTile]).
 ///   Downloaded copies are listed from the on-device index when the catalog
 ///   or a subject detail cannot be fetched, so they open offline.
-class EbookScreen extends StatelessWidget {
+///
+/// Freshness (stable-release pass 2026-10-12): the tab stays mounted in the
+/// shell's stack, so it refreshes in the background each time it becomes
+/// visible and on app resume (at most every 30 s, [RefreshWhenVisible]):
+/// app-config first (a late `features.files` flip turns the tab on), then
+/// the catalog and every owned subject's detail, forced. What is on screen
+/// stays while that runs, under a light [ThemedRefreshBar].
+class EbookScreen extends StatefulWidget {
   const EbookScreen({super.key});
+
+  @override
+  State<EbookScreen> createState() => _EbookScreenState();
+}
+
+class _EbookScreenState extends State<EbookScreen>
+    with RefreshWhenVisible<EbookScreen> {
+  @override
+  Future<void> onRefreshWhenVisible() async {
+    final appConfig = context.read<AppConfigProvider>();
+    await appConfig.load();
+    if (!mounted || !appConfig.filesEnabled) return;
+    await _loadLibrary(context, force: true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +101,23 @@ class _ComingSoon extends StatelessWidget {
   }
 }
 
+/// Loads the catalog and the detail (file list) of every owned subject.
+/// [force] refetches both (pull-to-refresh, retry, background refresh);
+/// without it a cached copy is kept. Every owned subject is fetched: the
+/// list's file counts may predate a file the admin just added.
+Future<void> _loadLibrary(BuildContext context, {required bool force}) async {
+  final catalog = context.read<AcademyCatalogProvider>();
+  if (force) {
+    await catalog.reload();
+  } else {
+    await catalog.ensureLoaded();
+  }
+  await Future.wait([
+    for (final s in catalog.ownedSubjects)
+      catalog.loadDetail(s.id, force: force),
+  ]);
+}
+
 /// One subject's section in the library.
 class _Group {
   _Group({
@@ -109,18 +149,7 @@ class _NotesLibraryState extends State<_NotesLibrary> {
 
   Future<void> _load({bool force = false}) async {
     if (!mounted) return;
-    final catalog = context.read<AcademyCatalogProvider>();
-    if (force) {
-      await catalog.reload();
-    } else {
-      await catalog.ensureLoaded();
-    }
-    if (!mounted) return;
-    await Future.wait([
-      for (final s in catalog.ownedSubjects)
-        if (s.counts.books + s.counts.notes > 0)
-          catalog.loadDetail(s.id, force: force),
-    ]);
+    await _loadLibrary(context, force: force);
   }
 
   /// Owned subjects (server order) with their files: from the fresh detail
@@ -139,7 +168,11 @@ class _NotesLibraryState extends State<_NotesLibrary> {
       final state = catalog.detailOf(s.id);
       final detail = state.detail;
       final saved = bySubject[s.id] ?? const [];
-      if (state.status == LoadStatus.ready && detail != null) {
+      // A detail being refetched keeps showing its last copy (cached first).
+      final shown =
+          state.status == LoadStatus.ready ||
+          state.status == LoadStatus.loading;
+      if (shown && detail != null) {
         if (detail.owned && detail.files.isNotEmpty) {
           groups.add(_Group(subject: detail, files: detail.files));
         }
@@ -188,6 +221,12 @@ class _NotesLibraryState extends State<_NotesLibrary> {
     final catalog = context.watch<AcademyCatalogProvider>();
     final files = context.watch<FilesProvider>();
     final groups = _groups(catalog, files);
+    final refreshing =
+        catalog.isRefreshing ||
+        catalog.ownedSubjects.any((s) {
+          final d = catalog.detailOf(s.id);
+          return d.status == LoadStatus.loading && d.detail != null;
+        });
 
     final children = <Widget>[
       ThemedSectionHeader(title: l10n.navNotesAndBooks, uppercase: false),
@@ -220,20 +259,27 @@ class _NotesLibraryState extends State<_NotesLibrary> {
 
     return AppShell(
       showHeader: false,
-      body: RefreshIndicator(
-        color: AppColors.crimson,
-        backgroundColor: AppColors.surfaceElevated,
-        onRefresh: () => _load(force: true),
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-          children: children,
-        ),
+      body: Column(
+        children: [
+          ThemedRefreshBar(active: refreshing),
+          Expanded(child: _list(children)),
+        ],
       ),
     );
   }
+
+  Widget _list(List<Widget> children) => RefreshIndicator(
+    color: AppColors.crimson,
+    backgroundColor: AppColors.surfaceElevated,
+    onRefresh: () => _load(force: true),
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+      children: children,
+    ),
+  );
 }
 
 class _SubjectFiles extends StatelessWidget {
