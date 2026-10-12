@@ -174,8 +174,9 @@ void main() {
       });
 
       testWidgets('tapping tabs switches the stack', (tester) async {
-        // Wider than a phone: the catalog Courses tab overflows a row by 22px
-        // at 390px in Arabic (courses_screen.dart:390, not part of this task).
+        // Wider than a phone for historical reasons: the Courses tab once
+        // overflowed by 22px at 390px in Arabic. A probe on 2026-10-12 found
+        // no overflow at 390px in either language; the width is left as is.
         await pump(tester, size: const Size(600, 844));
         for (final (i, label) in navLabels.indexed) {
           await tester.tap(
