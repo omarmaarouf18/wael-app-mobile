@@ -203,6 +203,7 @@ class _RequestForm extends StatelessWidget {
           obscureText: true,
           hintText: l10n.currentPassword,
           readOnly: busy,
+          autofillHints: const [AutofillHints.password],
           textInputAction: TextInputAction.next,
           onChanged: (_) => onChanged(),
         ),

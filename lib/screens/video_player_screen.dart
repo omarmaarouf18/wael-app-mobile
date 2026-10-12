@@ -638,6 +638,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         body = _playerLayout(l10n);
     }
 
+    // System back (Android, and the iOS edge swipe) leaves full screen first;
+    // a second back closes the player.
+    return PopScope<Object?>(
+      canPop: !_fullscreen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _fullscreen) _setFullscreen(false);
+      },
+      child: _shell(l10n, body),
+    );
+  }
+
+  Widget _shell(AppLocalizations l10n, Widget body) {
     return AppShell(
       showHeader: !_fullscreen,
       showBack: true,

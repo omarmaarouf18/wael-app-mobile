@@ -285,6 +285,12 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                   keyboardType: widget.isPhone
                       ? TextInputType.phone
                       : TextInputType.name,
+                  autofillHints: [
+                    widget.isPhone
+                        ? AutofillHints.telephoneNumber
+                        : AutofillHints.name,
+                  ],
+                  textInputAction: TextInputAction.next,
                   readOnly: _busy,
                   onFieldSubmitted: (_) => _save(),
                 ),
@@ -295,6 +301,8 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                 obscureText: true,
                 hintText: l10n.currentPassword,
                 readOnly: _busy,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _save(),
               ),
               if (_error != null) ...[

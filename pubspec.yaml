@@ -76,9 +76,12 @@ flutter:
   uses-material-design: true
 
   # Listed one by one: store_icon_512.png (Play Store listing only) and the
-  # unreferenced landscape image must not be bundled into the app.
+  # unreferenced landscape image must not be bundled into the app. Nor is
+  # el_metr_character_art.png (2 MB): it stays the icon source for
+  # scripts/make_app_icons.sh; the app bundles the visually equal 190 KB
+  # JPEG copy (2026-10-12).
   assets:
-    - assets/branding/el_metr_character_art.png
+    - assets/branding/el_metr_character_art.jpg
     - assets/branding/el_metr_poster.jpg
     - assets/images/home_hero.png
     - assets/images/elmetr_banner.jpg

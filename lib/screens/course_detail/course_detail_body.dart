@@ -314,7 +314,7 @@ class _PendingRequest extends StatelessWidget {
             if (openUri != null)
               PrimaryButton(
                 text: l10n.openWhatsApp,
-                height: 44,
+                height: 48,
                 leadingIcon: const Icon(
                   Icons.chat_outlined,
                   size: 16,

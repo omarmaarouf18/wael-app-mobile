@@ -10,7 +10,7 @@ class AppConstants {
 
   // Asset paths
   static const String imgCharacterArt =
-      'assets/branding/el_metr_character_art.png';
+      'assets/branding/el_metr_character_art.jpg';
   static const String imgLandscape = 'assets/branding/el_metr_landscape.jpg';
 
   /// The EL METR poster, shown on the login screen only.

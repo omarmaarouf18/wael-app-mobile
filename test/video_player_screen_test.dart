@@ -523,6 +523,30 @@ void main() {
         );
       });
 
+      testWidgets('system back in full screen exits full screen first', (
+        tester,
+      ) async {
+        final rig = _Rig();
+        await rig.pump(tester, locale);
+        await tester.tap(find.byTooltip(l10n.enterFullscreen));
+        await tester.pump();
+        expect(find.byType(AppBar), findsNothing);
+
+        // First back: leaves full screen, the player stays open.
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        expect(find.byType(AppBar), findsOneWidget);
+        expect(find.byType(VideoPlayerScreen), findsOneWidget);
+        expect(rig.popped, isFalse);
+
+        // Second back: closes the player.
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(VideoPlayerScreen), findsNothing);
+        expect(rig.popped, isTrue);
+      });
+
       testWidgets('the same video surface survives full screen (no rebuild)', (
         tester,
       ) async {

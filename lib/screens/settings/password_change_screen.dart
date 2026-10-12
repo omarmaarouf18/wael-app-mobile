@@ -82,41 +82,51 @@ class _PasswordChangeScreenState extends State<PasswordChangeScreen> {
       title: l10n.changePasswordTitle,
       body: SingleChildScrollView(
         padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ThemedTextField(
-              controller: _currentController,
-              obscureText: true,
-              hintText: l10n.currentPassword,
-              readOnly: _busy,
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: AppSpacing.spaceSm),
-            ThemedTextField(
-              controller: _newController,
-              obscureText: true,
-              hintText: l10n.newPassword,
-              readOnly: _busy,
-              textInputAction: TextInputAction.next,
-              onChanged: (_) => setState(() {}),
-            ),
-            PasswordRules(password: _newController.text),
-            const SizedBox(height: AppSpacing.spaceSm),
-            ThemedTextField(
-              controller: _confirmController,
-              obscureText: true,
-              hintText: l10n.confirmPassword,
-              readOnly: _busy,
-              onFieldSubmitted: (_) => _save(),
-            ),
-            if (_error != null) ...[
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ThemedTextField(
+                controller: _currentController,
+                obscureText: true,
+                hintText: l10n.currentPassword,
+                readOnly: _busy,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.next,
+              ),
               const SizedBox(height: AppSpacing.spaceSm),
-              ThemedErrorBanner(message: _error ?? ''),
+              ThemedTextField(
+                controller: _newController,
+                obscureText: true,
+                hintText: l10n.newPassword,
+                readOnly: _busy,
+                autofillHints: const [AutofillHints.newPassword],
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => setState(() {}),
+              ),
+              PasswordRules(password: _newController.text),
+              const SizedBox(height: AppSpacing.spaceSm),
+              ThemedTextField(
+                controller: _confirmController,
+                obscureText: true,
+                hintText: l10n.confirmPassword,
+                readOnly: _busy,
+                autofillHints: const [AutofillHints.newPassword],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _save(),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: AppSpacing.spaceSm),
+                ThemedErrorBanner(message: _error ?? ''),
+              ],
+              const SizedBox(height: AppSpacing.spaceMd),
+              PrimaryButton(
+                text: l10n.save,
+                isLoading: _busy,
+                onPressed: _save,
+              ),
             ],
-            const SizedBox(height: AppSpacing.spaceMd),
-            PrimaryButton(text: l10n.save, isLoading: _busy, onPressed: _save),
-          ],
+          ),
         ),
       ),
     );

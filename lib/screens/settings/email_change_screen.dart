@@ -98,57 +98,62 @@ class _EmailChangeScreenState extends State<EmailChangeScreen> {
       title: l10n.editEmailTitle,
       body: SingleChildScrollView(
         padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!_codeSent) ...[
-              ThemedTextField(
-                controller: _emailController,
-                label: l10n.newEmailLabel,
-                keyboardType: TextInputType.emailAddress,
-                readOnly: _busy,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: AppSpacing.spaceSm),
-              ThemedTextField(
-                controller: _passwordController,
-                obscureText: true,
-                hintText: l10n.currentPassword,
-                readOnly: _busy,
-                onFieldSubmitted: (_) => _sendCode(),
-              ),
-              const SizedBox(height: AppSpacing.spaceMd),
-              PrimaryButton(
-                text: l10n.sendCodeAction,
-                isLoading: _busy,
-                onPressed: _sendCode,
-              ),
-            ] else ...[
-              Text(
-                l10n.emailCodeSent,
-                style: AppTypography.bodyMd(isArabic: l10n.isArabic),
-              ),
-              const SizedBox(height: AppSpacing.spaceMd),
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: OtpPinInput(
-                  controller: _codeController,
-                  enabled: !_busy,
-                  onCompleted: (_) => _confirm(),
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!_codeSent) ...[
+                ThemedTextField(
+                  controller: _emailController,
+                  label: l10n.newEmailLabel,
+                  keyboardType: TextInputType.emailAddress,
+                  readOnly: _busy,
+                  autofillHints: const [AutofillHints.email],
+                  textInputAction: TextInputAction.next,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.spaceMd),
-              PrimaryButton(
-                text: l10n.confirm,
-                isLoading: _busy,
-                onPressed: _confirm,
-              ),
+                const SizedBox(height: AppSpacing.spaceSm),
+                ThemedTextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  hintText: l10n.currentPassword,
+                  readOnly: _busy,
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _sendCode(),
+                ),
+                const SizedBox(height: AppSpacing.spaceMd),
+                PrimaryButton(
+                  text: l10n.sendCodeAction,
+                  isLoading: _busy,
+                  onPressed: _sendCode,
+                ),
+              ] else ...[
+                Text(
+                  l10n.emailCodeSent,
+                  style: AppTypography.bodyMd(isArabic: l10n.isArabic),
+                ),
+                const SizedBox(height: AppSpacing.spaceMd),
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: OtpPinInput(
+                    controller: _codeController,
+                    enabled: !_busy,
+                    onCompleted: (_) => _confirm(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.spaceMd),
+                PrimaryButton(
+                  text: l10n.confirm,
+                  isLoading: _busy,
+                  onPressed: _confirm,
+                ),
+              ],
+              if (_error != null) ...[
+                const SizedBox(height: AppSpacing.spaceSm),
+                ThemedErrorBanner(message: _error ?? ''),
+              ],
             ],
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.spaceSm),
-              ThemedErrorBanner(message: _error ?? ''),
-            ],
-          ],
+          ),
         ),
       ),
     );
