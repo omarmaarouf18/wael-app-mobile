@@ -313,7 +313,7 @@ class AppLocalizations {
           'جهازين كحد أقصى في نفس الوقت.',
           'المحتوى للمذاكرة الشخصية فقط، وممنوع تسجيل الشاشة أو نسخه أو نشره.',
           'اسمك ورقم هاتفك يظهران كعلامة مائية على الفيديو.',
-          'تفعيل المواد يتم من خلال السنتر.',
+          'تفعيل المواد يتم من خلال الأكاديمية.',
           'مخالفة الشروط قد تؤدي لإيقاف الحساب.',
         ]
       : const [
@@ -321,7 +321,7 @@ class AppLocalizations {
           'At most two devices may be signed in at the same time.',
           'Content is for personal study only; recording the screen, copying it or publishing it is forbidden.',
           'Your name and phone number appear as a watermark on videos.',
-          'Subjects are activated through the center.',
+          'Subjects are activated through the academy.',
           'Breaking these terms may suspend your account.',
         ];
   List<String> get privacySummaryBullets => isArabic
@@ -371,11 +371,12 @@ class AppLocalizations {
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
   // Locked/pending wording (owner decision 2026-10-08): the subject is
-  // activated by the center/support after the student contacts support on
-  // WhatsApp.
+  // activated by the academy/support after the student contacts support on
+  // WhatsApp. (Owner decision 2026-10-12: "السنتر"/"center" became
+  // "الأكاديمية"/"academy" in the app, as in the admin console.)
   String get contactSupportToActivate => isArabic
-      ? 'المادة دي بتتفعّل من خلال السنتر. تواصل مع الدعم لتفعيلها.'
-      : 'This subject is activated by the center. Contact support to activate it.';
+      ? 'المادة دي بتتفعّل من خلال الأكاديمية. تواصل مع الدعم لتفعيلها.'
+      : 'This subject is activated by the academy. Contact support to activate it.';
   String get sendingAccessRequest =>
       isArabic ? 'جارٍ إرسال طلبك…' : 'Sending your request…';
   String get copySupportLink =>
