@@ -49,10 +49,12 @@ void main() {
     expect(calls, ['isEnabled', 'enable', 'isEnabled', 'disable', 'isEnabled']);
   });
 
+  // Amended 2026-10-12 (owner decision: recording protection covers iOS
+  // too): iOS left this list; it now uses the channel for capture detection
+  // (tests below and test/ios_capture_cover_test.dart).
   test('other platforms do nothing and never touch the channel', () async {
     handler((call) async => null);
     for (final platform in [
-      TargetPlatform.iOS,
       TargetPlatform.linux,
       TargetPlatform.macOS,
       TargetPlatform.windows,
@@ -85,5 +87,47 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
     await secure.disable();
+  });
+
+  test('the capture channel name matches AppDelegate.swift', () {
+    expect(
+      SecureScreen.captureChannelName,
+      'com.wael.app/secure_screen/capture',
+    );
+  });
+
+  test(
+    'iOS: enable proves the channel, FLAG_SECURE stays Android-only',
+    () async {
+      handler((call) async => call.method == 'isCaptured' ? false : null);
+      final secure = SecureScreen(platform: TargetPlatform.iOS);
+      expect(secure.isSupported, isFalse);
+      expect(secure.detectsCapture, isTrue);
+      await secure.enable();
+      expect(await secure.isCaptured(), isFalse);
+      await secure.disable();
+      expect(calls, ['enable', 'isCaptured']);
+    },
+  );
+
+  test('iOS: isCaptured fails closed', () async {
+    final secure = SecureScreen(platform: TargetPlatform.iOS);
+    // Missing channel.
+    await expectLater(secure.enable(), throwsA(isA<SecureScreenException>()));
+    await expectLater(
+      secure.isCaptured(),
+      throwsA(isA<SecureScreenException>()),
+    );
+    // Error and non-bool answers.
+    handler((call) async => throw PlatformException(code: 'boom'));
+    await expectLater(
+      secure.isCaptured(),
+      throwsA(isA<SecureScreenException>()),
+    );
+    handler((call) async => 'yes');
+    await expectLater(
+      secure.isCaptured(),
+      throwsA(isA<SecureScreenException>()),
+    );
   });
 }

@@ -15,6 +15,7 @@ import '../providers/playback_speed_provider.dart';
 import '../services/secure_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/player_next_cards.dart';
+import '../widgets/primary_button.dart';
 import '../widgets/protected_video_surface.dart';
 import '../widgets/themed_error_banner.dart';
 import '../widgets/themed_loading_indicator.dart';
@@ -50,7 +51,10 @@ enum PlayerExit {
   locked,
 }
 
-enum _Stage { starting, playing, failed }
+/// [captureBlocked]: iOS reported screen capture before the first play, so
+/// nothing was requested or loaded; the cover shows until it stops, then a
+/// play button (no auto-start).
+enum _Stage { starting, captureBlocked, playing, failed }
 
 enum _Failure { noIdentity, notSecure, unavailable, verify }
 
@@ -65,6 +69,14 @@ enum _Failure { noIdentity, notSecure, unavailable, verify }
 ///   [PlayerExit.locked].
 /// - A moving watermark with the student's identity stays over the video, in
 ///   full screen too. Without an identity it refuses to play.
+/// - iOS (owner decision 2026-10-12: recording protection covers iOS too):
+///   recording cannot be blocked, so it is detected. Before the first play,
+///   on every change and on every resume the capture state is checked; while
+///   the screen is recorded or mirrored the video is paused, an opaque cover
+///   with a message hides it and play is blocked. When capture stops the
+///   cover goes and the video stays paused until the student taps play. A
+///   missing or failing channel never plays (fail closed). Screenshots cannot
+///   be prevented on iOS (docs/frontend/VIDEO_PLAYER.md).
 class VideoPlayerScreen extends StatefulWidget {
   const VideoPlayerScreen({super.key, required this.args});
 
@@ -114,6 +126,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   bool _busy = false;
   Timer? _hideTimer;
 
+  /// iOS: the screen is being recorded or mirrored ([SecureScreen]).
+  bool _captured = false;
+  StreamSubscription<bool>? _captureSub;
+
   @override
   void initState() {
     super.initState();
@@ -162,6 +178,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       return _fail(_Failure.notSecure);
     }
     if (!mounted || _released) return;
+
+    // iOS: check capture before the first play, then follow every change.
+    final bool captured;
+    try {
+      captured = await _deps.secureScreen.isCaptured();
+    } on SecureScreenException {
+      return _fail(_Failure.notSecure);
+    }
+    if (!mounted || _released) return;
+    _listenCapture();
+    if (captured) {
+      setState(() {
+        _captured = true;
+        _stage = _Stage.captureBlocked;
+      });
+      return;
+    }
 
     final VideoPlayback playback;
     try {
@@ -268,6 +301,42 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     }
   }
 
+  // ---- iOS screen capture --------------------------------------------------
+
+  void _listenCapture() {
+    if (_captureSub != null) return;
+    _captureSub = _deps.secureScreen.captureChanges().listen(
+      _onCapture,
+      // A broken stream counts as captured (fail closed).
+      onError: (Object _) => _onCapture(true),
+    );
+  }
+
+  /// Applies a capture state: on, pause and cover (and stop any countdown);
+  /// off, remove the cover and leave the video paused.
+  void _onCapture(bool captured) {
+    if (!mounted || _released || captured == _captured) return;
+    if (captured) {
+      _engine?.pause();
+      _hideTimer?.cancel();
+      _cancelCountdown();
+    }
+    setState(() => _captured = captured);
+  }
+
+  /// Resume: a change while the app was in the background may never have
+  /// arrived, so ask again. A failing channel counts as captured.
+  Future<void> _recheckCapture() async {
+    if (_released || !_deps.secureScreen.detectsCapture) return;
+    bool captured;
+    try {
+      captured = await _deps.secureScreen.isCaptured();
+    } on SecureScreenException {
+      captured = true;
+    }
+    _onCapture(captured);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_released) return;
@@ -276,6 +345,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       case AppLifecycleState.hidden:
         _engine?.pause();
       case AppLifecycleState.resumed:
+        _recheckCapture();
         _revalidate();
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
@@ -314,6 +384,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     if (_released) return;
     _released = true;
     _cancelCountdown();
+    _captureSub?.cancel();
+    _captureSub = null;
     _disposeEngine();
     unawaited(_deps.secureScreen.disable());
     _applyFullscreenToSystem(false);
@@ -363,7 +435,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   /// title mask re-holds for 4 s once the new video plays (see
   /// [_surfaceSnapshot]); a 404 closes through the existing locked path.
   Future<void> _startNext() async {
-    if (_released || _loadingNext) return;
+    if (_released || _loadingNext || _captured) return;
     final next = _nextVideo();
     if (next == null) return;
     _cancelCountdown();
@@ -410,6 +482,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   void _onSnapshot(PlayerSnapshot snapshot) {
     if (!mounted || _released) return;
+    // Nothing plays under the capture cover, whatever started it.
+    if (_captured && snapshot.isPlaying) _engine?.pause();
     final startedPlaying = snapshot.isPlaying && !_snapshot.isPlaying;
     // The next video answered: the loading cover hands over to the live
     // surface (whose title mask re-holds for 4 s on this transition).
@@ -448,6 +522,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   void _playPause() {
     final engine = _engine;
     if (engine == null) return;
+    if (_captured) {
+      engine.pause();
+      return;
+    }
     if (_snapshot.isPlaying || _snapshot.phase == PlayerPhase.buffering) {
       engine.pause();
       _hideTimer?.cancel();
@@ -470,7 +548,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   Future<void> _replay() async {
     final engine = _engine;
-    if (engine == null || _loadingNext) return;
+    if (engine == null || _loadingNext || _captured) return;
     // A fresh watch restarts the end-of-video countdown on the next end.
     _cancelCountdown();
     _countdownCancelled = false;
@@ -526,6 +604,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     switch (_stage) {
       case _Stage.starting:
         body = ThemedLoadingIndicator(label: l10n.playerStarting);
+      case _Stage.captureBlocked:
+        body = AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _captured
+              ? _CaptureCover(message: l10n.playerCaptureBlocked)
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.all(
+                      AppSpacing.marginMobile,
+                    ),
+                    child: PrimaryButton(
+                      key: const ValueKey('capture_play'),
+                      text: l10n.playerCapturePlay,
+                      onPressed: _start,
+                    ),
+                  ),
+                ),
+        );
       case _Stage.failed:
         body = Center(
           child: Padding(
@@ -601,20 +697,29 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           children: [
             AspectRatio(
               aspectRatio: ratio,
-              child: ProtectedVideoSurface(
-                video: engine.buildView(),
-                snapshot: snapshot,
-                watermarkText: watermark,
-                controlsVisible: _controlsVisible || !snapshot.isPlaying,
-                isFullscreen: _fullscreen,
-                onTap: _toggleControls,
-                onPlayPause: _playPause,
-                onSeek: _seek,
-                onToggleFullscreen: () => _setFullscreen(!_fullscreen),
-                onReplay: _replay,
-                playbackRate: _speed.rate,
-                onSelectRate: _selectRate,
-                endedFooter: endedFooter,
+              // Always a Stack, so the surface keeps its element (and the
+              // WebView) when the capture cover comes and goes.
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ProtectedVideoSurface(
+                    video: engine.buildView(),
+                    snapshot: snapshot,
+                    watermarkText: watermark,
+                    controlsVisible: _controlsVisible || !snapshot.isPlaying,
+                    isFullscreen: _fullscreen,
+                    onTap: _toggleControls,
+                    onPlayPause: _playPause,
+                    onSeek: _seek,
+                    onToggleFullscreen: () => _setFullscreen(!_fullscreen),
+                    onReplay: _replay,
+                    playbackRate: _speed.rate,
+                    onSelectRate: _selectRate,
+                    endedFooter: endedFooter,
+                  ),
+                  if (_captured)
+                    _CaptureCover(message: l10n.playerCaptureBlocked),
+                ],
               ),
             ),
             if (!_fullscreen)
@@ -671,6 +776,47 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
           ],
         );
       },
+    );
+  }
+}
+
+/// iOS screen-capture cover: opaque black over the whole video (full screen
+/// too) with the localized message. It takes every touch, so the controls
+/// under it cannot start the video.
+class _CaptureCover extends StatelessWidget {
+  const _CaptureCover({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = AppLocalizations.of(context).isArabic;
+    return ColoredBox(
+      key: const ValueKey('capture_cover'),
+      color: AppColors.scrimBlack,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.all(AppSpacing.marginMobile),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.videocam_off_outlined,
+                color: AppColors.textSecondary,
+                size: 32,
+              ),
+              const SizedBox(height: AppSpacing.spaceSm),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTypography.bodyMd(
+                  isArabic: isArabic,
+                ).copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

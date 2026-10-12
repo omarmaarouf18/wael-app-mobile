@@ -66,7 +66,11 @@ YouTube logo is left visible (it cannot be tapped); a mask over the top edge hid
 YouTube's title bar while the video is not playing and for 4 seconds after every
 start, resume, replay and seek, and it is taller in full screen (owner decision
 2026-10-05). Whether that fully covers the title bar on a real phone is still the
-owner's device check. What it
+owner's device check. *(Amended 2026-10-12, owner decision: iOS is covered too —
+it cannot block recording, so the player detects screen recording and mirroring
+through a channel in `AppDelegate.swift`, pauses, covers the video with a black
+layer and a message, and blocks play until capture stops; screenshots cannot be
+prevented on iOS. Details in `docs/frontend/VIDEO_PLAYER.md`.)* What it
 hides, what it cannot, the backend contract and the manual device checks are in
 `docs/frontend/VIDEO_PLAYER.md`. Release builds declare `INTERNET` in the main
 manifest.

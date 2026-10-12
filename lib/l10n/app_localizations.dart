@@ -444,6 +444,10 @@ class AppLocalizations {
   String get playerNoIdentity => isArabic
       ? 'بيانات حسابك غير مكتملة، لذلك لا يمكن تشغيل الفيديو. تواصل مع الدعم.'
       : 'Your profile is incomplete, so the video cannot start. Contact support.';
+  String get playerCaptureBlocked => isArabic
+      ? 'لا يُسمح بتسجيل الشاشة أو عرضها أثناء تشغيل الدرس. أوقف التسجيل أو مشاركة الشاشة للمتابعة.'
+      : 'Screen recording or mirroring is not allowed while a lesson is playing. Stop it to continue.';
+  String get playerCapturePlay => isArabic ? 'تشغيل الدرس' : 'Play lesson';
   String get playerNotSecure => isArabic
       ? 'تعذر حماية الشاشة على هذا الجهاز، لذلك لا يمكن تشغيل الفيديو.'
       : 'This device cannot protect the screen, so the video cannot play.';
