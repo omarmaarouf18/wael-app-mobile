@@ -14,6 +14,10 @@ class AppConfigData {
     this.minVersion = '',
     this.latestVersion = '',
     this.updateUrl = '',
+    this.updateUrlAndroid = '',
+    this.updateUrlIos = '',
+    this.minVersionIos = '',
+    this.latestVersionIos = '',
     this.showPrices = false,
     this.center,
     this.filesEnabled = false,
@@ -25,6 +29,15 @@ class AppConfigData {
   final String minVersion;
   final String latestVersion;
   final String updateUrl;
+
+  /// Per-platform update metadata (owner decision 2026-10-12): read first,
+  /// the shared [updateUrl]/[minVersion]/[latestVersion] are the fallback.
+  /// Empty means the server did not send the field. iOS only ever opens an
+  /// `https://apps.apple.com/...` link (see [isAppStoreUrl]).
+  final String updateUrlAndroid;
+  final String updateUrlIos;
+  final String minVersionIos;
+  final String latestVersionIos;
 
   /// Owner amendment 2026-10-08 (F-UX6): subject prices render only when
   /// this is true AND the subject carries a non-null price. Missing,
@@ -50,6 +63,10 @@ class AppConfigData {
     minVersion: (json['min_version'] ?? '').toString().trim(),
     latestVersion: (json['latest_version'] ?? '').toString().trim(),
     updateUrl: _httpsUrl(json['update_url']),
+    updateUrlAndroid: _httpsUrl(json['update_url_android']),
+    updateUrlIos: _httpsUrl(json['update_url_ios']),
+    minVersionIos: (json['min_version_ios'] ?? '').toString().trim(),
+    latestVersionIos: (json['latest_version_ios'] ?? '').toString().trim(),
     showPrices: json['show_prices'] == true,
     center: CenterInfo.fromJson(json['center']),
     filesEnabled: _feature(json['features'], 'files'),
@@ -75,10 +92,24 @@ class AppConfigData {
     'min_version': minVersion,
     'latest_version': latestVersion,
     'update_url': updateUrl,
+    'update_url_android': updateUrlAndroid,
+    'update_url_ios': updateUrlIos,
+    'min_version_ios': minVersionIos,
+    'latest_version_ios': latestVersionIos,
     'show_prices': showPrices,
     'center': center?.toJson(),
     'features': {'files': filesEnabled},
   };
+}
+
+/// True only for an `https://apps.apple.com/...` App Store link: the only
+/// update link iOS ever opens (owner decision 2026-10-12; an APK or Play
+/// link on iOS is an App Store review rejection risk).
+bool isAppStoreUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  return uri != null &&
+      uri.scheme == 'https' &&
+      uri.host.toLowerCase() == 'apps.apple.com';
 }
 
 /// Tutoring-center info from `GET /academy/app-config` (owner amendment

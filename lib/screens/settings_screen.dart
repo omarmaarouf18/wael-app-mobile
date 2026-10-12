@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/external_links.dart'
-    show LaunchUrl, defaultLaunchUrl, openSupportChat;
+    show LaunchUrl, defaultLaunchUrl, openSupportChat, whatsappUrl;
 import '../core/legal_links.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
@@ -264,11 +264,24 @@ class SettingsScreen extends StatelessWidget {
                     future: appConfig.currentVersion(),
                     builder: (context, snapshot) {
                       final version = snapshot.data ?? '';
+                      // Owner decision 2026-10-12: the same per-platform
+                      // rule as the update gate. The platform's own link
+                      // (iOS: App Store links only); with none, the tile
+                      // opens the support WhatsApp chat; with neither it
+                      // is hidden.
+                      final updateUrl = appConfig.updateUrlFor();
+                      final supportUrl = appConfig.supportWhatsappUrl;
+                      final hasSupport =
+                          whatsappUrl(
+                            supportUrl: supportUrl,
+                            messageText: '',
+                          ) !=
+                          null;
                       final isUpdateAvailable =
                           version.isNotEmpty &&
                           appConfig.updateState(version) ==
                               UpdateState.available &&
-                          appConfig.config.updateUrl.isNotEmpty;
+                          (updateUrl.isNotEmpty || hasSupport);
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -276,11 +289,26 @@ class SettingsScreen extends StatelessWidget {
                             _buildNavigationTile(
                               icon: Icons.system_update_outlined,
                               title: l10n.updateAvailable,
-                              onTap: () => _openExternal(
-                                context,
-                                launch,
-                                appConfig.config.updateUrl,
-                              ),
+                              onTap: () async {
+                                if (updateUrl.isNotEmpty) {
+                                  _openExternal(context, launch, updateUrl);
+                                  return;
+                                }
+                                final ok = await openSupportChat(
+                                  supportUrl: supportUrl,
+                                  messageText: l10n.whatsappHelpText,
+                                  launch: launch,
+                                );
+                                if (!ok && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor:
+                                          AppColors.surfaceElevated,
+                                      content: Text(l10n.supportOpenFailed),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           _buildNavigationTile(
                             icon: Icons.info_outline,

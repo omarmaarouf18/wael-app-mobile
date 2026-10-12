@@ -1,4 +1,9 @@
-import 'package:flutter/foundation.dart' show ChangeNotifier, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show
+        ChangeNotifier,
+        TargetPlatform,
+        defaultTargetPlatform,
+        visibleForTesting;
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/app_config_cache.dart';
@@ -125,22 +130,54 @@ class AppConfigProvider extends ChangeNotifier {
 
   String? _version;
 
-  /// Update state for [currentVersion]: required when below min_version,
-  /// available when below latest_version, none otherwise (or when the
-  /// versions are unknown).
-  UpdateState updateState(String currentVersion) {
+  /// The update link for [platform] (default: the running platform), or ''
+  /// when there is no usable one (owner decision 2026-10-12):
+  ///
+  /// - iOS: `update_url_ios`, else the shared `update_url`, and either one
+  ///   only when it is an `https://apps.apple.com/...` link. iOS never
+  ///   opens an APK, Play or website link.
+  /// - Android and the rest: `update_url_android`, else the shared
+  ///   `update_url`; an App Store link is never offered there.
+  String updateUrlFor([TargetPlatform? platform]) {
+    final p = platform ?? defaultTargetPlatform;
+    if (p == TargetPlatform.iOS) {
+      for (final url in [_config.updateUrlIos, _config.updateUrl]) {
+        if (url.isNotEmpty && isAppStoreUrl(url)) return url;
+      }
+      return '';
+    }
+    for (final url in [_config.updateUrlAndroid, _config.updateUrl]) {
+      if (url.isNotEmpty && !isAppStoreUrl(url)) return url;
+    }
+    return '';
+  }
+
+  /// Update state for [currentVersion] on [platform] (default: the running
+  /// platform): required when below the minimum, available when below the
+  /// latest, none otherwise (or when the versions are unknown). iOS reads
+  /// `min_version_ios`/`latest_version_ios` first and falls back to the
+  /// shared `min_version`/`latest_version`; Android reads the shared ones.
+  UpdateState updateState(String currentVersion, [TargetPlatform? platform]) {
     if (currentVersion.isEmpty) return UpdateState.none;
     final cur = parseAppVersion(currentVersion);
     if (cur == null) return UpdateState.none;
 
-    if (_config.minVersion.isNotEmpty) {
-      final min = parseAppVersion(_config.minVersion);
+    final ios = (platform ?? defaultTargetPlatform) == TargetPlatform.iOS;
+    final minVersion = ios && _config.minVersionIos.isNotEmpty
+        ? _config.minVersionIos
+        : _config.minVersion;
+    final latestVersion = ios && _config.latestVersionIos.isNotEmpty
+        ? _config.latestVersionIos
+        : _config.latestVersion;
+
+    if (minVersion.isNotEmpty) {
+      final min = parseAppVersion(minVersion);
       if (min != null && cur.compareTo(min) < 0) {
         return UpdateState.required;
       }
     }
-    if (_config.latestVersion.isNotEmpty) {
-      final latest = parseAppVersion(_config.latestVersion);
+    if (latestVersion.isNotEmpty) {
+      final latest = parseAppVersion(latestVersion);
       if (latest != null && cur.compareTo(latest) < 0) {
         return UpdateState.available;
       }

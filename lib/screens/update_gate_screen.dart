@@ -13,6 +13,11 @@ import '../widgets/themed_card.dart';
 
 /// Full-screen blocking gate shown at launch when the installed version is
 /// strictly below `min_version` from public app config (SPEC F-UX2 Part B).
+///
+/// Owner decision 2026-10-12: the link is per platform
+/// ([AppConfigProvider.updateUrlFor]; iOS only ever opens an App Store
+/// link). With no usable link the gate offers the support WhatsApp chat
+/// instead of a dead end; with neither it shows the contact-support text.
 class UpdateGateScreen extends StatelessWidget {
   const UpdateGateScreen({super.key, LaunchUrl? launch})
     : launch = launch ?? defaultLaunchUrl;
@@ -25,13 +30,36 @@ class UpdateGateScreen extends StatelessWidget {
     await launch(uri, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _openSupport(
+    BuildContext context,
+    String supportUrl,
+    AppLocalizations l10n,
+  ) async {
+    final ok = await openSupportChat(
+      supportUrl: supportUrl,
+      messageText: l10n.whatsappHelpText,
+      launch: launch,
+    );
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.surfaceElevated,
+          content: Text(l10n.supportOpenFailed),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final appConfig = Provider.of<AppConfigProvider?>(context);
-    final updateUrl = appConfig?.config.updateUrl.trim() ?? '';
+    final updateUrl = appConfig?.updateUrlFor().trim() ?? '';
     final hasUpdateUrl =
         updateUrl.isNotEmpty && (Uri.tryParse(updateUrl)?.scheme == 'https');
+    final supportUrl = appConfig?.supportWhatsappUrl ?? '';
+    final hasSupport =
+        whatsappUrl(supportUrl: supportUrl, messageText: '') != null;
 
     return PopScope(
       canPop: false,
@@ -81,17 +109,20 @@ class UpdateGateScreen extends StatelessWidget {
                     ),
                     onPressed: () => _openUpdateUrl(updateUrl),
                   )
-                else
-                  ThemedCard(
-                    padding: const EdgeInsets.all(AppSpacing.spaceLg),
-                    child: Text(
-                      l10n.updateContactSupport,
-                      style: AppTypography.bodySm(
-                        isArabic: l10n.isArabic,
-                      ).copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
+                else if (hasSupport) ...[
+                  _contactSupportCard(l10n),
+                  const SizedBox(height: AppSpacing.spaceLg),
+                  PrimaryButton(
+                    text: l10n.contactWhatsApp,
+                    leadingIcon: const Icon(
+                      Icons.support_agent_outlined,
+                      color: AppColors.textPrimary,
+                      size: 20,
                     ),
+                    onPressed: () => _openSupport(context, supportUrl, l10n),
                   ),
+                ] else
+                  _contactSupportCard(l10n),
               ],
             ),
           ),
@@ -99,4 +130,15 @@ class UpdateGateScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _contactSupportCard(AppLocalizations l10n) => ThemedCard(
+    padding: const EdgeInsets.all(AppSpacing.spaceLg),
+    child: Text(
+      l10n.updateContactSupport,
+      style: AppTypography.bodySm(
+        isArabic: l10n.isArabic,
+      ).copyWith(color: AppColors.textSecondary),
+      textAlign: TextAlign.center,
+    ),
+  );
 }
