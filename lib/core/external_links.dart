@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:url_launcher/url_launcher.dart';
 
 /// Opens external links (support WhatsApp chat for help and access requests).
@@ -11,6 +12,56 @@ Future<bool> defaultLaunchUrl(
   Uri url, {
   LaunchMode mode = LaunchMode.externalApplication,
 }) => launchUrl(url, mode: mode);
+
+/// One guard for every external launch (WhatsApp, update, legal pages;
+/// 2026-10-12): a second tap on the same link while its launch is in flight,
+/// or within [cooldown] after it, is ignored, so a double tap opens the link
+/// once. Different links are independent (Terms then Privacy both open).
+class LaunchGuard {
+  LaunchGuard({this.cooldown = const Duration(seconds: 1)});
+
+  /// The app-wide instance every launch helper uses.
+  static final instance = LaunchGuard();
+
+  final Duration cooldown;
+
+  /// Time source for the cooldown. Tests replace it.
+  @visibleForTesting
+  DateTime Function() clock = DateTime.now;
+
+  final Set<String> _inFlight = {};
+  final Map<String, DateTime> _done = {};
+
+  /// Runs [launch] for [key] unless that key is in flight or cooling down;
+  /// an ignored tap answers true (the first tap is already handling it).
+  Future<bool> run(String key, Future<bool> Function() launch) async {
+    if (_inFlight.contains(key)) return true;
+    final last = _done[key];
+    if (last != null && clock().difference(last) < cooldown) return true;
+    _inFlight.add(key);
+    try {
+      return await launch();
+    } finally {
+      _inFlight.remove(key);
+      _done[key] = clock();
+    }
+  }
+
+  /// Forgets every launch (tests).
+  @visibleForTesting
+  void reset() {
+    _inFlight.clear();
+    _done.clear();
+    clock = DateTime.now;
+  }
+}
+
+/// [launch] for [uri] behind [LaunchGuard.instance], keyed by the link.
+Future<bool> guardedLaunch(
+  Uri uri,
+  LaunchUrl launch, {
+  LaunchMode mode = LaunchMode.externalApplication,
+}) => LaunchGuard.instance.run(uri.toString(), () => launch(uri, mode: mode));
 
 /// Builds the WhatsApp URL with a prefilled, URL-encoded [messageText]
 /// (`Uri` encodes the `text` parameter), or null when [supportUrl] is not
@@ -35,6 +86,11 @@ Future<bool> openSupportChat({
 }) async {
   final uri = whatsappUrl(supportUrl: supportUrl, messageText: messageText);
   if (uri == null) return false;
+  // The app attempt and its browser fallback are one guarded launch.
+  return LaunchGuard.instance.run(uri.toString(), () => _openChat(uri, launch));
+}
+
+Future<bool> _openChat(Uri uri, LaunchUrl launch) async {
   try {
     if (await launch(uri, mode: LaunchMode.externalApplication)) return true;
   } catch (_) {

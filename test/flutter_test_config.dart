@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wael_app/core/external_links.dart';
 import 'package:wael_app/core/notification_time.dart';
 
 /// Global test bootstrap.
@@ -28,5 +29,8 @@ Future<void> testExecutable(Future<void> Function() testMain) async {
           );
         },
       );
+  // Every test starts with no recent external launch (LaunchGuard keeps a
+  // 1 s per-link cooldown across the app).
+  setUp(LaunchGuard.instance.reset);
   await testMain();
 }

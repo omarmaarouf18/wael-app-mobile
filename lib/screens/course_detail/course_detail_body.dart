@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import '../../core/constants.dart';
 import '../../core/error_messages.dart';
 import '../../core/external_links.dart';
@@ -323,10 +322,7 @@ class _PendingRequest extends StatelessWidget {
                 onPressed: () async {
                   bool opened = false;
                   try {
-                    opened = await launchUrl(
-                      openUri,
-                      mode: LaunchMode.externalApplication,
-                    );
+                    opened = await guardedLaunch(openUri, launchUrl);
                   } catch (_) {
                     opened = false;
                   }

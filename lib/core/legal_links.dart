@@ -1,5 +1,3 @@
-import 'package:url_launcher/url_launcher.dart' show LaunchMode;
-
 import 'external_links.dart';
 
 /// Legal page URLs with always-working fallbacks (owner decision 2026-10-08).
@@ -58,5 +56,5 @@ Future<bool> openLegalPage(
 }) async {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return false;
-  return launch(uri, mode: LaunchMode.externalApplication);
+  return guardedLaunch(uri, launch);
 }

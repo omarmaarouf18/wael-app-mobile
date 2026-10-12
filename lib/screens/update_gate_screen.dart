@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../core/external_links.dart';
 import '../core/theme.dart';
@@ -27,7 +26,7 @@ class UpdateGateScreen extends StatelessWidget {
   Future<void> _openUpdateUrl(String url) async {
     final uri = Uri.tryParse(url.trim());
     if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launch(uri, mode: LaunchMode.externalApplication);
+    await guardedLaunch(uri, launch);
   }
 
   Future<void> _openSupport(
