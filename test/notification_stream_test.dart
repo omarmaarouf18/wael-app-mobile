@@ -48,6 +48,39 @@ void main() {
       await stream.stop();
     });
 
+    test(
+      'a dropped stream reconnects after the backoff and delivers again',
+      () async {
+        var sendCalls = 0;
+        final mock = MockClient.streaming((req, bodyStream) async {
+          sendCalls++;
+          // Each connection sends one frame and then ends (server restart,
+          // token expiry close, network drop).
+          return http.StreamedResponse(
+            Stream.fromIterable([
+              'data: {"id":"$sendCalls","title":"Item $sendCalls","body":""}\n\n'
+                  .codeUnits,
+            ]),
+            200,
+          );
+        });
+        final api = ApiClient(baseUrl: 'https://test', client: mock);
+        final received = <NotificationModel>[];
+        final stream = NotificationStream(api, tokenReader: () async => 't');
+
+        await stream.connect(onItem: received.add);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(sendCalls, 1);
+        expect(stream.isStopped, isFalse);
+
+        // backoffDelay(0) is one second.
+        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        expect(sendCalls, 2);
+        expect(received.map((n) => n.title), ['Item 1', 'Item 2']);
+        await stream.stop();
+      },
+    );
+
     test('403 stops permanently with no retry loop', () async {
       int sendCalls = 0;
       final mock = MockClient.streaming((req, bodyStream) async {
