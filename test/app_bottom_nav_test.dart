@@ -34,4 +34,38 @@ void main() {
     final iconCentre = tester.getRect(find.byIcon(Icons.edit_note)).center.dx;
     expect((labelCentre - iconCentre).abs(), lessThan(1.0));
   });
+
+  testWidgets('a bottom inset adds height, never squeezes the items', (
+    tester,
+  ) async {
+    // iPhone Pro Max portrait: 440 x 956 pt, 34 pt bottom inset.
+    tester.view.physicalSize = const Size(440, 956);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: AppBottomNav(
+            currentIndex: 0,
+            onTap: (_) {},
+            items: const [
+              AppNavItem(icon: Icons.home, label: 'Home'),
+              AppNavItem(icon: Icons.school_outlined, label: 'Courses'),
+              AppNavItem(icon: Icons.edit_note, label: 'Notes & books'),
+              AppNavItem(icon: Icons.tune, label: 'Settings'),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final bar = tester.getRect(find.byType(AppBottomNav));
+    expect(bar.height, 68 + 34);
+    // The label sits fully above the inset.
+    expect(
+      tester.getRect(find.text('HOME')).bottom,
+      lessThanOrEqualTo(956 - 34),
+    );
+  });
 }

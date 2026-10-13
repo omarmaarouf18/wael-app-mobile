@@ -28,8 +28,12 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The bar's own height plus the home-indicator inset: SafeArea below
+    // takes that inset back out, so a fixed height squeezed the items on
+    // Face ID iPhones (34 pt inset) and clipped the labels.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
-      height: AppSpacing.navBarHeight,
+      height: AppSpacing.navBarHeight + bottomInset,
       decoration: const BoxDecoration(
         color: AppColors.navBarGlass,
         border: Border(top: BorderSide(color: AppColors.glassHairline)),
