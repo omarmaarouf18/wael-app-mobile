@@ -187,11 +187,16 @@ final class CaptureStreamHandler: NSObject, FlutterStreamHandler {
     ) { [weak self] _ in
       self?.emit()
     }
+    // Flutter calls onListen/onCancel on the main thread, and the iOS 17
+    // trait-registration APIs are @MainActor (an error, not a warning, with
+    // the Xcode 26 SDK), so these calls assert main-actor isolation.
     if #available(iOS 17.0, *), let scene = SecureScreenCapture.activeScene() {
-      observedScene = scene
-      traitRegistration = scene.registerForTraitChanges([UITraitSceneCaptureState.self]) {
-        [weak self] (_: UIWindowScene, _: UITraitCollection) in
-        self?.emit()
+      MainActor.assumeIsolated {
+        observedScene = scene
+        traitRegistration = scene.registerForTraitChanges([UITraitSceneCaptureState.self]) {
+          [weak self] (_: UIWindowScene, _: UITraitCollection) in
+          self?.emit()
+        }
       }
     }
     emit()
@@ -206,7 +211,9 @@ final class CaptureStreamHandler: NSObject, FlutterStreamHandler {
     if #available(iOS 17.0, *),
       let registration = traitRegistration as? UITraitChangeRegistration
     {
-      observedScene?.unregisterForTraitChanges(registration)
+      MainActor.assumeIsolated {
+        observedScene?.unregisterForTraitChanges(registration)
+      }
     }
     traitRegistration = nil
     observedScene = nil
