@@ -1,0 +1,94 @@
+name: Store screenshots (iOS)
+
+# Lives in wael-app/frontend/.github/ and runs only in wael-app-mobile
+# (the subtree mirror), where this folder is the repository root.
+#
+# Manual only: macOS minutes cost 10x Linux minutes on private repositories.
+# Takes App Store screenshots of the real app on the newest 6.9-inch iPhone
+# Simulator (1320x2868), signed in to production with the store demo account,
+# in Arabic and English. Tour: frontend/tool/screenshots/main.dart; capture:
+# frontend/tool/screenshots/capture_ios.sh. Nothing is signed or uploaded to
+# Apple: the PNGs come back as a workflow artifact for App Store Connect.
+#
+# Needs the repo variable API_BASE_URL (same as Build iOS) and two secrets
+# for a dedicated demo account that owns at least one subject:
+# SCREENSHOT_EMAIL and SCREENSHOT_PASSWORD. The tour signs out at the end.
+on:
+  workflow_dispatch:
+    inputs:
+      langs:
+        description: Languages, space-separated (ar, en)
+        type: string
+        default: ar en
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screenshots-ios
+  cancel-in-progress: false
+
+jobs:
+  screenshots:
+    name: Capture screenshots
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'com.wael.app' }}
+      IOS_XCODE_VERSION: ${{ vars.IOS_XCODE_VERSION }}
+      SHOT_LANGS: ${{ inputs.langs }}
+      HAS_ACCOUNT: ${{ secrets.SCREENSHOT_EMAIL != '' && secrets.SCREENSHOT_PASSWORD != '' }}
+    steps:
+      - name: Check configuration
+        run: |
+          case "$API_BASE_URL" in
+            https://*) echo "API_BASE_URL=$API_BASE_URL" ;;
+            *) echo "::error::Set repository variable API_BASE_URL to the https production URL"; exit 1 ;;
+          esac
+          [ "$HAS_ACCOUNT" = "true" ] || { echo "::error::Set the SCREENSHOT_EMAIL and SCREENSHOT_PASSWORD secrets (store demo account)"; exit 1; }
+
+      - name: Select Xcode
+        run: |
+          if [ -n "$IOS_XCODE_VERSION" ]; then
+            sudo xcode-select -s "/Applications/Xcode_${IOS_XCODE_VERSION}.app"
+          fi
+          xcodebuild -version
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter (same pin as wael-app CI)
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.44.6'
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Capture
+        env:
+          SHOT_EMAIL: ${{ secrets.SCREENSHOT_EMAIL }}
+          SHOT_PASSWORD: ${{ secrets.SCREENSHOT_PASSWORD }}
+          SHOT_LOG_DIR: ${{ runner.temp }}/shot-logs
+        run: bash tool/screenshots/capture_ios.sh "$RUNNER_TEMP/screenshots"
+
+      - name: Keep screenshots
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ios-screenshots-6.9-${{ github.run_number }}
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Keep logs (failure only)
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ios-screenshots-logs-${{ github.run_number }}
+          path: ${{ runner.temp }}/shot-logs
+          if-no-files-found: ignore
+          retention-days: 7
