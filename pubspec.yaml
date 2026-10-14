@@ -77,9 +77,10 @@ flutter:
 
   # Listed one by one: store_icon_512.png (Play Store listing only) and the
   # unreferenced landscape image must not be bundled into the app. Nor is
-  # el_metr_character_art.png (2 MB): it stays the icon source for
-  # scripts/make_app_icons.sh; the app bundles the visually equal 190 KB
-  # JPEG copy (2026-10-12).
+  # el_metr_character_art.png (2 MB); the app bundles the visually equal
+  # 190 KB JPEG copy (2026-10-12). The app icon sources (app_icon_1024.png,
+  # app_icon_adaptive_foreground.png, for scripts/make_app_icons.sh) are not
+  # bundled either (2026-10-14).
   assets:
     - assets/branding/el_metr_character_art.jpg
     - assets/branding/el_metr_poster.jpg
