@@ -7,6 +7,10 @@
   account fields the student enters (name, email, phone), the account id and
   the per-install device id used for the two-device session cap; all linked
   to the student, used only for app functionality, never for tracking.
+  Added 2026-10-26 (store compliance review 2026-10-14): product interaction
+  (the server's video_plays log, one row per video play) and purchase
+  history (access requests, entitlements and payment_records of subjects the
+  academy activated), both listed in the privacy policy.
   The app's own code calls no required-reason API (no UserDefaults, file
   timestamp, system boot time, disk space or active keyboard APIs).
   The owner must keep the App Store Connect privacy answers consistent with
@@ -71,6 +75,30 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
