@@ -15,7 +15,7 @@ import 'password_change_screen.dart';
 
 /// "My account" settings section (F-UX2 Part B): the name and phone rows.
 /// Each opens a sheet with the new value plus the current password; the
-/// server allows each field once every 30 days.
+/// server allows each field once every 30 days, except adding a first phone.
 class ProfileSection extends StatelessWidget {
   const ProfileSection({super.key});
 
@@ -45,18 +45,34 @@ class ProfileSection extends StatelessWidget {
                   isPhone: false,
                 ),
               ),
-              _ProfileRow(
-                icon: Icons.phone_outlined,
-                title: l10n.mobileNumber,
-                value: user.phone,
-                hint: l10n.changeOnceEvery30Days,
-                onTap: () => showProfileEditSheet(
-                  context: context,
-                  title: l10n.editPhoneTitle,
-                  initialValue: user.phone,
-                  isPhone: true,
+              // The phone is optional (owner amendment 2026-11-03): without
+              // one the row offers to add it, which the server allows at any
+              // time; changing an existing phone keeps the 30-day limit.
+              if (user.phone.trim().isEmpty)
+                _ProfileRow(
+                  icon: Icons.add_call,
+                  title: l10n.addPhoneNumber,
+                  value: '',
+                  onTap: () => showProfileEditSheet(
+                    context: context,
+                    title: l10n.addPhoneNumber,
+                    initialValue: '',
+                    isPhone: true,
+                  ),
+                )
+              else
+                _ProfileRow(
+                  icon: Icons.phone_outlined,
+                  title: l10n.mobileNumber,
+                  value: user.phone,
+                  hint: l10n.changeOnceEvery30Days,
+                  onTap: () => showProfileEditSheet(
+                    context: context,
+                    title: l10n.editPhoneTitle,
+                    initialValue: user.phone,
+                    isPhone: true,
+                  ),
                 ),
-              ),
               _ProfileRow(
                 icon: Icons.mail_outline,
                 title: l10n.email,

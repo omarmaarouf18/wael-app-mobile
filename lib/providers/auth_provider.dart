@@ -244,16 +244,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Identity text for the moving video watermark: full name and phone when
-  /// known, otherwise the email, otherwise null (the player then refuses to
-  /// start, because a watermark must always identify the student).
+  /// the student has a phone, otherwise full name and email (the phone is
+  /// optional since the 2026-11-03 amendment); null when nothing identifies
+  /// the student (the player then refuses to start, because a watermark must
+  /// always identify the student).
   String? get watermarkText {
+    final phone = _currentUser.phone.trim();
+    final contact = phone.isNotEmpty
+        ? phone
+        : (_account?.email ?? _currentUser.email).trim();
     final parts = [
       _currentUser.fullName.trim(),
-      _currentUser.phone.trim(),
+      contact,
     ].where((s) => s.isNotEmpty).toList();
-    if (parts.isNotEmpty) return parts.join(' · ');
-    final email = (_account?.email ?? _currentUser.email).trim();
-    return email.isEmpty ? null : email;
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   @visibleForTesting

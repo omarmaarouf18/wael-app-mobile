@@ -60,7 +60,12 @@ void main() {
         expect(find.text('EL METR'), findsOneWidget);
         expect(find.text('ACADEMY'), findsOneWidget);
         expect(find.byType(TextFormField), findsNWidgets(5));
-        expect(find.text(l10n.phoneNumber), findsOneWidget);
+        // Login is email only, and the phone is optional (owner amendment
+        // 2026-11-03, App Store 5.1.1(v)).
+        expect(find.text(l10n.email), findsOneWidget);
+        expect(find.text(l10n.emailOrPhone), findsNothing);
+        expect(find.text(l10n.phoneOptional), findsOneWidget);
+        expect(find.text(l10n.phoneOptionalHelper), findsOneWidget);
         expect(find.text(l10n.termsLinkLabel), findsOneWidget);
         expect(find.text(l10n.privacyLinkLabel), findsOneWidget);
         expect(find.byType(ThemedErrorBanner), findsNothing);
@@ -141,10 +146,42 @@ void main() {
         // server errors only.
         expect(find.byType(ThemedErrorBanner), findsNothing);
         expect(repo.signupCalls, 0);
-        expect(find.text(ErrorMessages.emptyField(isArabic)), findsNWidgets(5));
+        // Four required fields; the optional phone has no error.
+        expect(find.text(ErrorMessages.emptyField(isArabic)), findsNWidgets(4));
         await tester.pump(const Duration(minutes: 1));
         expect(find.byType(ThemedErrorBanner), findsNothing);
         expect(find.byType(SnackBar), findsNothing);
+      });
+
+      testWidgets('an empty phone signs up without one', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await fill(tester);
+        await tester.enterText(find.byType(TextFormField).at(2), '');
+        await agreeToTerms(tester);
+        await submit(tester);
+        expect(find.text(ErrorMessages.invalidPhone(isArabic)), findsNothing);
+        expect(repo.signupCalls, 1);
+        expect(repo.lastSignupPhone, '');
+        expect(find.text('route:/otp'), findsOneWidget);
+      });
+
+      testWidgets('a typed phone is still validated', (tester) async {
+        final repo = FakeAuthRepository();
+        await pump(tester, repo: repo);
+        await fill(tester);
+        await tester.enterText(find.byType(TextFormField).at(2), '12ab');
+        await agreeToTerms(tester);
+        await submit(tester);
+        expect(find.text(ErrorMessages.invalidPhone(isArabic)), findsOneWidget);
+        expect(repo.signupCalls, 0);
+        await tester.enterText(
+          find.byType(TextFormField).at(2),
+          '+20 100 000 0000',
+        );
+        await submit(tester);
+        expect(repo.signupCalls, 1);
+        expect(repo.lastSignupPhone, '+20 100 000 0000');
       });
 
       testWidgets('field errors appear on blur', (tester) async {

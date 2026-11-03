@@ -25,6 +25,10 @@ class ErrorMessages {
       ? 'يرجى إدخال بريد إلكتروني صالح.'
       : 'Please enter a valid email address.';
 
+  static String invalidPhone(bool isArabic) => isArabic
+      ? 'يرجى إدخال رقم هاتف صالح.'
+      : 'Please enter a valid phone number.';
+
   static String passwordTooLong(bool isArabic) =>
       isArabic ? 'كلمة السر طويلة جدًا' : 'Password is too long.';
 

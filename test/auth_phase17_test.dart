@@ -193,6 +193,39 @@ void main() {
     );
   });
 
+  test(
+    'HttpAuthRepository leaves an empty phone out of the signup request',
+    () async {
+      // The phone is optional (owner amendment 2026-11-03).
+      final bodies = <Map<String, dynamic>>[];
+      final mockClient = MockClient((request) async {
+        bodies.add(jsonDecode(request.body) as Map<String, dynamic>);
+        return http.Response(
+          jsonEncode({'id': 'u1', 'email': 'user@example.com', 'phone': null}),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final httpRepo = HttpAuthRepository(
+        ApiClient(baseUrl: 'http://localhost', client: mockClient),
+      );
+      await httpRepo.signup(
+        fullName: 'No Phone',
+        phone: '',
+        email: 'user@example.com',
+        password: 'password123',
+      );
+      await httpRepo.signup(
+        fullName: 'With Phone',
+        phone: '+201000000000',
+        email: 'user@example.com',
+        password: 'password123',
+      );
+      expect(bodies[0].containsKey('phone'), isFalse);
+      expect(bodies[1]['phone'], '+201000000000');
+    },
+  );
+
   group('Phase 1.7: 401 session_replaced handling and messages', () {
     const ownerArabicMsg = 'عفوًا، لقد تجاوزت الحد المسموح لاستخدام هذا الحساب';
     const ownerEnglishMsg =

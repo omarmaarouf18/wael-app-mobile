@@ -112,7 +112,8 @@ class HttpAuthRepository implements AuthRepository {
       '$_prefix/signup',
       body: {
         'full_name': fullName,
-        'phone': phone,
+        // The phone is optional: an empty one is left out of the request.
+        if (phone.trim().isNotEmpty) 'phone': phone,
         'email': email,
         'password': password,
       },

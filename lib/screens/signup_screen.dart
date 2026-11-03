@@ -156,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Email
                     ThemedTextField(
-                      label: l10n.emailOrPhone,
+                      label: l10n.email,
                       hintText: 'name@example.com',
                       controller: _emailController,
                       focusNode: _emailFocus,
@@ -176,21 +176,30 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Phone Number
                     ThemedTextField(
-                      label: l10n.phoneNumber,
+                      label: l10n.phoneOptional,
                       hintText: '+20 100 000 0000',
                       controller: _phoneController,
                       focusNode: _phoneFocus,
                       keyboardType: TextInputType.phone,
                       autofillHints: const [AutofillHints.telephoneNumber],
                       textInputAction: TextInputAction.next,
-                      validator: (v) =>
-                          FieldValidators.required(v, isArabic: l10n.isArabic),
+                      validator: (v) => FieldValidators.optionalPhone(
+                        v,
+                        isArabic: l10n.isArabic,
+                      ),
                       onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                       prefixIcon: const Icon(
                         Icons.phone_outlined,
                         size: 18,
                         color: AppColors.textTertiary,
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.spaceXs),
+                    Text(
+                      l10n.phoneOptionalHelper,
+                      style: AppTypography.caption(
+                        isArabic: l10n.isArabic,
+                      ).copyWith(color: AppColors.textTertiary),
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
 

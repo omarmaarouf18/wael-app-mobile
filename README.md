@@ -60,7 +60,7 @@ Linux desktop (`-d linux`) is the lowest-friction target on this machine:
 
 ### Video player (Android)
 Lesson videos play in a protected embedded player (`youtube_player_iframe`): Android
-`FLAG_SECURE` (no screenshots or recording), a moving name-and-phone watermark, no
+`FLAG_SECURE` (no screenshots or recording), a moving name-and-phone watermark (name and email when the student has no phone; the phone is optional since 2026-11-03), no
 YouTube links or controls, and a server check on open and on every resume. The
 YouTube logo is left visible (it cannot be tapped); a mask over the top edge hides
 YouTube's title bar while the video is not playing and for 4 seconds after every

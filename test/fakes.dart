@@ -23,6 +23,7 @@ class FakeAuthRepository implements AuthRepository {
   String mePhone = '';
   int signupCalls = 0;
   String? lastSignupEmail;
+  String? lastSignupPhone;
   int loginCalls = 0;
   String? lastLoginEmail;
   String? lastLoginDeviceId;
@@ -116,6 +117,7 @@ class FakeAuthRepository implements AuthRepository {
   }) async {
     signupCalls++;
     lastSignupEmail = email;
+    lastSignupPhone = phone;
     if (mode == 'signup-conflict') {
       throw ApiException(statusCode: 409, message: 'email already registered');
     }

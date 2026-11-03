@@ -20,11 +20,54 @@ void main() {
       testWidgets('name and phone rows show the account and the 30-day note', (
         tester,
       ) async {
-        await pumpScreen(tester, locale, const SettingsScreen(), size: _tall);
+        await pumpScreen(
+          tester,
+          locale,
+          const SettingsScreen(),
+          auth: await signedInAuth(),
+          size: _tall,
+        );
         expect(find.text(upper(l10n.myAccount)), findsOneWidget);
         expect(find.text(l10n.nameLabel), findsOneWidget);
         expect(find.text(l10n.mobileNumber), findsOneWidget);
+        expect(find.text(l10n.addPhoneNumber), findsNothing);
         expect(find.text(l10n.changeOnceEvery30Days), findsNWidgets(2));
+      });
+
+      testWidgets('without a phone the row offers to add one', (tester) async {
+        // The phone is optional (owner amendment 2026-11-03): no 30-day note,
+        // and adding saves the typed phone with the password.
+        final auth = await signedInAuth(phone: '');
+        final repo = FakeAccountRepository();
+        await pumpScreen(
+          tester,
+          locale,
+          const SettingsScreen(),
+          auth: auth,
+          accounts: AccountProvider(
+            auth: auth,
+            repository: repo,
+            localeReader: () => locale.languageCode,
+          ),
+          size: _tall,
+        );
+        expect(find.text(l10n.mobileNumber), findsNothing);
+        expect(find.text(l10n.addPhoneNumber), findsOneWidget);
+        expect(find.text(l10n.changeOnceEvery30Days), findsOneWidget);
+        await tester.tap(find.text(l10n.addPhoneNumber));
+        await tester.pumpAndSettle();
+        // The sheet carries the same title.
+        expect(find.text(l10n.addPhoneNumber), findsNWidgets(2));
+        final fields = find.byType(TextFormField);
+        await tester.enterText(fields.at(0), '+201099999999');
+        await tester.enterText(fields.at(1), 'Password123!');
+        await tester.tap(find.text(l10n.save));
+        await tester.pump();
+        expect(repo.profileCalls, 1);
+        expect(repo.lastPhone, '+201099999999');
+        expect(repo.lastFullName, isNull);
+        expect(find.text(l10n.profileUpdated), findsOneWidget);
+        await tester.pumpAndSettle();
       });
 
       testWidgets('editing the name saves with the password', (tester) async {
@@ -64,12 +107,14 @@ void main() {
             statusCode: 401,
             message: 'invalid credentials',
           );
+        final auth = await signedInAuth();
         await pumpScreen(
           tester,
           locale,
           const SettingsScreen(),
+          auth: auth,
           accounts: AccountProvider(
-            auth: await signedInAuth(),
+            auth: auth,
             repository: repo,
             localeReader: () => locale.languageCode,
           ),

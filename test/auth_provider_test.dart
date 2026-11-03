@@ -508,13 +508,26 @@ void main() {
       expect(auth.currentUser.fullName, 'Jane Doe');
     });
 
+    test('without a phone the watermark is the name and the email', () async {
+      // The phone is optional (owner amendment 2026-11-03).
+      final repo = FakeAuthRepository()..meFullName = 'Jane Doe';
+      final auth = providerWith(repo, MemoryTokenStore());
+      await auth.login('u@e.com', 'password123');
+      expect(auth.watermarkText, 'Jane Doe · u@e.com');
+    });
+
     test(
-      'only a name, or only a phone, still identifies the student',
+      'a student who signed up without a phone gets name and email',
       () async {
-        final repo = FakeAuthRepository()..meFullName = 'Jane Doe';
-        final auth = providerWith(repo, MemoryTokenStore());
-        await auth.login('u@e.com', 'password123');
-        expect(auth.watermarkText, 'Jane Doe');
+        final auth = providerWith(FakeAuthRepository(), MemoryTokenStore());
+        await auth.signup(
+          fullName: 'Jane Doe',
+          phone: '',
+          email: 'u@e.com',
+          password: 'password123',
+        );
+        await auth.verifyOtp(email: 'u@e.com', code: '123456');
+        expect(auth.watermarkText, 'Jane Doe · u@e.com');
       },
     );
 

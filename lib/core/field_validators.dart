@@ -37,6 +37,22 @@ class FieldValidators {
     return null;
   }
 
+  /// Optional phone (owner amendment 2026-11-03, App Store 5.1.1(v)): empty
+  /// passes; a typed number must look like a phone (an optional leading +,
+  /// then 8 to 15 digits, spaces and dashes allowed). The server still
+  /// normalizes and validates it.
+  static String? optionalPhone(String? value, {required bool isArabic}) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return null;
+    final body = v.startsWith('+') ? v.substring(1) : v;
+    if (!RegExp(r'^[0-9 \-]+$').hasMatch(body)) {
+      return ErrorMessages.invalidPhone(isArabic);
+    }
+    final digits = body.replaceAll(RegExp(r'[ \-]'), '').length;
+    if (digits < 8 || digits > 15) return ErrorMessages.invalidPhone(isArabic);
+    return null;
+  }
+
   /// Login password: required only. The server decides validity; the client
   /// must not block short input with a length rule here.
   static String? loginPassword(String? value, {required bool isArabic}) {

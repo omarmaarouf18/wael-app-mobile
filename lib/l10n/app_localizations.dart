@@ -98,6 +98,13 @@ class AppLocalizations {
   String get signIn => isArabic ? 'تسجيل الدخول' : 'Sign In';
   String get signUp => isArabic ? 'إنشاء حساب جديد' : 'Create Account';
   String get phoneNumber => isArabic ? 'رقم الهاتف المحمول' : 'Phone Number';
+  String get phoneOptional =>
+      isArabic ? 'رقم الهاتف (اختياري)' : 'Phone number (optional)';
+  String get phoneOptionalHelper => isArabic
+      ? 'عشان الأكاديمية تقدر تتواصل معاك.'
+      : 'So the academy can contact you.';
+  String get addPhoneNumber =>
+      isArabic ? 'إضافة رقم الهاتف' : 'Add phone number';
   String get email => isArabic ? 'البريد الإلكتروني' : 'Email';
   String get emailOrPhone =>
       isArabic ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email or Phone Number';
