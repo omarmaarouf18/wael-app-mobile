@@ -16,7 +16,7 @@ import 'widget_layer_harness.dart';
 // none), and iOS never opens a link that is not on apps.apple.com.
 
 const _play = 'https://play.google.com/store/apps/details?id=app.x';
-const _apk = 'https://elmetracademy.app/download/app.apk';
+const _apk = 'https://example.com/download/app.apk';
 const _appStore = 'https://apps.apple.com/app/el-metr-academy/id1234567890';
 const _support = 'https://wa.me/201000000000';
 
@@ -191,7 +191,7 @@ void main() {
     test(
       'iOS never returns a non-App-Store link, whatever the server sends',
       () {
-        for (final url in [_apk, _play, 'https://elmetracademy.app/']) {
+        for (final url in [_apk, _play, 'https://example.com/']) {
           final p = _provider(
             AppConfigData(
               updateUrl: url,

@@ -138,7 +138,7 @@ void main() {
           )..setForTesting(
             const AppConfigData(
               minVersion: '2.0.0',
-              updateUrl: 'https://elmetracademy.app/app.apk',
+              updateUrl: 'https://example.com/app.apk',
             ),
           ),
     );

@@ -11,7 +11,7 @@ import 'widget_layer_harness.dart';
 
 AppConfigProvider _configWith({
   String minVersion = '2.0.0',
-  String updateUrl = 'https://elmetracademy.app/download',
+  String updateUrl = 'https://example.com/download',
   String currentVersion = '1.0.0',
 }) => AppConfigProvider(
   cache: MemoryAppConfigCache(),
@@ -47,7 +47,7 @@ void main() {
           await tester.tap(find.text(l10n.updateNow));
           await tester.pump();
           expect(launched.map((u) => u.toString()), [
-            'https://elmetracademy.app/download',
+            'https://example.com/download',
           ]);
         },
       );

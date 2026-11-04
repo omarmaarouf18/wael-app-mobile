@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,13 @@ import 'package:wael_app/l10n/app_localizations.dart';
 ///
 /// The backend Go notification store-safety test is the counterpart for the
 /// server (notifications still never mention price); it is untouched.
+///
+/// Website guard (owner decision 2026-11-04, ADR-0014, SPEC D3 amendment):
+/// the app never contains the sales website's address or any link or
+/// wording that leads to buying on it (Apple 3.1.3(a) reader app, Google
+/// Play payments policy). The website's domain is still an open owner
+/// decision, so every candidate is refused: the apex domain, any subdomain
+/// other than the app's own [_appSubdomains], and Vercel hosts.
 
 // Arabic payment-action words: plain substring match (Arabic has no case,
 // and \b word boundaries do not cross Arabic letters).
@@ -92,6 +100,63 @@ List<String> priceWordsIn(String literal) {
 
 bool hasPriceWord(String text) => priceWordsIn(text).isNotEmpty;
 
+// The patterns are built from parts so this file never matches itself.
+const _domain =
+    'elmetracademy'
+    r'\.app';
+
+/// Subdomains the app itself uses: the legal pages and the API.
+const _appSubdomains = {'legal', 'api'};
+
+/// Extra website hosts, as regex sources. Add the owner's chosen domain here
+/// if it is not under the academy domain (ADR-0014 open decision 1).
+const List<String> _extraWebsiteHosts = [];
+
+final _apexOrSubdomain = RegExp(
+  r'(?<![a-z0-9.-])(?:([a-z0-9-]+)\.)?' + _domain + r'(?![a-z0-9-])',
+  caseSensitive: false,
+);
+final _otherWebsiteHosts = [
+  RegExp(
+    r'vercel'
+    r'\.(?:app|com)',
+    caseSensitive: false,
+  ),
+  for (final host in _extraWebsiteHosts) RegExp(host, caseSensitive: false),
+];
+
+/// Website addresses found in [text]; `legal.` and `api.` hosts are allowed.
+List<String> websiteAddressesIn(String text) {
+  final hits = <String>[];
+  for (final m in _apexOrSubdomain.allMatches(text)) {
+    final sub = m.group(1)?.toLowerCase();
+    if (sub == null || !_appSubdomains.contains(sub)) hits.add(m.group(0)!);
+  }
+  for (final pattern in _otherWebsiteHosts) {
+    hits.addAll(pattern.allMatches(text).map((m) => m.group(0)!));
+  }
+  return hits;
+}
+
+/// Directories under frontend/ that are build output or tool state, never
+/// source (and may hold symlinks into the pub cache).
+const _generatedDirs = {
+  '.dart_tool',
+  'build',
+  '.gradle',
+  'Pods',
+  '.symlinks',
+  'ephemeral',
+  '.idea',
+  '.git',
+  'coverage',
+};
+
+const _binaryExtensions = {
+  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.ttf', '.otf', //
+  '.jar', '.zip', '.pdf', '.so', '.keystore', '.jks',
+};
+
 void main() {
   test('word-boundary guard: pay matches standalone pay, not display', () {
     expect(hasPaymentWord('Pay now'), isTrue);
@@ -104,6 +169,74 @@ void main() {
     expect(hasPaymentWord('فودافون كاش'), isTrue);
     expect(hasPaymentWord('المحفظة'), isTrue);
     expect(hasPaymentWord('InstaPay'), isTrue);
+  });
+
+  group('Website address guard (ADR-0014)', () {
+    test(
+      'matcher: website hosts are refused, the app\'s own hosts are not',
+      () {
+        // Built from parts, like the patterns, so the scan below never trips
+        // on this file.
+        const d =
+            'elmetracademy'
+            '.app';
+        expect(websiteAddressesIn('https://$d/subjects'), isNotEmpty);
+        expect(websiteAddressesIn('https://www.$d'), isNotEmpty);
+        expect(websiteAddressesIn('https://shop.$d/buy'), isNotEmpty);
+        expect(
+          websiteAddressesIn('visit ${d.toUpperCase()} to buy'),
+          isNotEmpty,
+        );
+        expect(
+          websiteAddressesIn(
+            'https://elmetr-web.vercel'
+            '.app',
+          ),
+          isNotEmpty,
+        );
+        expect(websiteAddressesIn('https://legal.$d/terms#en'), isEmpty);
+        expect(websiteAddressesIn('https://api.$d'), isEmpty);
+        expect(websiteAddressesIn('app.elmetracademy.student'), isEmpty);
+      },
+    );
+
+    test('no file under frontend/ names the website or links to it', () {
+      final root = Directory('.');
+      expect(File('pubspec.yaml').existsSync(), isTrue);
+
+      final violations = <String>[];
+      final pending = <Directory>[root];
+      while (pending.isNotEmpty) {
+        final dir = pending.removeLast();
+        for (final entity in dir.listSync(followLinks: false)) {
+          final name = entity.uri.pathSegments.lastWhere((s) => s.isNotEmpty);
+          if (entity is Directory) {
+            if (!_generatedDirs.contains(name)) pending.add(entity);
+            continue;
+          }
+          if (entity is! File) continue;
+          final dot = name.lastIndexOf('.');
+          final ext = dot == -1 ? '' : name.substring(dot).toLowerCase();
+          if (_binaryExtensions.contains(ext)) continue;
+          final bytes = entity.readAsBytesSync();
+          if (bytes.contains(0)) continue; // other binary files
+          final lines = utf8.decode(bytes, allowMalformed: true).split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            for (final hit in websiteAddressesIn(lines[i])) {
+              violations.add('${entity.path}:${i + 1}: "$hit"');
+            }
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason:
+            'Store safety rule violated! The app must never contain the '
+            'website\'s address or a link to it (ADR-0014).',
+      );
+    });
   });
 
   group('Store-safety l10n scan', () {

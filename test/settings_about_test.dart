@@ -110,7 +110,7 @@ void main() {
             appConfig: configWith(
               data: const AppConfigData(
                 latestVersion: '2.0.0',
-                updateUrl: 'https://elmetracademy.app/download',
+                updateUrl: 'https://example.com/download',
               ),
               version: '1.0.0',
             ),
@@ -120,7 +120,7 @@ void main() {
           await tester.tap(find.text(l10n.updateAvailable));
           await tester.pump();
           expect(launched.map((u) => u.toString()), [
-            'https://elmetracademy.app/download',
+            'https://example.com/download',
           ]);
         },
       );
@@ -135,7 +135,7 @@ void main() {
           appConfig: configWith(
             data: const AppConfigData(
               latestVersion: '1.0.0',
-              updateUrl: 'https://elmetracademy.app/download',
+              updateUrl: 'https://example.com/download',
             ),
             version: '1.0.0',
           ),
