@@ -21,9 +21,10 @@ import 'package:wael_app/l10n/app_localizations.dart';
 /// Website guard (owner decision 2026-11-04, ADR-0014, SPEC D3 amendment):
 /// the app never contains the sales website's address or any link or
 /// wording that leads to buying on it (Apple 3.1.3(a) reader app, Google
-/// Play payments policy). The website's domain is still an open owner
-/// decision, so every candidate is refused: the apex domain, any subdomain
-/// other than the app's own [_appSubdomains], and Vercel hosts.
+/// Play payments policy). The website's hosts (owner decision 2026-11-04,
+/// ADR-0014 amendment) are refused: the apex domain, `www.` and Vercel
+/// deployments (`*.vercel.app`). The app's own `legal.` and `api.` hosts,
+/// and every other subdomain, are not the website and stay allowed.
 
 // Arabic payment-action words: plain substring match (Arabic has no case,
 // and \b word boundaries do not cross Arabic letters).
@@ -105,38 +106,26 @@ const _domain =
     'elmetracademy'
     r'\.app';
 
-/// Subdomains the app itself uses: the legal pages and the API.
-const _appSubdomains = {'legal', 'api'};
-
-/// Extra website hosts, as regex sources. Add the owner's chosen domain here
-/// if it is not under the academy domain (ADR-0014 open decision 1).
-const List<String> _extraWebsiteHosts = [];
-
-final _apexOrSubdomain = RegExp(
-  r'(?<![a-z0-9.-])(?:([a-z0-9-]+)\.)?' + _domain + r'(?![a-z0-9-])',
-  caseSensitive: false,
-);
-final _otherWebsiteHosts = [
+/// The website's hosts: the apex domain and `www.` (a `legal.` or `api.`
+/// host never matches, since a dot before the domain is refused unless it
+/// follows `www`), and Vercel deployments.
+final _websiteHosts = [
   RegExp(
-    r'vercel'
-    r'\.(?:app|com)',
+    r'(?<![a-z0-9.-])(?:www\.)?' + _domain + r'(?![a-z0-9-])',
     caseSensitive: false,
   ),
-  for (final host in _extraWebsiteHosts) RegExp(host, caseSensitive: false),
+  RegExp(
+    r'(?<![a-z0-9.-])(?:[a-z0-9-]+\.)+vercel'
+    r'\.app(?![a-z0-9-])',
+    caseSensitive: false,
+  ),
 ];
 
 /// Website addresses found in [text]; `legal.` and `api.` hosts are allowed.
-List<String> websiteAddressesIn(String text) {
-  final hits = <String>[];
-  for (final m in _apexOrSubdomain.allMatches(text)) {
-    final sub = m.group(1)?.toLowerCase();
-    if (sub == null || !_appSubdomains.contains(sub)) hits.add(m.group(0)!);
-  }
-  for (final pattern in _otherWebsiteHosts) {
-    hits.addAll(pattern.allMatches(text).map((m) => m.group(0)!));
-  }
-  return hits;
-}
+List<String> websiteAddressesIn(String text) => [
+  for (final pattern in _websiteHosts)
+    ...pattern.allMatches(text).map((m) => m.group(0)!),
+];
 
 /// Directories under frontend/ that are build output or tool state, never
 /// source (and may hold symlinks into the pub cache).
@@ -182,7 +171,7 @@ void main() {
             '.app';
         expect(websiteAddressesIn('https://$d/subjects'), isNotEmpty);
         expect(websiteAddressesIn('https://www.$d'), isNotEmpty);
-        expect(websiteAddressesIn('https://shop.$d/buy'), isNotEmpty);
+        expect(websiteAddressesIn('WWW.$d/subjects'), isNotEmpty);
         expect(
           websiteAddressesIn('visit ${d.toUpperCase()} to buy'),
           isNotEmpty,
@@ -194,9 +183,24 @@ void main() {
           ),
           isNotEmpty,
         );
+        expect(
+          websiteAddressesIn(
+            'https://elmetr-web-git-develop-team.vercel'
+            '.app/en',
+          ),
+          isNotEmpty,
+        );
         expect(websiteAddressesIn('https://legal.$d/terms#en'), isEmpty);
         expect(websiteAddressesIn('https://api.$d'), isEmpty);
         expect(websiteAddressesIn('app.elmetracademy.student'), isEmpty);
+        expect(websiteAddressesIn('https://shop.$d'), isEmpty);
+        expect(
+          websiteAddressesIn(
+            'https://vercel'
+            '.com/docs',
+          ),
+          isEmpty,
+        );
       },
     );
 
