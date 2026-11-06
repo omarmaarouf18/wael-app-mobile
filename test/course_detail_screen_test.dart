@@ -12,9 +12,7 @@ import 'package:wael_app/core/constants.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/core/external_links.dart';
 import 'package:wael_app/models/academy_catalog.dart';
-import 'package:wael_app/models/app_config.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
-import 'package:wael_app/providers/app_config_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
 import 'package:wael_app/screens/course_detail/subject_content_section.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
@@ -57,18 +55,18 @@ void main() {
       Size size = const Size(390, 2400),
       bool settle = true,
       DirectorProfile director = testDirector,
-      bool showPrices = false,
+      TargetPlatform platform = TargetPlatform.android,
     }) async {
       final repository = repo ?? fake();
       if (detail.isNotEmpty) repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
-      final appConfig = AppConfigProvider()
-        ..setForTesting(AppConfigData(showPrices: showPrices));
       await pumpScreen(
         tester,
         locale,
-        const CourseDetailScreen(courseId: 'd1'),
-        appConfig: appConfig,
+        Theme(
+          data: ThemeData(platform: platform),
+          child: const CourseDetailScreen(courseId: 'd1'),
+        ),
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
@@ -706,17 +704,28 @@ void main() {
       testWidgets('a locked subject shows its price when the API sends it', (
         tester,
       ) async {
-        await pump(tester, lockedBody, showPrices: true);
+        await pump(tester, lockedBody);
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(title('1800 ج.م', 'EGP 1800')), findsOneWidget);
         expect(find.textContaining('route:/payment'), findsNothing);
         expect(stubRouteArguments, isEmpty);
       });
 
-      testWidgets('the price stays hidden when show_prices is off', (
+      testWidgets('the price stays hidden when the API sends no price', (
         tester,
       ) async {
-        await pump(tester, lockedBody, showPrices: false);
+        final unpriced = Map<String, dynamic>.from(lockedBody)
+          ..remove('price')
+          ..remove('currency');
+        await pump(tester, unpriced);
+        expect(find.text(l10n.priceLabel), findsNothing);
+        expect(find.text(title('1800 ج.م', 'EGP 1800')), findsNothing);
+      });
+
+      testWidgets('the price stays hidden on iOS even when sent', (
+        tester,
+      ) async {
+        await pump(tester, lockedBody, platform: TargetPlatform.iOS);
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.text(title('1800 ج.م', 'EGP 1800')), findsNothing);
       });

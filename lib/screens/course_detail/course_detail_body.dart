@@ -29,7 +29,7 @@ class CourseDetailBody extends StatelessWidget {
     super.key,
     required this.detail,
     this.launchUrl = defaultLaunchUrl,
-    this.showPrice = false,
+    this.showPrice = true,
   });
 
   final AcademySubjectDetail detail;
@@ -37,9 +37,8 @@ class CourseDetailBody extends StatelessWidget {
   /// Opens the support WhatsApp chat. Injected in widget tests.
   final LaunchUrl launchUrl;
 
-  /// Owner amendment 2026-10-08 (F-UX6): the price renders only when the
-  /// public app-config flag `show_prices` is true (the screen passes it
-  /// down). Defaults to hidden (fail closed).
+  /// Effective price visibility (amended 2026-11-05, Part D): the price renders
+  /// when the server sends it and not on iOS. Defaults to true.
   final bool showPrice;
 
   @override
@@ -103,14 +102,15 @@ class CourseDetailBody extends StatelessWidget {
                     ).copyWith(height: 1.5),
                   ),
                 ],
-                // The server-sent price, locked subjects only and only when
-                // the app-config flag allows it: anything else renders
-                // nothing (and no gap). It stays in the header, never in
+                // The server-sent price, locked subjects only: renders when
+                // the effective setting is show (communicated by non-null
+                // price) and not on iOS. It stays in the header, never in
                 // the support panel below.
                 if (shouldShowSubjectPrice(
                   owned: detail.owned,
                   price: detail.price,
                   showPrices: showPrice,
+                  platform: Theme.of(context).platform,
                 )) ...[
                   const SizedBox(height: AppSpacing.spaceMd),
                   SubjectPriceTag(

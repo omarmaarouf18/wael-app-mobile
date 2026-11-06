@@ -145,17 +145,41 @@ void main() {
       );
     });
 
-    test('shouldShowSubjectPrice needs unlocked, priced and flag on', () {
+    test('shouldShowSubjectPrice needs unlocked, priced and not iOS', () {
+      expect(
+        shouldShowSubjectPrice(
+          owned: false,
+          price: 350,
+          platform: TargetPlatform.android,
+        ),
+        isTrue,
+      );
       expect(
         shouldShowSubjectPrice(owned: false, price: 350, showPrices: true),
         isTrue,
       );
       expect(
-        shouldShowSubjectPrice(owned: true, price: 350, showPrices: true),
+        shouldShowSubjectPrice(
+          owned: true,
+          price: 350,
+          platform: TargetPlatform.android,
+        ),
         isFalse,
       );
       expect(
-        shouldShowSubjectPrice(owned: false, price: null, showPrices: true),
+        shouldShowSubjectPrice(
+          owned: false,
+          price: null,
+          platform: TargetPlatform.android,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldShowSubjectPrice(
+          owned: false,
+          price: 350,
+          platform: TargetPlatform.iOS,
+        ),
         isFalse,
       );
       expect(
@@ -173,18 +197,18 @@ void main() {
     Future<void> pumpDetail(
       WidgetTester tester,
       Map<String, dynamic> detail, {
-      bool showPrices = false,
+      TargetPlatform platform = TargetPlatform.android,
     }) async {
       final repository = fake();
       repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
-      final appConfig = AppConfigProvider()
-        ..setForTesting(AppConfigData(showPrices: showPrices));
       await pumpScreen(
         tester,
         locale,
-        const CourseDetailScreen(courseId: 'd1'),
-        appConfig: appConfig,
+        Theme(
+          data: ThemeData(platform: platform),
+          child: const CourseDetailScreen(courseId: 'd1'),
+        ),
         extraProviders: [
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
@@ -203,21 +227,19 @@ void main() {
       testWidgets('locked subject with price shows label and value', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody(price: 350), showPrices: true);
+        await pumpDetail(tester, detailBody(price: 350));
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(priced(350)), findsOneWidget);
       });
 
-      testWidgets('flag off hides the price even when sent', (tester) async {
-        await pumpDetail(tester, detailBody(price: 350), showPrices: false);
-        expect(find.text(l10n.priceLabel), findsNothing);
-        expect(find.text(priced(350)), findsNothing);
-      });
-
-      testWidgets('missing flag (offline default) hides the price', (
+      testWidgets('iOS never shows prices even when the API sends one', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody(price: 350));
+        await pumpDetail(
+          tester,
+          detailBody(price: 350),
+          platform: TargetPlatform.iOS,
+        );
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.text(priced(350)), findsNothing);
       });
@@ -225,7 +247,7 @@ void main() {
       testWidgets('locked subject without price shows nothing, no gap', (
         tester,
       ) async {
-        await pumpDetail(tester, detailBody(), showPrices: true);
+        await pumpDetail(tester, detailBody());
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.textContaining('EGP'), findsNothing);
         expect(find.textContaining('ج.م'), findsNothing);
@@ -234,11 +256,7 @@ void main() {
       testWidgets('owned subject shows no price even when sent', (
         tester,
       ) async {
-        await pumpDetail(
-          tester,
-          detailBody(owned: true, price: 350),
-          showPrices: true,
-        );
+        await pumpDetail(tester, detailBody(owned: true, price: 350));
         expect(find.text(l10n.accessActive), findsOneWidget);
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.text(priced(350)), findsNothing);
@@ -250,43 +268,41 @@ void main() {
         await pumpLocalized(
           tester,
           locale,
-          CatalogSubjectCard(
-            subject: cardSubject(),
-            showPrice: true,
-            onTap: () {},
-          ),
+          CatalogSubjectCard(subject: cardSubject(), onTap: () {}),
         );
         expect(find.text(l10n.priceLabel), findsOneWidget);
         expect(find.text(priced(350)), findsOneWidget);
       });
 
-      testWidgets('list card hides the price when the flag is off', (
-        tester,
-      ) async {
+      testWidgets('list card hides the price on iOS', (tester) async {
         await pumpLocalized(
           tester,
           locale,
-          CatalogSubjectCard(
-            subject: cardSubject(),
-            showPrice: false,
-            onTap: () {},
+          Theme(
+            data: ThemeData(platform: TargetPlatform.iOS),
+            child: CatalogSubjectCard(subject: cardSubject(), onTap: () {}),
           ),
         );
         expect(find.text(l10n.priceLabel), findsNothing);
         expect(find.text(priced(350)), findsNothing);
       });
 
-      testWidgets('list card hides the price when the flag is missing', (
-        tester,
-      ) async {
-        await pumpLocalized(
-          tester,
-          locale,
-          CatalogSubjectCard(subject: cardSubject(), onTap: () {}),
-        );
-        expect(find.text(l10n.priceLabel), findsNothing);
-        expect(find.text(priced(350)), findsNothing);
-      });
+      testWidgets(
+        'list card hides the price when explicit showPrice is false',
+        (tester) async {
+          await pumpLocalized(
+            tester,
+            locale,
+            CatalogSubjectCard(
+              subject: cardSubject(),
+              showPrice: false,
+              onTap: () {},
+            ),
+          );
+          expect(find.text(l10n.priceLabel), findsNothing);
+          expect(find.text(priced(350)), findsNothing);
+        },
+      );
 
       testWidgets('list card hides the price when owned or absent', (
         tester,

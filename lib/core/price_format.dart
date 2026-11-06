@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
+
 /// Formats a subject price exactly as the server sent it.
 ///
 /// The academy API sends `price` (whole EGP by SPEC D2) and `currency`
@@ -23,13 +26,27 @@ String formatSubjectPrice({
   return isArabic ? '$amount $code' : '$code $amount';
 }
 
-/// Whether a subject's price may render (owner amendment 2026-10-08,
-/// F-UX6): only for locked subjects that carry a server-sent price AND
-/// only when the public app-config flag `show_prices` is true. Owned
-/// subjects, a null price, or a missing/false/offline flag all hide the
-/// price (fail closed, no gap).
+/// Whether a subject's price may render (amended 2026-11-05, Part D):
+///
+/// - iOS never shows prices (unchanged, per the iOS store decision).
+/// - Android and other platforms show a subject's price only when its
+///   effective setting is show, which the server communicates by sending
+///   a non-null [price] on the unlocked subject.
+/// - Owned subjects or a null price (effective setting hide, follow_global
+///   with global off, or EXPOSE_PRICE_TO_STUDENTS=false) hide the price.
+/// - An explicit [showPrices] = false override still hides the price if passed.
 bool shouldShowSubjectPrice({
   required bool owned,
   required int? price,
-  required bool showPrices,
-}) => !owned && price != null && showPrices;
+  bool? showPrices,
+  TargetPlatform? platform,
+}) {
+  final p = platform ?? defaultTargetPlatform;
+  if (p == TargetPlatform.iOS) {
+    return false;
+  }
+  if (showPrices == false) {
+    return false;
+  }
+  return !owned && price != null;
+}

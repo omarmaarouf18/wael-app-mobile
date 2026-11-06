@@ -21,16 +21,15 @@ class CatalogSubjectCard extends StatelessWidget {
     required this.subject,
     this.instructorName = '',
     required this.onTap,
-    this.showPrice = false,
+    this.showPrice = true,
   });
 
   final AcademySubject subject;
   final String instructorName;
   final VoidCallback onTap;
 
-  /// Owner amendment 2026-10-08 (F-UX6): the price renders only when the
-  /// public app-config flag `show_prices` is true (the screen passes it
-  /// down). Defaults to hidden (fail closed).
+  /// Effective price visibility (amended 2026-11-05, Part D): the price renders
+  /// when the server sends it and not on iOS. Defaults to true.
   final bool showPrice;
 
   @override
@@ -94,13 +93,14 @@ class CatalogSubjectCard extends StatelessWidget {
               style: AppTypography.bodyXs(isArabic: isArabic),
             ),
           ],
-          // Compact server-sent price, locked subjects only and only when
-          // the app-config flag allows it: anything else renders nothing
-          // (and no gap).
+          // Compact server-sent price, locked subjects only: renders when
+          // the effective setting is show (communicated by non-null price)
+          // and not on iOS.
           if (shouldShowSubjectPrice(
             owned: subject.owned,
             price: subject.price,
             showPrices: showPrice,
+            platform: Theme.of(context).platform,
           )) ...[
             const SizedBox(height: AppSpacing.spaceXs),
             SubjectPriceTag(
