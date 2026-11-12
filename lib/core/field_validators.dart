@@ -53,6 +53,15 @@ class FieldValidators {
     return null;
   }
 
+  /// Required phone (Android signup, owner amendment 2026-11-12): empty is
+  /// refused; a typed number follows [optionalPhone].
+  static String? requiredPhone(String? value, {required bool isArabic}) {
+    if ((value?.trim() ?? '').isEmpty) {
+      return ErrorMessages.emptyField(isArabic);
+    }
+    return optionalPhone(value, isArabic: isArabic);
+  }
+
   /// Login password: required only. The server decides validity; the client
   /// must not block short input with a length rule here.
   static String? loginPassword(String? value, {required bool isArabic}) {

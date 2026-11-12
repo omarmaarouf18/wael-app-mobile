@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/external_links.dart';
 import '../core/field_validators.dart';
+import '../core/store_policy.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -101,6 +102,9 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final auth = Provider.of<AuthProvider>(context);
+    final phoneOptional = StorePolicy.phoneOptionalAtSignup(
+      Theme.of(context).platform,
+    );
 
     final error = _validationError ?? auth.errorMessage;
 
@@ -174,19 +178,27 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: AppSpacing.spaceMd),
 
-                    // Phone Number
+                    // Phone Number: optional on iOS only (owner amendment
+                    // 2026-11-12); Android requires it.
                     ThemedTextField(
-                      label: l10n.phoneOptional,
+                      label: phoneOptional
+                          ? l10n.phoneOptional
+                          : l10n.phoneNumber,
                       hintText: '+20 100 000 0000',
                       controller: _phoneController,
                       focusNode: _phoneFocus,
                       keyboardType: TextInputType.phone,
                       autofillHints: const [AutofillHints.telephoneNumber],
                       textInputAction: TextInputAction.next,
-                      validator: (v) => FieldValidators.optionalPhone(
-                        v,
-                        isArabic: l10n.isArabic,
-                      ),
+                      validator: (v) => phoneOptional
+                          ? FieldValidators.optionalPhone(
+                              v,
+                              isArabic: l10n.isArabic,
+                            )
+                          : FieldValidators.requiredPhone(
+                              v,
+                              isArabic: l10n.isArabic,
+                            ),
                       onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                       prefixIcon: const Icon(
                         Icons.phone_outlined,

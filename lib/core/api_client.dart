@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' show IOClient;
 import '../debug/diagnostics_tracker.dart';
+import 'store_policy.dart';
 
 /// Outcome of a token refresh attempt, so a transient failure (network,
 /// timeout, 5xx, 408, 429) never ends the session while a definitive one
@@ -93,9 +94,13 @@ class ApiClient {
 
   Map<String, String> _headers(String? token) {
     final lang = localeReader?.call();
+    final client = StorePolicy.clientId();
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      // ios / android (owner amendment 2026-11-12): the server lets only the
+      // iOS app sign up without a phone.
+      'X-Client': ?client,
       if (lang != null && lang.isNotEmpty) 'Accept-Language': lang,
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
     };

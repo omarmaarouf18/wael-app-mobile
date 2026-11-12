@@ -60,11 +60,12 @@ void main() {
         expect(find.text('EL METR'), findsOneWidget);
         expect(find.text('ACADEMY'), findsOneWidget);
         expect(find.byType(TextFormField), findsNWidgets(5));
-        // Login is email only, and the phone is optional (owner amendment
-        // 2026-11-03, App Store 5.1.1(v)).
+        // Login is email only. On Android (the test default) the phone is
+        // required (owner amendment 2026-11-12); iOS is covered below.
         expect(find.text(l10n.email), findsOneWidget);
         expect(find.text(l10n.emailOrPhone), findsNothing);
-        expect(find.text(l10n.phoneOptional), findsOneWidget);
+        expect(find.text(l10n.phoneNumber), findsOneWidget);
+        expect(find.text(l10n.phoneOptional), findsNothing);
         expect(find.text(l10n.phoneOptionalHelper), findsOneWidget);
         expect(find.text(l10n.termsLinkLabel), findsOneWidget);
         expect(find.text(l10n.privacyLinkLabel), findsOneWidget);
@@ -146,24 +147,64 @@ void main() {
         // server errors only.
         expect(find.byType(ThemedErrorBanner), findsNothing);
         expect(repo.signupCalls, 0);
-        // Four required fields; the optional phone has no error.
-        expect(find.text(ErrorMessages.emptyField(isArabic)), findsNWidgets(4));
+        // Android: five required fields, the phone included.
+        expect(find.text(ErrorMessages.emptyField(isArabic)), findsNWidgets(5));
         await tester.pump(const Duration(minutes: 1));
         expect(find.byType(ThemedErrorBanner), findsNothing);
         expect(find.byType(SnackBar), findsNothing);
       });
 
-      testWidgets('an empty phone signs up without one', (tester) async {
+      testWidgets(
+        'iOS: optional phone label, helper, no empty error',
+        (tester) async {
+          final repo = FakeAuthRepository();
+          await pump(tester, repo: repo);
+          expect(find.text(l10n.phoneOptional), findsOneWidget);
+          expect(find.text(l10n.phoneNumber), findsNothing);
+          expect(find.text(l10n.phoneOptionalHelper), findsOneWidget);
+          await agreeToTerms(tester);
+          await submit(tester);
+          // Four required fields; the optional phone has no error.
+          expect(
+            find.text(ErrorMessages.emptyField(isArabic)),
+            findsNWidgets(4),
+          );
+          expect(repo.signupCalls, 0);
+          // On iOS, Form announces validation results after a 1 s timer.
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+
+      testWidgets(
+        'iOS: an empty phone signs up without one',
+        (tester) async {
+          final repo = FakeAuthRepository();
+          await pump(tester, repo: repo);
+          await fill(tester);
+          await tester.enterText(find.byType(TextFormField).at(2), '');
+          await agreeToTerms(tester);
+          await submit(tester);
+          expect(find.text(ErrorMessages.invalidPhone(isArabic)), findsNothing);
+          expect(repo.signupCalls, 1);
+          expect(repo.lastSignupPhone, '');
+          expect(find.text('route:/otp'), findsOneWidget);
+          // On iOS, Form announces validation results after a 1 s timer.
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+
+      testWidgets('Android: an empty phone is refused inline', (tester) async {
         final repo = FakeAuthRepository();
         await pump(tester, repo: repo);
         await fill(tester);
         await tester.enterText(find.byType(TextFormField).at(2), '');
         await agreeToTerms(tester);
         await submit(tester);
-        expect(find.text(ErrorMessages.invalidPhone(isArabic)), findsNothing);
-        expect(repo.signupCalls, 1);
-        expect(repo.lastSignupPhone, '');
-        expect(find.text('route:/otp'), findsOneWidget);
+        expect(find.text(ErrorMessages.emptyField(isArabic)), findsOneWidget);
+        expect(repo.signupCalls, 0);
+        expect(find.text('route:/otp'), findsNothing);
       });
 
       testWidgets('a typed phone is still validated', (tester) async {
