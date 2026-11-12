@@ -86,7 +86,10 @@ Future<void> showFileDetailsSheet(
                   Expanded(
                     child: Text(
                       locked
-                          ? ErrorMessages.courseLocked(isArabic)
+                          ? ErrorMessages.courseLocked(
+                              isArabic,
+                              Theme.of(context).platform,
+                            )
                           : l10n.downloadsSoon,
                       style: AppTypography.bodySm(isArabic: isArabic),
                     ),

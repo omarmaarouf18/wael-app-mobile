@@ -73,7 +73,10 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
     if (!mounted || exit != PlayerExit.locked) return;
     setState(() => _lockedAfterPlayer.add(video.id));
     catalog.loadDetail(subjectId, force: true);
-    _say(context, ErrorMessages.courseLocked(isArabic));
+    _say(
+      context,
+      ErrorMessages.courseLocked(isArabic, Theme.of(context).platform),
+    );
   }
 
   @override
@@ -186,7 +189,13 @@ class _SubjectContentSectionState extends State<SubjectContentSection> {
               locked: !_unlocked(detail, video),
               onTap: () => _unlocked(detail, video)
                   ? _openPlayer(video)
-                  : _say(context, ErrorMessages.courseLocked(l10n.isArabic)),
+                  : _say(
+                      context,
+                      ErrorMessages.courseLocked(
+                        l10n.isArabic,
+                        Theme.of(context).platform,
+                      ),
+                    ),
             ),
           ),
       ],

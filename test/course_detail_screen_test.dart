@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,8 +56,13 @@ void main() {
       Size size = const Size(390, 2400),
       bool settle = true,
       DirectorProfile director = testDirector,
-      TargetPlatform platform = TargetPlatform.android,
+      TargetPlatform? platform,
     }) async {
+      final effectivePlatform =
+          platform ??
+          (defaultTargetPlatform == TargetPlatform.iOS
+              ? TargetPlatform.iOS
+              : TargetPlatform.android);
       final repository = repo ?? fake();
       if (detail.isNotEmpty) repository.detailJson['d1'] = detail;
       final catalog = AcademyCatalogProvider(repository);
@@ -64,7 +70,7 @@ void main() {
         tester,
         locale,
         Theme(
-          data: ThemeData(platform: platform),
+          data: ThemeData(platform: effectivePlatform),
           child: const CourseDetailScreen(courseId: 'd1'),
         ),
         extraProviders: [
@@ -750,8 +756,88 @@ void main() {
         await tester.tap(find.text(l10n.retry));
         await tester.pumpAndSettle();
         expect(repo.accessCalls, ['d1']);
-        expect(find.text(l10n.requestPending), findsOneWidget);
       });
+    });
+
+    group('CourseDetailScreen iOS content-only [$name]', () {
+      testWidgets(
+        'iOS: locked subject shows only the neutral text, no button, no WhatsApp/copy action, no price',
+        (tester) async {
+          final (_, repo) = await pump(tester, lockedBody);
+          // Automatic access request still sent
+          expect(repo.accessCalls, ['d1']);
+          // Neutral text is shown
+          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          // No buttons, no WhatsApp, no copy action
+          expect(find.byType(PrimaryButton), findsNothing);
+          expect(find.text(l10n.openWhatsApp), findsNothing);
+          expect(find.text(l10n.copySupportLink), findsNothing);
+          expect(find.text(l10n.contactSupportToActivate), findsNothing);
+          expect(find.text(l10n.requestPending), findsNothing);
+          expect(find.text(l10n.sendingAccessRequest), findsNothing);
+          // No price
+          expect(find.text(l10n.priceLabel), findsNothing);
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+
+      testWidgets(
+        'iOS: pending subject shows only the neutral text, no button, no WhatsApp/copy action, no price',
+        (tester) async {
+          final repo = fake()..pendingIds.add('d1');
+          await pump(tester, lockedBody, repo: repo);
+          expect(repo.accessCalls, isEmpty);
+          // Neutral text is shown
+          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          // No buttons, no WhatsApp, no copy action
+          expect(find.byType(PrimaryButton), findsNothing);
+          expect(find.text(l10n.openWhatsApp), findsNothing);
+          expect(find.text(l10n.copySupportLink), findsNothing);
+          expect(find.text(l10n.contactSupportToActivate), findsNothing);
+          expect(find.text(l10n.requestPending), findsNothing);
+          // No price
+          expect(find.text(l10n.priceLabel), findsNothing);
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+
+      testWidgets(
+        'iOS: sending state shows only the neutral text while in flight',
+        (tester) async {
+          final gate = Completer<void>();
+          final repo = fake()..accessGate = gate.future;
+          await pump(tester, lockedBody, repo: repo, settle: false);
+          await tester.pump();
+          await tester.pump();
+          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.sendingAccessRequest), findsNothing);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+
+          gate.complete();
+          await tester.pumpAndSettle();
+          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.requestPending), findsNothing);
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
+
+      testWidgets(
+        'iOS: owned subject unchanged',
+        (tester) async {
+          final ownedBody = Map<String, dynamic>.from(lockedBody)
+            ..['owned'] = true;
+          await pump(tester, ownedBody);
+          expect(find.text(l10n.accessActive), findsOneWidget);
+          expect(find.text(l10n.enrolledStudentsOnly), findsNothing);
+          expect(find.byType(PrimaryButton), findsNothing);
+          expect(find.text(l10n.priceLabel), findsNothing);
+          await tester.pump(const Duration(seconds: 2));
+        },
+        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+      );
     });
 
     for (final width in [360.0, 390.0]) {

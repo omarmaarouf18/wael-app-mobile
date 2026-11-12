@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../core/error_messages.dart';
 import '../../core/external_links.dart';
 import '../../core/price_format.dart';
+import '../../core/store_policy.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/academy_catalog.dart';
@@ -187,6 +188,40 @@ class _Access extends StatelessWidget {
     final catalog = context.watch<AcademyCatalogProvider>();
     final access = catalog.accessOf(detail.id);
 
+    if (StorePolicy.contentOnly(Theme.of(context).platform)) {
+      final panel = ThemedPanel(
+        tone: PanelTone.raised,
+        borderRadius: AppRadius.radiusLg,
+        padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+        child: Text(
+          l10n.enrolledStudentsOnly,
+          style: AppTypography.bodySm(
+            isArabic: isArabic,
+          ).copyWith(color: AppColors.textPrimary),
+        ),
+      );
+      if (access.status == AccessRequestStatus.failed) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            panel,
+            const SizedBox(height: AppSpacing.spaceSm),
+            ThemedErrorBanner(
+              message: ErrorMessages.forAccessRequest(
+                access.error!,
+                isArabic: isArabic,
+                contentOnly: true,
+              ),
+              onRetry: access.canRetry
+                  ? () => catalog.requestAccess(detail.id)
+                  : null,
+            ),
+          ],
+        );
+      }
+      return panel;
+    }
+
     if (detail.hasPendingRequest || access.status == AccessRequestStatus.sent) {
       return _PendingRequest(
         supportUrl: access.supportUrl,
@@ -267,6 +302,21 @@ class _PendingRequest extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isArabic = l10n.isArabic;
+
+    if (StorePolicy.contentOnly(Theme.of(context).platform)) {
+      return ThemedPanel(
+        tone: PanelTone.raised,
+        borderRadius: AppRadius.radiusLg,
+        padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+        child: Text(
+          l10n.enrolledStudentsOnly,
+          style: AppTypography.bodySm(
+            isArabic: isArabic,
+          ).copyWith(color: AppColors.textPrimary),
+        ),
+      );
+    }
+
     final url = supportUrl;
     final email = Provider.of<AuthProvider>(
       context,

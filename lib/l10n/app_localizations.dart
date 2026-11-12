@@ -377,6 +377,15 @@ class AppLocalizations {
   String get priceLabel => isArabic ? 'السعر' : 'Price';
   String get requestPending =>
       isArabic ? 'الطلب قيد الانتظار' : 'Request pending';
+
+  /// Neutral copy for iOS content-only (reader app) mode (owner decision
+  /// 2026-11-12): locked and pending subjects show only that the subject is
+  /// available to the academy's enrolled students, with no activation or
+  /// purchase wording.
+  String get enrolledStudentsOnly => isArabic
+      ? 'المادة دي متاحة لطلبة الأكاديمية المسجّلين.'
+      : "This subject is available to the academy's enrolled students.";
+
   // Locked/pending wording (owner decision 2026-10-08): the subject is
   // activated by the academy/support after the student contacts support on
   // WhatsApp. (Owner decision 2026-10-12: "السنتر"/"center" became

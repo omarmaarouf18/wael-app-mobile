@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
 
@@ -567,5 +568,66 @@ void main() {
       expect(ErrorMessages.courseLocked(true), isNot(contains('الاشتراك')));
       expect(ErrorMessages.courseLocked(false), contains('gain access'));
     });
+
+    test(
+      'iOS locked and pending panel strings contain no activation, WhatsApp or price words',
+      () {
+        for (final locale in [const Locale('ar'), const Locale('en')]) {
+          final l10n = AppLocalizations(locale);
+          final isArabic = locale.languageCode == 'ar';
+          final strings = [
+            l10n.enrolledStudentsOnly,
+            ErrorMessages.courseLocked(isArabic, TargetPlatform.iOS),
+            ErrorMessages.forAccessRequest(
+              ApiException(statusCode: 500, message: 'fail'),
+              isArabic: isArabic,
+              contentOnly: true,
+            ),
+            ErrorMessages.forAccessRequest(
+              ApiException(statusCode: 404, message: 'not found'),
+              isArabic: isArabic,
+              contentOnly: true,
+            ),
+            ErrorMessages.forAccessRequest(
+              ApiException(statusCode: 409, message: 'conflict'),
+              isArabic: isArabic,
+              contentOnly: true,
+            ),
+            ErrorMessages.forAccessRequest(
+              ApiException(statusCode: 503, message: 'unavailable'),
+              isArabic: isArabic,
+              contentOnly: true,
+            ),
+          ];
+
+          const forbidden = [
+            'تفعيل',
+            'تتفعّل',
+            'activate',
+            'whatsapp',
+            'واتساب',
+            'سعر',
+            'price',
+            'egp',
+            'ج.م',
+            'شراء',
+            'buy',
+            'اشترك',
+            'اشتراك',
+          ];
+
+          for (final str in strings) {
+            final lower = str.toLowerCase();
+            for (final word in forbidden) {
+              expect(
+                lower.contains(word),
+                isFalse,
+                reason: 'iOS string "$str" contains forbidden word "$word"',
+              );
+            }
+          }
+        }
+      },
+    );
   });
 }

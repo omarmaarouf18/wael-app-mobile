@@ -32,6 +32,19 @@ void main() {
       expect(StorePolicy.clientId(TargetPlatform.android), 'android');
       expect(StorePolicy.clientId(TargetPlatform.macOS), isNull);
     });
+
+    test('contentOnly is true on iOS only', () {
+      expect(StorePolicy.contentOnly(TargetPlatform.iOS), isTrue);
+      for (final p in [
+        TargetPlatform.android,
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.windows,
+        TargetPlatform.fuchsia,
+      ]) {
+        expect(StorePolicy.contentOnly(p), isFalse, reason: '$p');
+      }
+    });
   });
 
   group('FieldValidators.requiredPhone', () {

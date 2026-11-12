@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import '../models/academy_catalog.dart';
 import '../services/file_downloads.dart';
 import 'api_client.dart';
+import 'store_policy.dart';
 
 /// Standardized Error Messages supporting localized resolution
 class ErrorMessages {
@@ -89,9 +91,16 @@ class ErrorMessages {
       ? 'تعذر تحميل الإشعارات. يرجى المحاولة لاحقاً.'
       : 'Unable to load notifications. Please try again later.';
 
-  static String courseLocked(bool isArabic) => isArabic
-      ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل لتفعيل الوصول.'
-      : 'This content is restricted. Complete enrolment to gain access.';
+  static String courseLocked(bool isArabic, [TargetPlatform? platform]) {
+    if (StorePolicy.contentOnly(platform)) {
+      return isArabic
+          ? 'المادة دي متاحة لطلبة الأكاديمية المسجّلين.'
+          : "This subject is available to the academy's enrolled students.";
+    }
+    return isArabic
+        ? 'هذا المحتوى مقيد. يرجى إتمام إجراءات التسجيل لتفعيل الوصول.'
+        : 'This content is restricted. Complete enrolment to gain access.';
+  }
 
   static String catalogLoadFailed(bool isArabic) => isArabic
       ? 'تعذر تحميل المحتوى الدراسي. يرجى المحاولة مرة أخرى.'
@@ -122,7 +131,20 @@ class ErrorMessages {
   /// Message for a failed access request. 409 is the server's generic
   /// refusal (already owned, or the subject's access date has passed), so it
   /// is worded without guessing which.
-  static String forAccessRequest(Object e, {bool isArabic = false}) {
+  static String forAccessRequest(
+    Object e, {
+    bool isArabic = false,
+    bool contentOnly = false,
+  }) {
+    if (contentOnly) {
+      if (e is ApiException) {
+        if (e.isRateLimited) return tryAgainLater(isArabic);
+        if (e.statusCode == 404) return subjectNotFound(isArabic);
+        if (e.statusCode == 503) return serviceUnavailable(isArabic);
+        return tryAgainLater(isArabic);
+      }
+      return networkError(isArabic);
+    }
     if (e is ApiException) {
       if (e.isRateLimited) return tryAgainLater(isArabic);
       if (e.statusCode == 404) return subjectNotFound(isArabic);
@@ -134,9 +156,16 @@ class ErrorMessages {
     return networkError(isArabic);
   }
 
-  static String fileNotActivated(bool isArabic) => isArabic
-      ? 'هذا الملف متاح بعد تفعيل المادة فقط.'
-      : 'This file is available only after the subject is activated.';
+  static String fileNotActivated(bool isArabic, [TargetPlatform? platform]) {
+    if (StorePolicy.contentOnly(platform)) {
+      return isArabic
+          ? 'هذا الملف متاح لطلبة الأكاديمية المسجّلين.'
+          : "This file is available to the academy's enrolled students.";
+    }
+    return isArabic
+        ? 'هذا الملف متاح بعد تفعيل المادة فقط.'
+        : 'This file is available only after the subject is activated.';
+  }
 
   static String fileUnavailable(bool isArabic) => isArabic
       ? 'هذا الملف لم يعد متاحًا.'
@@ -159,12 +188,16 @@ class ErrorMessages {
   /// file, 413 too large, 429 a wait (with `Retry-After` when sent);
   /// timeouts and connection failures are network errors. Unknown statuses
   /// and codes get the generic message, never the server's text.
-  static String forFileDownload(Object e, {bool isArabic = false}) {
+  static String forFileDownload(
+    Object e, {
+    bool isArabic = false,
+    TargetPlatform? platform,
+  }) {
     if (e is ApiException) {
       if (e.code == 'timeout' || e.statusCode <= 0) {
         return networkError(isArabic);
       }
-      if (e.statusCode == 403) return fileNotActivated(isArabic);
+      if (e.statusCode == 403) return fileNotActivated(isArabic, platform);
       if (e.statusCode == 404) return fileUnavailable(isArabic);
       if (e.statusCode == 413) return fileTooLarge(isArabic);
       if (e.isRateLimited) {
