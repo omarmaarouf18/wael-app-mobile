@@ -18,6 +18,13 @@ class StorePolicy {
   static bool contentOnly([TargetPlatform? platform]) =>
       !kIsWeb && (platform ?? defaultTargetPlatform) == TargetPlatform.iOS;
 
+  /// In-App Purchase of subject packages runs on iOS only (owner decision
+  /// 2026-11-13, App Store 3.1.1; issue #57). Same rule as [contentOnly].
+  /// While this is false the StoreKit plugin is never initialised or
+  /// touched, and no IAP route is called: Android and web stay as they are.
+  static bool iapEnabled([TargetPlatform? platform]) =>
+      !kIsWeb && (platform ?? defaultTargetPlatform) == TargetPlatform.iOS;
+
   /// The `X-Client` header value for this app: `ios` or `android`, or null
   /// elsewhere (the website sends its own `web`). The server reads it at
   /// signup to decide whether the phone may be left out.

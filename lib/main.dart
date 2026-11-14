@@ -29,6 +29,7 @@ import 'providers/auth_provider.dart';
 import 'providers/academy_catalog_provider.dart';
 import 'repositories/account_repository.dart';
 import 'providers/files_provider.dart';
+import 'providers/iap_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/playback_speed_provider.dart';
@@ -37,6 +38,8 @@ import 'providers/playback_speed_provider.dart';
 import 'player/player_engine.dart';
 import 'player/youtube_iframe_engine.dart';
 import 'repositories/academy_repository.dart';
+import 'repositories/iap_repository.dart';
+import 'services/iap_service.dart';
 import 'services/file_downloads.dart';
 
 // Screens
@@ -217,6 +220,33 @@ class WaelApp extends StatelessWidget {
                   files.clearAll();
                 }
                 return files;
+              },
+            ),
+            // iOS In-App Purchase of subject packages (issue #57). Not lazy
+            // so the StoreKit listener starts at launch and re-sends
+            // unfinished transactions; off iOS it never touches StoreKit
+            // and calls no IAP route (StorePolicy.iapEnabled).
+            ChangeNotifierProxyProvider2<
+              AuthProvider,
+              AcademyCatalogProvider,
+              IapProvider
+            >(
+              lazy: false,
+              create: (ctx) {
+                final repo = HttpIapRepository(
+                  ctx.read<AuthProvider>().authedApi,
+                );
+                return IapProvider(
+                  repository: repo,
+                  service: IapService(repository: repo),
+                );
+              },
+              update: (_, auth, catalog, iap) {
+                iap!.attachCatalogReload(catalog.reload);
+                // Runs during build: bindSession never notifies
+                // synchronously.
+                iap.bindSession(authenticated: auth.isAuthenticated);
+                return iap;
               },
             ),
             // The protected player's real engine and Android channel.

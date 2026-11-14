@@ -45,6 +45,18 @@ void main() {
         expect(StorePolicy.contentOnly(p), isFalse, reason: '$p');
       }
     });
+    test('iapEnabled is true on iOS only (issue #57)', () {
+      expect(StorePolicy.iapEnabled(TargetPlatform.iOS), isTrue);
+      for (final p in [
+        TargetPlatform.android,
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.windows,
+        TargetPlatform.fuchsia,
+      ]) {
+        expect(StorePolicy.iapEnabled(p), isFalse, reason: '$p');
+      }
+    });
   });
 
   group('FieldValidators.requiredPhone', () {

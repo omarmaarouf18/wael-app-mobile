@@ -52,6 +52,16 @@ dependencies:
   # books (Android getCacheDir(), no storage permission). Was already a
   # transitive dependency at this version. BSD-3-Clause (Flutter Authors).
   path_provider: 2.1.6
+  # Pinned exact: iOS In-App Purchase of subject packages (owner decision
+  # 2026-11-13, issue #57). The StoreKit implementation of the official
+  # `in_app_purchase` plugin, used directly so the Android build gets no
+  # Play Billing code (the Android app must stay unchanged); StoreKit 2 is
+  # its default. Only touched when `StorePolicy.iapEnabled()` (iOS).
+  # BSD-3-Clause (Flutter Authors).
+  in_app_purchase_storekit: 0.4.17
+  # Pinned exact: PurchaseParam / PurchaseDetails types used by the plugin
+  # above. BSD-3-Clause (Flutter Authors).
+  in_app_purchase_platform_interface: 1.4.1
 
 dev_dependencies:
   flutter_test:
