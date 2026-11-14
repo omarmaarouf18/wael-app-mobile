@@ -13,8 +13,40 @@ owner on 2026-10-08). `docs/frontend/CONTENT-GAPS.md` lists what
 exists and what is missing.
 Opening a locked subject creates its access request through the real
 `POST /api/v1/academy/subjects/{id}/access-request` (SPEC decision 9, Phase 3.3);
-the subject screen then shows "Request pending". There is no payment screen in
-the app (payment happens outside it, ADR-0003).
+the subject screen then shows "Request pending". *(Amended 2026-11-14, owner
+decision D7 / ADR-0015: the previous sentence said "There is no payment screen
+in the app (payment happens outside it, ADR-0003)". Now:)* iOS has an In-App
+Purchase packages screen (see "iOS packages" below); Android has none, and
+payment for Android and the website still happens outside the app (ADR-0003).
+
+## iOS packages (In-App Purchase, ADR-0015)
+
+On iOS only (`StorePolicy.iapEnabled`, decided by platform, never by a server
+flag) the app sells **packages** of subjects with StoreKit 2 (issues #57, #58):
+
+- **Entry**: a "الباقات / Packages" tile on Home and Courses
+  (`lib/widgets/packages_entry_tile.dart`) opens `/packages`
+  (`lib/screens/packages_screen.dart`): each package's title, "متاحة حتى /
+  Available until" date (hidden when none), subjects with an owned mark, the
+  price StoreKit returns (our API never carries one), Buy (disabled with a
+  reason when not on sale, all owned, or StoreKit has no product) and Restore
+  Purchases.
+- **Locked subject**: names its package with a button to it, or says the
+  subject isn't available right now; the automatic access request still sends.
+  No WhatsApp, copy link, contact, activation, website or price.
+- **Plumbing**: `GET/POST /api/v1/academy/iap/*` through
+  `lib/repositories/iap_repository.dart`; `lib/services/iap_service.dart`
+  finishes a StoreKit transaction only on a 200 or one of the five permanent
+  refusals (owner decision D4), otherwise it stays unfinished and is re-sent.
+  Dependencies: `in_app_purchase_storekit` 0.4.17 and
+  `in_app_purchase_platform_interface` 1.4.1 (BSD-3-Clause), used directly so
+  the Android build gets no Play Billing code.
+- **Wording**: only `iapBuy` and `iapRestorePurchases` may name the purchase
+  action (owner decision D5, allowlisted in `test/store_safety_l10n_test.dart`);
+  `test/packages_screen_test.dart` proves no `iap*` string renders on Android.
+- **Store screenshots**: `test/goldens/iap_packages_ar.png` and
+  `test/goldens/iap_packages_en.png` (iPhone 6.7" size, 1290x2796), from
+  `test/iap_packages_goldens_test.dart`.
 
 ## Backend connection
 
@@ -162,6 +194,11 @@ bash ../scripts/frontend_composition_gate.sh
 flutter analyze
 flutter test
 ```
+
+*(Amended 2026-11-14, owner decision D6: while the Very Good Flutter plugin's
+hook is active, run the tests through the very_good_cli MCP `test` tool with
+`optimization: false` (its optimized bundle breaks the login golden), plus
+`make ci` from the repo root; never the bare test command then.)*
 
 The composition gate (`scripts/frontend_composition_gate.sh`) scans `lib/screens/` for raw
 `Scaffold(`, `AppBar(`, `BoxDecoration(`, `TextStyle(`, `fontSize:`, `Color(0x...)`,

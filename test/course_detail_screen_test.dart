@@ -15,6 +15,7 @@ import 'package:wael_app/core/external_links.dart';
 import 'package:wael_app/models/academy_catalog.dart';
 import 'package:wael_app/providers/academy_catalog_provider.dart';
 import 'package:wael_app/providers/home_provider.dart';
+import 'package:wael_app/providers/iap_provider.dart';
 import 'package:wael_app/screens/course_detail/subject_content_section.dart';
 import 'package:wael_app/screens/course_detail_screen.dart';
 import 'package:wael_app/screens/video_player_screen.dart';
@@ -30,6 +31,7 @@ import 'package:wael_app/widgets/themed_error_banner.dart';
 import 'package:wael_app/widgets/themed_skeleton.dart';
 
 import 'academy_fakes.dart';
+import 'iap_fakes.dart';
 import 'director_fixture.dart';
 import 'screen_harness.dart';
 import 'widget_layer_harness.dart';
@@ -57,6 +59,7 @@ void main() {
       bool settle = true,
       DirectorProfile director = testDirector,
       TargetPlatform? platform,
+      IapProvider? iap,
     }) async {
       final effectivePlatform =
           platform ??
@@ -77,6 +80,10 @@ void main() {
           ChangeNotifierProvider<AcademyCatalogProvider>.value(value: catalog),
           ChangeNotifierProvider(
             create: (_) => HomeProvider(director: director),
+          ),
+          // iOS packages (issue #58); inert off iOS.
+          ChangeNotifierProvider<IapProvider>.value(
+            value: iap ?? fakeIapProvider(),
           ),
         ],
         size: size,
@@ -767,7 +774,7 @@ void main() {
           // Automatic access request still sent
           expect(repo.accessCalls, ['d1']);
           // Neutral text is shown
-          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
           // No buttons, no WhatsApp, no copy action
           expect(find.byType(PrimaryButton), findsNothing);
           expect(find.text(l10n.openWhatsApp), findsNothing);
@@ -789,7 +796,7 @@ void main() {
           await pump(tester, lockedBody, repo: repo);
           expect(repo.accessCalls, isEmpty);
           // Neutral text is shown
-          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
           // No buttons, no WhatsApp, no copy action
           expect(find.byType(PrimaryButton), findsNothing);
           expect(find.text(l10n.openWhatsApp), findsNothing);
@@ -811,13 +818,13 @@ void main() {
           await pump(tester, lockedBody, repo: repo, settle: false);
           await tester.pump();
           await tester.pump();
-          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
           expect(find.text(l10n.sendingAccessRequest), findsNothing);
           expect(find.byType(CircularProgressIndicator), findsNothing);
 
           gate.complete();
           await tester.pumpAndSettle();
-          expect(find.text(l10n.enrolledStudentsOnly), findsOneWidget);
+          expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
           expect(find.text(l10n.requestPending), findsNothing);
           await tester.pump(const Duration(seconds: 2));
         },
@@ -831,7 +838,7 @@ void main() {
             ..['owned'] = true;
           await pump(tester, ownedBody);
           expect(find.text(l10n.accessActive), findsOneWidget);
-          expect(find.text(l10n.enrolledStudentsOnly), findsNothing);
+          expect(find.text(l10n.iapSubjectNotAvailable), findsNothing);
           expect(find.byType(PrimaryButton), findsNothing);
           expect(find.text(l10n.priceLabel), findsNothing);
           await tester.pump(const Duration(seconds: 2));

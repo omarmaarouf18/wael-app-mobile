@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/refresh_when_visible.dart';
+import '../core/store_policy.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../models/academy_catalog.dart';
@@ -11,6 +12,7 @@ import '../widgets/accent_title.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/catalog_level_header.dart';
 import '../widgets/catalog_subject_card.dart';
+import '../widgets/packages_entry_tile.dart';
 import '../widgets/search_field.dart';
 import '../widgets/selectable_chip.dart';
 import '../widgets/themed_empty_state.dart';
@@ -96,6 +98,17 @@ class _CoursesScreenState extends State<CoursesScreen>
                   },
                 ),
               ),
+              // iOS packages entry (issue #58).
+              if (StorePolicy.iapEnabled(Theme.of(context).platform))
+                Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: AppSpacing.marginMobile,
+                    vertical: AppSpacing.spaceSm,
+                  ),
+                  child: PackagesEntryTile(
+                    onTap: () => Navigator.of(context).pushNamed('/packages'),
+                  ),
+                ),
               ..._body(context, l10n, catalog, instructor),
               const SizedBox(height: AppSpacing.space3xl),
             ],

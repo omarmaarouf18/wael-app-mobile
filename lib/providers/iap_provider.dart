@@ -48,6 +48,39 @@ class IapProvider extends ChangeNotifier {
   IapFailure? get error => _error;
   IapPurchaseState get purchase => _service.state;
 
+  /// Purchase and restore updates, for one-off feedback (snackbars).
+  Stream<IapPurchaseState> get purchaseStates => _service.states;
+
+  /// Whether this package's purchase (or a verification) is in progress.
+  bool isBusyWith(IapPackage package) =>
+      _busy && _service.state.productId == package.productId;
+
+  /// Loads the packages once (locked subject panels call this).
+  void ensureLoaded() {
+    if (enabled && !_disposed && _status == IapCatalogStatus.idle) {
+      unawaited(load());
+    }
+  }
+
+  IapPackage? packageById(String id) {
+    for (final p in packages) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  /// The package that lists [subjectId]: one on sale first, else the first
+  /// in the server's order; null when no package lists it.
+  IapPackage? packageForSubject(String subjectId) {
+    IapPackage? first;
+    for (final p in packages) {
+      if (!p.subjects.any((s) => s.id == subjectId)) continue;
+      if (p.onSale) return p;
+      first ??= p;
+    }
+    return first;
+  }
+
   /// StoreKit's product (display price) for [package], or null when StoreKit
   /// does not know it (then the app offers no Buy button).
   IapStoreProduct? productFor(IapPackage package) =>

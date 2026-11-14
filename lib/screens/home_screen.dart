@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/error_messages.dart';
 import '../core/refresh_when_visible.dart';
+import '../core/store_policy.dart';
 import '../core/theme.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/academy_catalog_provider.dart';
@@ -11,6 +12,7 @@ import '../widgets/app_shell.dart';
 import '../widgets/home_hero_banner.dart';
 import '../widgets/instructor_dossier_card.dart';
 import '../widgets/owned_subject_tile.dart';
+import '../widgets/packages_entry_tile.dart';
 import '../widgets/secondary_button.dart';
 import '../widgets/themed_empty_state.dart';
 import '../widgets/themed_error_banner.dart';
@@ -77,6 +79,18 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               HomeHeroBanner(onExplore: _explore),
+
+              // iOS packages entry (issue #58).
+              if (StorePolicy.iapEnabled(Theme.of(context).platform))
+                Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: AppSpacing.marginMobile,
+                    vertical: AppSpacing.spaceSm,
+                  ),
+                  child: PackagesEntryTile(
+                    onTap: () => Navigator.of(context).pushNamed('/packages'),
+                  ),
+                ),
 
               // Academy director: hidden while the profile has no content.
               if (home.director.hasContent)

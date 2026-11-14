@@ -1,0 +1,4 @@
+# Test tags (see README "iOS packages").
+tags:
+  # The App Store screenshot goldens of the iOS packages screen.
+  store-screenshot:

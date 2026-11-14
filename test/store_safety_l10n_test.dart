@@ -6,6 +6,8 @@ import 'package:wael_app/core/api_client.dart';
 import 'package:wael_app/core/error_messages.dart';
 import 'package:wael_app/l10n/app_localizations.dart';
 
+import 'packages_screen_test.dart' show iapStrings;
+
 /// Store-safety rules (owner decision 2026-10-08, SPEC D3 amendment).
 ///
 /// The app may show a subject's price (the server-sent `price` + `currency`,
@@ -68,6 +70,63 @@ bool hasPaymentWord(String text) {
     if (pattern.hasMatch(text)) return true;
   }
   return false;
+}
+
+// Owner decision D5 (2026-11-14, issue #58): Apple requires a clear
+// purchase button and "Restore Purchases". These two l10n keys, and only
+// these, may name the purchase action; they render only behind
+// StorePolicy.iapEnabled (iOS), in lib/screens/packages_screen.dart. Every
+// other string keeps the ban above.
+const _iapPurchaseActionKeys = {'iapBuy', 'iapRestorePurchases'};
+
+/// Every `iap*` key in AppLocalizations (issue #58); keep in sync with
+/// `iapStrings` in test/packages_screen_test.dart.
+const _iapKeys = {
+  'iapBuy',
+  'iapRestorePurchases',
+  'iapPackagesTitle',
+  'iapEntrySubtitle',
+  'iapAvailableUntil',
+  'iapSubjectsHeading',
+  'iapOwned',
+  'iapNoSubjects',
+  'iapNoPackages',
+  'iapNotOnSale',
+  'iapAllOwned',
+  'iapStoreUnavailable',
+  'iapPending',
+  'iapVerifying',
+  'iapSuccess',
+  'iapRestoreNothing',
+  'iapSubjectInPackage',
+  'iapViewPackage',
+  'iapSubjectNotAvailable',
+  'iapLoadFailed',
+  'iapErrorRetryLater',
+  'iapErrorInProgress',
+  'iapErrorOtherAccount',
+  'iapErrorUsedByOther',
+  'iapErrorCancelledByApple',
+  'iapErrorNotConfirmed',
+  'iapErrorSandbox',
+  'iapErrorPackageMissing',
+};
+
+/// Line indexes (0-based) of lib/l10n/app_localizations.dart that belong to
+/// the D5 allowlisted getters: from `String get <key>` to its closing `;`.
+Set<int> iapAllowlistedLines(List<String> lines) {
+  final out = <int>{};
+  for (var i = 0; i < lines.length; i++) {
+    final m = RegExp(r'String get (\w+)\b').firstMatch(lines[i]);
+    if (m == null || !_iapPurchaseActionKeys.contains(m.group(1))) continue;
+    var j = i;
+    while (true) {
+      out.add(j);
+      if (lines[j].trimRight().endsWith(';') || j == lines.length - 1) break;
+      j++;
+    }
+  }
+  return out;
 }
 
 // Price words (owner decision 2026-10-08): allowed only where
@@ -253,8 +312,11 @@ void main() {
 
         final lines = file.readAsLinesSync();
         final violations = <String>[];
+        final allowed = iapAllowlistedLines(lines);
+        expect(allowed, isNotEmpty);
 
         for (var i = 0; i < lines.length; i++) {
+          if (allowed.contains(i)) continue;
           final line = lines[i].trim();
           // Ignore comments
           if (line.startsWith('//') ||
@@ -309,7 +371,11 @@ void main() {
               .value;
 
           final lines = file.readAsLinesSync();
+          final allowed = relPath.endsWith('lib/l10n/app_localizations.dart')
+              ? iapAllowlistedLines(lines)
+              : const <int>{};
           for (var i = 0; i < lines.length; i++) {
+            if (allowed.contains(i)) continue;
             var line = lines[i].trim();
             if (line.startsWith('*') || line.startsWith('/*')) {
               continue;
@@ -629,5 +695,113 @@ void main() {
         }
       },
     );
+
+    test('D5: exactly iapBuy and iapRestorePurchases are allowlisted', () {
+      final lines = File('lib/l10n/app_localizations.dart').readAsLinesSync();
+      final allowed = iapAllowlistedLines(lines);
+      final keys = {
+        for (final i in allowed)
+          ?RegExp(r'String get (\w+)\b').firstMatch(lines[i])?.group(1),
+      };
+      expect(keys, _iapPurchaseActionKeys);
+      // Each allowlisted getter is two lines at most (no hidden extra text).
+      expect(allowed.length, lessThanOrEqualTo(4));
+      for (final locale in [const Locale('ar'), const Locale('en')]) {
+        final l10n = AppLocalizations(locale);
+        final isArabic = locale.languageCode == 'ar';
+        expect(l10n.iapBuy, isArabic ? 'شراء' : 'Buy');
+        expect(
+          l10n.iapRestorePurchases,
+          isArabic ? 'استعادة المشتريات' : 'Restore Purchases',
+        );
+      }
+    });
+
+    test('D5: the allowlisted keys are used only by the packages screen', () {
+      final uses = <String>[];
+      for (final f in Directory('lib').listSync(recursive: true)) {
+        if (f is! File || !f.path.endsWith('.dart')) continue;
+        final rel = f.path.replaceAll(r'\', '/');
+        if (rel.endsWith('lib/l10n/app_localizations.dart')) continue;
+        final text = f.readAsStringSync();
+        for (final key in _iapPurchaseActionKeys) {
+          if (text.contains('.$key')) uses.add('$rel:$key');
+        }
+      }
+      expect(uses.toSet(), {
+        'lib/screens/packages_screen.dart:iapBuy',
+        'lib/screens/packages_screen.dart:iapRestorePurchases',
+      });
+    });
+
+    test('every iap key is listed (and nothing else starts with iap)', () {
+      final text = File('lib/l10n/app_localizations.dart').readAsStringSync();
+      final declared = {
+        for (final m in RegExp(r'String (?:get )?(iap\w+)\b').allMatches(text))
+          m.group(1)!,
+      }..remove('iapError');
+      expect(declared, _iapKeys);
+      for (final locale in [const Locale('ar'), const Locale('en')]) {
+        // iapSubjectInPackage is listed with an Arabic and a Latin name.
+        expect(
+          iapStrings(AppLocalizations(locale)),
+          hasLength(_iapKeys.length + 1),
+        );
+      }
+    });
+
+    test('D5: every other iOS packages string names no payment action, price, '
+        'activation, WhatsApp or website', () {
+      const forbidden = [
+        'تفعيل',
+        'تتفعّل',
+        'activate',
+        'whatsapp',
+        'واتساب',
+        'website',
+        'الموقع',
+        'سعر',
+        'price',
+        'egp',
+        'ج.م',
+        'اشترك',
+        'اشتراك',
+        'contact',
+        'تواصل',
+      ];
+      for (final locale in [const Locale('ar'), const Locale('en')]) {
+        final l10n = AppLocalizations(locale);
+        final strings = [
+          for (final s in iapStrings(l10n))
+            if (s != l10n.iapBuy && s != l10n.iapRestorePurchases) s,
+          for (final code in [
+            null,
+            'store_unavailable',
+            'storekit_duplicate_product_object',
+            'accountMismatch',
+            'transactionOwnedByOtherUser',
+            'revokedTransaction',
+            'invalidTransaction',
+            'sandboxNotAllowed',
+            'unknownProduct',
+            'network',
+          ])
+            l10n.iapError(code),
+        ];
+        for (final str in strings) {
+          expect(hasPaymentWord(str), isFalse, reason: 'payment: "$str"');
+          expect(hasPriceWord(str), isFalse, reason: 'price: "$str"');
+          expect(websiteAddressesIn(str), isEmpty, reason: 'site: "$str"');
+          final lower = str.toLowerCase();
+          for (final word in forbidden) {
+            expect(
+              lower.contains(word),
+              isFalse,
+              reason: 'iOS string "$str" contains "$word"',
+            );
+          }
+        }
+      }
+    });
   });
 }

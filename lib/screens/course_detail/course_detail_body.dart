@@ -12,6 +12,7 @@ import '../../models/academy_catalog.dart';
 import '../../providers/academy_catalog_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/iap_provider.dart';
 import '../../widgets/director_strip.dart';
 import '../../widgets/owned_subject_tile.dart';
 import '../../widgets/primary_button.dart';
@@ -188,18 +189,24 @@ class _Access extends StatelessWidget {
     final catalog = context.watch<AcademyCatalogProvider>();
     final access = catalog.accessOf(detail.id);
 
-    if (StorePolicy.contentOnly(Theme.of(context).platform)) {
-      final panel = ThemedPanel(
-        tone: PanelTone.raised,
-        borderRadius: AppRadius.radiusLg,
-        padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
-        child: Text(
-          l10n.enrolledStudentsOnly,
-          style: AppTypography.bodySm(
-            isArabic: isArabic,
-          ).copyWith(color: AppColors.textPrimary),
-        ),
-      );
+    final platform = Theme.of(context).platform;
+    if (StorePolicy.contentOnly(platform)) {
+      // iOS (issue #58): the locked subject points to its package; the
+      // automatic access request still sends. Idle, sending, pending and
+      // failed all show this same panel (failed adds the retry banner).
+      final Widget panel = StorePolicy.iapEnabled(platform)
+          ? _IapLockedPanel(subjectId: detail.id)
+          : ThemedPanel(
+              tone: PanelTone.raised,
+              borderRadius: AppRadius.radiusLg,
+              padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+              child: Text(
+                l10n.enrolledStudentsOnly,
+                style: AppTypography.bodySm(
+                  isArabic: isArabic,
+                ).copyWith(color: AppColors.textPrimary),
+              ),
+            );
       if (access.status == AccessRequestStatus.failed) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,6 +402,94 @@ class _PendingRequest extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// iOS locked subject (issue #58): "included in the `name` package" with a
+/// button to that package, or the neutral "not available to you right now"
+/// when no package lists the subject. No WhatsApp, no copy link, no
+/// contact or activation wording, no website, no price.
+class _IapLockedPanel extends StatefulWidget {
+  const _IapLockedPanel({required this.subjectId});
+
+  final String subjectId;
+
+  @override
+  State<_IapLockedPanel> createState() => _IapLockedPanelState();
+}
+
+class _IapLockedPanelState extends State<_IapLockedPanel> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<IapProvider?>()?.ensureLoaded();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isArabic = l10n.isArabic;
+    final iap = context.watch<IapProvider?>();
+    final package = iap?.packageForSubject(widget.subjectId);
+    final loading =
+        iap != null &&
+        iap.enabled &&
+        package == null &&
+        (iap.status == IapCatalogStatus.idle ||
+            iap.status == IapCatalogStatus.loading);
+
+    final Widget child;
+    if (package != null) {
+      child = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.iapSubjectInPackage(package.title.resolve(isArabic)),
+            style: AppTypography.bodyMd(
+              isArabic: isArabic,
+            ).copyWith(color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: AppSpacing.spaceMd),
+          SecondaryButton(
+            text: l10n.iapViewPackage,
+            height: 44,
+            leadingIcon: const Icon(
+              Icons.inventory_2_outlined,
+              size: 16,
+              color: AppColors.textPrimary,
+            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed('/packages', arguments: package.id),
+          ),
+        ],
+      );
+    } else if (loading) {
+      child = const SizedBox(
+        height: 18,
+        width: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.crimson),
+        ),
+      );
+    } else {
+      child = Text(
+        l10n.iapSubjectNotAvailable,
+        style: AppTypography.bodySm(
+          isArabic: isArabic,
+        ).copyWith(color: AppColors.textPrimary),
+      );
+    }
+
+    return ThemedPanel(
+      tone: PanelTone.raised,
+      borderRadius: AppRadius.radiusLg,
+      padding: const EdgeInsetsDirectional.all(AppSpacing.spaceMd),
+      child: SizedBox(width: double.infinity, child: child),
     );
   }
 }

@@ -30,6 +30,7 @@ const kStubRoutes = [
   '/course-details',
   '/video-player',
   '/update-gate',
+  '/packages',
 ];
 
 /// Arguments passed to the stub routes, newest last. Cleared by [pumpScreen].

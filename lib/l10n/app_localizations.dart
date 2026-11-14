@@ -386,6 +386,101 @@ class AppLocalizations {
       ? 'المادة دي متاحة لطلبة الأكاديمية المسجّلين.'
       : "This subject is available to the academy's enrolled students.";
 
+  // iOS In-App Purchase packages (owner decisions 2026-11-13 and D5
+  // 2026-11-14, issue #58). Every key starts with `iap` and renders only
+  // behind StorePolicy.iapEnabled (iOS). Only iapBuy and iapRestorePurchases
+  // may name the purchase action (allowlisted in
+  // test/store_safety_l10n_test.dart); the rest keep the old ban.
+  String get iapBuy => isArabic ? 'شراء' : 'Buy';
+  String get iapRestorePurchases =>
+      isArabic ? 'استعادة المشتريات' : 'Restore Purchases';
+  String get iapPackagesTitle => isArabic ? 'الباقات' : 'Packages';
+  String get iapEntrySubtitle => isArabic
+      ? 'مواد كل فرقة في باقة واحدة'
+      : "All of a year's subjects in one package";
+  String iapAvailableUntil(String date) =>
+      isArabic ? 'متاحة حتى $date' : 'Available until $date';
+  String get iapSubjectsHeading =>
+      isArabic ? 'المواد في الباقة' : 'Subjects in this package';
+  String get iapOwned => isArabic ? 'متاحة ليك' : 'Owned';
+  String get iapNoSubjects => isArabic
+      ? 'لسه مفيش مواد في الباقة دي.'
+      : 'No subjects in this package yet.';
+  String get iapNoPackages => isArabic
+      ? 'مفيش باقات متاحة دلوقتي.'
+      : 'No packages are available right now.';
+  String get iapNotOnSale => isArabic
+      ? 'الباقة دي مش معروضة حاليًا.'
+      : "This package isn't offered right now.";
+  String get iapAllOwned => isArabic
+      ? 'كل مواد الباقة متاحة ليك بالفعل.'
+      : 'You already have every subject in this package.';
+  String get iapStoreUnavailable => isArabic
+      ? 'App Store مش متاح دلوقتي. حاول تاني بعد شوية.'
+      : "The App Store isn't available right now. Please try again later.";
+  String get iapPending => isArabic
+      ? 'مستنيين موافقة صاحب الحساب على العملية.'
+      : 'Waiting for approval from the account holder.';
+  String get iapVerifying =>
+      isArabic ? 'جارٍ تأكيد العملية...' : 'Confirming with the academy…';
+  String get iapSuccess => isArabic
+      ? 'تمت إضافة مواد الباقة لحسابك.'
+      : 'The package subjects were added to your account.';
+  String get iapRestoreNothing =>
+      isArabic ? 'مفيش عمليات سابقة نرجّعها.' : 'Nothing to restore.';
+  String iapSubjectInPackage(String name) => isArabic
+      ? 'المادة دي ضمن باقة $name'
+      : 'This subject is included in the $name package';
+  String get iapViewPackage => isArabic ? 'عرض الباقة' : 'View package';
+  String get iapSubjectNotAvailable => isArabic
+      ? 'المادة دي مش متاحة ليك حاليًا'
+      : "This subject isn't available to you right now";
+  String get iapLoadFailed => isArabic
+      ? 'مقدرناش نحمّل الباقات. حاول تاني.'
+      : "Couldn't load the packages. Please try again.";
+  String get iapErrorRetryLater => isArabic
+      ? 'حصلت مشكلة. حاول تاني بعد شوية؛ المواد هتتضاف تلقائيًا أول ما العملية تتأكد.'
+      : "Something went wrong. Please try again in a moment; your subjects are added automatically once it's confirmed.";
+  String get iapErrorInProgress => isArabic
+      ? 'فيه عملية لنفس الباقة لسه بتتأكد. استنى شوية وحاول تاني.'
+      : 'A previous attempt for this package is still being confirmed. Please wait and try again.';
+  String get iapErrorOtherAccount => isArabic
+      ? 'العملية دي اتعملت من حساب تاني في الأكاديمية. سجّل دخول بالحساب ده علشان المواد تتضاف.'
+      : 'This was made from a different academy account. Sign in with that account to receive the subjects.';
+  String get iapErrorUsedByOther => isArabic
+      ? 'العملية دي مسجلة على حساب تاني في الأكاديمية.'
+      : 'This transaction is already linked to another academy account.';
+  String get iapErrorCancelledByApple => isArabic
+      ? 'العملية دي اتلغت من Apple.'
+      : 'This transaction was cancelled by Apple.';
+  String get iapErrorNotConfirmed => isArabic
+      ? 'مقدرناش نأكد العملية دي مع App Store.'
+      : "We couldn't confirm this transaction with the App Store.";
+  String get iapErrorSandbox => isArabic
+      ? 'العمليات التجريبية مش متاحة للحساب ده.'
+      : "Test transactions aren't accepted for this account.";
+  String get iapErrorPackageMissing => isArabic
+      ? 'الباقة دي لسه مش متجهزة. المواد هتتضاف تلقائيًا أول ما تتجهز.'
+      : "This package isn't set up yet; your subjects are added automatically once it is.";
+
+  /// Message for an [IapPurchaseState.errorCode]: an `IapFailureCode` name
+  /// or a StoreKit / plugin code. Unknown codes get the retry-later text.
+  String iapError(String? code) => switch (code) {
+    'store_unavailable' || 'product_not_found' => iapStoreUnavailable,
+    'storekit_duplicate_product_object' => iapErrorInProgress,
+    'accountMismatch' => iapErrorOtherAccount,
+    'transactionOwnedByOtherUser' => iapErrorUsedByOther,
+    'revokedTransaction' => iapErrorCancelledByApple,
+    'invalidTransaction' ||
+    'wrongBundle' ||
+    'unsupportedProductType' ||
+    'missing_transaction' ||
+    'invalidBody' => iapErrorNotConfirmed,
+    'sandboxNotAllowed' => iapErrorSandbox,
+    'unknownProduct' => iapErrorPackageMissing,
+    _ => iapErrorRetryLater,
+  };
+
   // Locked/pending wording (owner decision 2026-10-08): the subject is
   // activated by the academy/support after the student contacts support on
   // WhatsApp. (Owner decision 2026-10-12: "السنتر"/"center" became

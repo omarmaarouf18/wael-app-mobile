@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:wael_app/providers/iap_provider.dart';
+import 'package:wael_app/services/iap_service.dart';
+
 import 'package:wael_app/models/iap_package.dart';
 import 'package:wael_app/repositories/iap_repository.dart';
 import 'package:wael_app/services/iap_store.dart';
@@ -158,3 +162,46 @@ IapStoreTransaction purchased({
   jws: jws,
   needsCompletion: needsCompletion,
 );
+
+/// Packages JSON whose single package lists [subjectIds].
+Map<String, dynamic> packagesWith(
+  List<String> subjectIds, {
+  bool onSale = true,
+  String titleAr = 'الفرقة الأولى',
+  String titleEn = 'Year 1',
+}) {
+  final json = packagesJson(onSale: onSale);
+  final pkg = (json['packages'] as List).single as Map<String, dynamic>;
+  pkg['title'] = {'ar': titleAr, 'en': titleEn};
+  pkg['subjects'] = [
+    for (final id in subjectIds)
+      {
+        'id': id,
+        'title': {'ar': 'مادة $id', 'en': 'Subject $id'},
+        'level_key': 'bachelor-y1',
+        'term': 'first',
+        'owned': false,
+      },
+  ];
+  return json;
+}
+
+/// An [IapProvider] over fakes; [platform] null follows the test variant.
+IapProvider fakeIapProvider({
+  FakeIapRepository? repo,
+  FakeIapStore? store,
+  TargetPlatform? platform,
+}) {
+  final r = repo ?? FakeIapRepository();
+  final s = store ?? FakeIapStore();
+  return IapProvider(
+    repository: r,
+    service: IapService(
+      repository: r,
+      storeFactory: () => s,
+      platform: platform,
+      log: (_) {},
+    ),
+    platform: platform,
+  );
+}

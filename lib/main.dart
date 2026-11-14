@@ -39,6 +39,7 @@ import 'player/player_engine.dart';
 import 'player/youtube_iframe_engine.dart';
 import 'repositories/academy_repository.dart';
 import 'repositories/iap_repository.dart';
+import 'screens/packages_screen.dart';
 import 'services/iap_service.dart';
 import 'services/file_downloads.dart';
 
@@ -301,6 +302,19 @@ class WaelApp extends StatelessWidget {
                 }
                 return MaterialPageRoute(
                   builder: (context) => CourseDetailScreen(courseId: courseId),
+                );
+              }
+              if (settings.name == '/packages') {
+                // iOS packages (issue #58); the argument, when present, is
+                // the package to scroll to.
+                final args = settings.arguments;
+                return MaterialPageRoute(
+                  settings: const RouteSettings(name: '/packages'),
+                  builder: (context) => PackagesScreen(
+                    focusPackageId: args is String && args.isNotEmpty
+                        ? args
+                        : null,
+                  ),
                 );
               }
               if (settings.name == '/video-player') {
