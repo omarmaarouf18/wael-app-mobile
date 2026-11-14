@@ -12,6 +12,12 @@
 # debug builds only; the app shows no debug-only UI on these screens). Each
 # `WAEL_SHOT:<lang>:<name>` line the tour prints becomes
 # OUT_DIR/<lang>/<name>.png. Written for the macOS system bash (3.2).
+#
+# In-App Purchase review screenshots: OUT_DIR/<lang>/08_packages.png is also
+# copied, scaled to fit 2000 px (App Store Connect's IAP review screenshot
+# limit), to OUT_DIR/iap_review/iap_review_<lang>.png. The tour's StoreKit
+# lines (`WAEL_IAP:` / `WAEL_IAP_RESULT:`) are printed to the job log and
+# kept as OUT_DIR/iap_review/storekit-<lang>.txt.
 set -euo pipefail
 
 out="${1:?usage: capture_ios.sh OUT_DIR}"
@@ -115,6 +121,15 @@ for lang in $langs; do
     sleep 1
   done
   grep -h 'WAEL_SHOT_NOTE' "$log" || true
+  mkdir -p "$out/iap_review"
+  grep -ho 'WAEL_IAP[A-Z_]*:.*' "$log" > "$out/iap_review/storekit-$lang.txt" || true
+  cat "$out/iap_review/storekit-$lang.txt"
+  if [ -f "$out/$lang/08_packages.png" ]; then
+    review="$out/iap_review/iap_review_$lang.png"
+    sips -Z 2000 "$out/$lang/08_packages.png" --out "$review" >/dev/null
+    size="$(sips -g pixelWidth -g pixelHeight "$review" | awk '/pixel/ {print $2}' | paste -sd x -)"
+    echo "IAP review copy iap_review/iap_review_$lang.png ($size)"
+  fi
   kill "$flutter_pid" 2>/dev/null || true
   wait "$flutter_pid" 2>/dev/null || true
   flutter_pid=""

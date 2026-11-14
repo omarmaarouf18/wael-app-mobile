@@ -9,6 +9,9 @@ name: Store screenshots (iOS)
 # in Arabic and English. Tour: frontend/tool/screenshots/main.dart; capture:
 # frontend/tool/screenshots/capture_ios.sh. Nothing is signed or uploaded to
 # Apple: the PNGs come back as a workflow artifact for App Store Connect.
+# The last shots are the iOS packages screen; iap_review/ in the artifact
+# holds the In-App Purchase review copies (<= 2000 px) and StoreKit's answer
+# per Product ID (also printed in the Capture step's log).
 #
 # Needs the repo variable API_BASE_URL (same as Build iOS) and two secrets
 # for a dedicated demo account that owns at least one subject:
