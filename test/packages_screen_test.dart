@@ -14,6 +14,7 @@ import 'package:wael_app/screens/packages_screen.dart';
 import 'package:wael_app/services/iap_store.dart';
 import 'package:wael_app/widgets/packages_entry_tile.dart';
 import 'package:wael_app/widgets/primary_button.dart';
+import 'package:wael_app/widgets/secondary_button.dart';
 
 import 'academy_fakes.dart';
 import 'director_fixture.dart';
@@ -41,9 +42,6 @@ List<String> iapStrings(AppLocalizations l10n) => [
   l10n.iapVerifying,
   l10n.iapSuccess,
   l10n.iapRestoreNothing,
-  l10n.iapSubjectInPackage('Year 1'),
-  l10n.iapSubjectInPackage('الفرقة الأولى'),
-  l10n.iapViewPackage,
   l10n.iapSubjectNotAvailable,
   l10n.iapLoadFailed,
   l10n.iapErrorRetryLater,
@@ -381,48 +379,39 @@ void main() {
         return repo;
       }
 
-      testWidgets(
-        'iOS: a subject in a package names it and opens that package',
-        (tester) async {
-          final repo = FakeIapRepository()
-            ..catalog = IapCatalog.fromJson(packagesWith(['d1']));
-          final academy = await pumpDetail(
-            tester,
-            iap: fakeIapProvider(repo: repo),
-          );
-          expect(academy.accessCalls, ['d1']);
-          final pkgName = l10n.isArabic ? 'الفرقة الأولى' : 'Year 1';
-          expect(find.text(l10n.iapSubjectInPackage(pkgName)), findsOneWidget);
-          expect(find.text(l10n.openWhatsApp), findsNothing);
-          expect(find.text(l10n.copySupportLink), findsNothing);
-          expect(find.text(l10n.contactSupportToActivate), findsNothing);
-          expect(find.text(l10n.enrolledStudentsOnly), findsNothing);
-          expect(find.text(l10n.priceLabel), findsNothing);
-
-          await tester.ensureVisible(find.text(l10n.iapViewPackage));
-          await tester.tap(find.text(l10n.iapViewPackage));
-          await tester.pumpAndSettle();
-          expect(find.text('route:/packages:pkg_1'), findsOneWidget);
-          await tester.pump(const Duration(seconds: 2));
-        },
-        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
-      );
-
-      testWidgets(
-        'iOS: a subject in no package shows the neutral text only',
-        (tester) async {
-          final academy = await pumpDetail(tester, iap: fakeIapProvider());
-          expect(academy.accessCalls, ['d1']);
-          expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
-          expect(find.text(l10n.iapViewPackage), findsNothing);
-          expect(find.byType(PrimaryButton), findsNothing);
-          expect(find.text(l10n.openWhatsApp), findsNothing);
-          expect(find.text(l10n.copySupportLink), findsNothing);
-          expect(find.text(l10n.priceLabel), findsNothing);
-          await tester.pump(const Duration(seconds: 2));
-        },
-        variant: TargetPlatformVariant.only(TargetPlatform.iOS),
-      );
+      // Owner decision 2026-11-14: on iOS a locked subject never names or
+      // links a package, whether or not one lists it.
+      for (final (label, subjectIds) in [
+        ('in a package', ['d1']),
+        ('in no package', <String>[]),
+      ]) {
+        testWidgets(
+          'iOS: a locked subject $label shows the neutral text only',
+          (tester) async {
+            final repo = FakeIapRepository()
+              ..catalog = IapCatalog.fromJson(packagesWith(subjectIds));
+            final academy = await pumpDetail(
+              tester,
+              iap: fakeIapProvider(repo: repo),
+            );
+            expect(academy.accessCalls, ['d1']);
+            expect(find.text(l10n.iapSubjectNotAvailable), findsOneWidget);
+            // No package lookup, name or link.
+            expect(repo.fetchCalls, 0);
+            expect(find.textContaining('Year 1'), findsNothing);
+            expect(find.textContaining('الفرقة الأولى'), findsNothing);
+            expect(find.byType(PrimaryButton), findsNothing);
+            expect(find.byType(SecondaryButton), findsNothing);
+            expect(find.text(l10n.openWhatsApp), findsNothing);
+            expect(find.text(l10n.copySupportLink), findsNothing);
+            expect(find.text(l10n.contactSupportToActivate), findsNothing);
+            expect(find.text(l10n.enrolledStudentsOnly), findsNothing);
+            expect(find.text(l10n.priceLabel), findsNothing);
+            await tester.pump(const Duration(seconds: 2));
+          },
+          variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+        );
+      }
 
       testWidgets(
         'Android: the locked subject renders no iap string',

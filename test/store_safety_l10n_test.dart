@@ -98,8 +98,6 @@ const _iapKeys = {
   'iapVerifying',
   'iapSuccess',
   'iapRestoreNothing',
-  'iapSubjectInPackage',
-  'iapViewPackage',
   'iapSubjectNotAvailable',
   'iapLoadFailed',
   'iapErrorRetryLater',
@@ -742,10 +740,9 @@ void main() {
       }..remove('iapError');
       expect(declared, _iapKeys);
       for (final locale in [const Locale('ar'), const Locale('en')]) {
-        // iapSubjectInPackage is listed with an Arabic and a Latin name.
         expect(
           iapStrings(AppLocalizations(locale)),
-          hasLength(_iapKeys.length + 1),
+          hasLength(_iapKeys.length),
         );
       }
     });

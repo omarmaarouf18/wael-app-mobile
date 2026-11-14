@@ -428,10 +428,6 @@ class AppLocalizations {
       : 'The package subjects were added to your account.';
   String get iapRestoreNothing =>
       isArabic ? 'مفيش عمليات سابقة نرجّعها.' : 'Nothing to restore.';
-  String iapSubjectInPackage(String name) => isArabic
-      ? 'المادة دي ضمن باقة $name'
-      : 'This subject is included in the $name package';
-  String get iapViewPackage => isArabic ? 'عرض الباقة' : 'View package';
   String get iapSubjectNotAvailable => isArabic
       ? 'المادة دي مش متاحة ليك حاليًا'
       : "This subject isn't available to you right now";

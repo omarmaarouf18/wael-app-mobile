@@ -31,8 +31,10 @@ flag) the app sells **packages** of subjects with StoreKit 2 (issues #57, #58):
   price StoreKit returns (our API never carries one), Buy (disabled with a
   reason when not on sale, all owned, or StoreKit has no product) and Restore
   Purchases.
-- **Locked subject**: names its package with a button to it, or says the
-  subject isn't available right now; the automatic access request still sends.
+- **Locked subject**: *(Amended 2026-11-14, owner decision: it used to name
+  its package with a button to it.)* Shows only "the subject isn't available
+  to you right now", whether or not a package lists it, with no package name
+  or button; the automatic access request still sends.
   No WhatsApp, copy link, contact, activation, website or price.
 - **Plumbing**: `GET/POST /api/v1/academy/iap/*` through
   `lib/repositories/iap_repository.dart`; `lib/services/iap_service.dart`
