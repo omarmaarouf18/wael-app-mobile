@@ -58,17 +58,18 @@ void main() {
   });
 
   group('every contract error code maps to a typed failure', () {
+    // The bool: the app finishes the StoreKit transaction (D4).
     const cases = <(int, String, IapFailureCode, bool)>[
       (400, 'invalid_body', IapFailureCode.invalidBody, false),
       (403, 'app_client_required', IapFailureCode.appClientRequired, false),
-      (422, 'invalid_transaction', IapFailureCode.invalidTransaction, false),
-      (422, 'wrong_bundle', IapFailureCode.wrongBundle, false),
-      (422, 'revoked_transaction', IapFailureCode.revokedTransaction, false),
+      (422, 'invalid_transaction', IapFailureCode.invalidTransaction, true),
+      (422, 'wrong_bundle', IapFailureCode.wrongBundle, true),
+      (422, 'revoked_transaction', IapFailureCode.revokedTransaction, true),
       (
         422,
         'unsupported_product_type',
         IapFailureCode.unsupportedProductType,
-        false,
+        true,
       ),
       (404, 'unknown_product', IapFailureCode.unknownProduct, false),
       (403, 'account_mismatch', IapFailureCode.accountMismatch, false),
@@ -76,16 +77,16 @@ void main() {
         409,
         'transaction_owned_by_other_user',
         IapFailureCode.transactionOwnedByOtherUser,
-        false,
+        true,
       ),
       (403, 'sandbox_not_allowed', IapFailureCode.sandboxNotAllowed, false),
-      (503, 'iap_unavailable', IapFailureCode.iapUnavailable, true),
-      (429, 'rate_limited', IapFailureCode.rateLimited, true),
-      (503, 'something_else', IapFailureCode.iapUnavailable, true),
-      (500, 'internal', IapFailureCode.unknown, true),
-      (418, 'teapot', IapFailureCode.unknown, true),
+      (503, 'iap_unavailable', IapFailureCode.iapUnavailable, false),
+      (429, 'rate_limited', IapFailureCode.rateLimited, false),
+      (503, 'something_else', IapFailureCode.iapUnavailable, false),
+      (500, 'internal', IapFailureCode.unknown, false),
+      (418, 'teapot', IapFailureCode.unknown, false),
     ];
-    for (final (status, code, expected, transient) in cases) {
+    for (final (status, code, expected, finishes) in cases) {
       test('$status $code -> ${expected.name}', () async {
         final h = _Harness(
           (_) async => _json({'code': code, 'message': 'm'}, status),
@@ -97,7 +98,11 @@ void main() {
                 .having((f) => f.code, 'code', expected)
                 .having((f) => f.statusCode, 'status', status)
                 .having((f) => f.serverCode, 'serverCode', code)
-                .having((f) => f.isTransient, 'isTransient', transient),
+                .having(
+                  (f) => f.finishesTransaction,
+                  'finishesTransaction',
+                  finishes,
+                ),
           ),
         );
       });
@@ -125,7 +130,7 @@ void main() {
       throwsA(
         isA<IapFailure>()
             .having((f) => f.code, 'code', IapFailureCode.network)
-            .having((f) => f.isTransient, 'isTransient', true),
+            .having((f) => f.finishesTransaction, 'finishesTransaction', false),
       ),
     );
     final h2 = _Harness((_) async => throw http.ClientException('reset'));

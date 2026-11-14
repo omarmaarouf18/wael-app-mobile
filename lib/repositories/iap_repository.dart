@@ -70,14 +70,17 @@ class IapFailure implements Exception {
   /// The server's raw `code`, kept for logs and unknown values.
   final String? serverCode;
 
-  /// The same request may succeed later without anything changing on the
-  /// student's side (a transaction is then left unfinished and re-sent).
-  bool get isTransient => switch (code) {
-    IapFailureCode.iapUnavailable ||
-    IapFailureCode.rateLimited ||
-    IapFailureCode.network ||
-    IapFailureCode.unauthorized ||
-    IapFailureCode.unknown => true,
+  /// A permanent refusal after which the app finishes the StoreKit
+  /// transaction (owner decision D4, 2026-11-14): sending it again can
+  /// never succeed. Every other failure (network, 5xx, `iap_unavailable`,
+  /// `unknown_product`, `sandbox_not_allowed`, `account_mismatch`, auth)
+  /// leaves it unfinished, so it is re-sent on the next submit or launch.
+  bool get finishesTransaction => switch (code) {
+    IapFailureCode.invalidTransaction ||
+    IapFailureCode.wrongBundle ||
+    IapFailureCode.unsupportedProductType ||
+    IapFailureCode.revokedTransaction ||
+    IapFailureCode.transactionOwnedByOtherUser => true,
     _ => false,
   };
 

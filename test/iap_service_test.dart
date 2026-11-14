@@ -26,6 +26,7 @@ class _Rig {
         return store;
       },
       platform: platform,
+      log: logs.add,
     );
     service.states.listen(phases.add);
   }
@@ -35,6 +36,7 @@ class _Rig {
   late final IapService service;
   int storeCreated = 0;
   final List<IapPurchaseState> phases = [];
+  final List<String> logs = [];
 
   List<IapPhase> get phaseNames => [for (final s in phases) s.phase];
   IapPackage get pkg => repo.catalog.packages.single;
@@ -79,27 +81,122 @@ void main() {
       );
     });
 
-    for (final f in [
-      const IapFailure(IapFailureCode.invalidTransaction, statusCode: 422),
-      const IapFailure(IapFailureCode.accountMismatch, statusCode: 403),
-      const IapFailure(IapFailureCode.iapUnavailable, statusCode: 503),
-      const IapFailure(IapFailureCode.network),
-    ]) {
-      test('server error ${f.code.name} -> NOT completed, failed', () async {
+    // Owner decision D4 (2026-11-14): finish on exactly five permanent
+    // refusals, keep every other failure unfinished and held.
+    const finishCodes = {
+      IapFailureCode.invalidTransaction: ('invalid_transaction', 422),
+      IapFailureCode.wrongBundle: ('wrong_bundle', 422),
+      IapFailureCode.unsupportedProductType: ('unsupported_product_type', 422),
+      IapFailureCode.revokedTransaction: ('revoked_transaction', 422),
+      IapFailureCode.transactionOwnedByOtherUser: (
+        'transaction_owned_by_other_user',
+        409,
+      ),
+    };
+    const keepCodes = {
+      IapFailureCode.invalidBody: ('invalid_body', 400),
+      IapFailureCode.appClientRequired: ('app_client_required', 403),
+      IapFailureCode.unknownProduct: ('unknown_product', 404),
+      IapFailureCode.accountMismatch: ('account_mismatch', 403),
+      IapFailureCode.sandboxNotAllowed: ('sandbox_not_allowed', 403),
+      IapFailureCode.iapUnavailable: ('iap_unavailable', 503),
+      IapFailureCode.unauthorized: ('unauthorized', 401),
+      IapFailureCode.rateLimited: ('rate_limited', 429),
+      IapFailureCode.invalidResponse: (null, 200),
+      IapFailureCode.unknown: ('internal', 500),
+    };
+    test('every failure code is classified exactly once', () {
+      expect({
+        ...finishCodes.keys,
+        ...keepCodes.keys,
+        IapFailureCode.network,
+      }, IapFailureCode.values.toSet());
+    });
+
+    for (final MapEntry(key: code, value: (server, status))
+        in finishCodes.entries) {
+      test('D4: ${code.name} -> finished, PII-free log, failed', () async {
         final r = _Rig(platform: TargetPlatform.iOS);
+        final f = IapFailure(code, statusCode: status, serverCode: server);
         r.repo.submitAnswers = [f];
         r.service.setSignedIn(true);
         await r.service.start();
         r.store.emit([purchased()]);
         await _settle();
-        expect(r.store.completed, isEmpty);
+        expect(r.store.completed.single.transactionId, '2000000123');
         expect(r.service.state.phase, IapPhase.failed);
-        expect(r.service.state.errorCode, f.code.name);
-        expect(r.service.state.failure, same(f));
-        // Only a transient failure is retried in this session.
-        expect(r.service.pendingSubmissions, f.isTransient ? 1 : 0);
+        expect(r.service.state.errorCode, code.name);
+        expect(r.service.pendingSubmissions, 0);
+        final line = r.logs.single;
+        expect(line, contains(server));
+        expect(line, contains('$status'));
+        expect(line, isNot(contains('header.payload.sig')));
+        expect(line, isNot(contains('2000000123')));
+        expect(line, isNot(contains(kToken)));
+
+        // Not re-sent on restore.
+        await r.service.restore();
+        await _settle();
+        expect(r.repo.submitted, hasLength(1));
       });
     }
+
+    for (final MapEntry(key: code, value: (server, status))
+        in keepCodes.entries) {
+      test('D4: ${code.name} -> NOT finished, held, no log', () async {
+        final r = _Rig(platform: TargetPlatform.iOS);
+        r.repo.submitAnswers = [
+          IapFailure(code, statusCode: status, serverCode: server),
+          IapTransactionResult.fromJson(grantedJson()),
+        ];
+        r.service.setSignedIn(true);
+        await r.service.start();
+        r.store.emit([purchased()]);
+        await _settle();
+        expect(r.store.completed, isEmpty);
+        expect(r.service.state.errorCode, code.name);
+        expect(r.service.pendingSubmissions, 1);
+        expect(r.logs, isEmpty);
+
+        // Re-sent on the next submit (restore) and finished on 200.
+        await r.service.restore();
+        await _settle();
+        expect(r.repo.submitted, hasLength(2));
+        expect(r.store.completed, hasLength(1));
+      });
+    }
+
+    test('D4: a network failure -> NOT finished, held', () async {
+      final r = _Rig(platform: TargetPlatform.iOS);
+      r.repo.submitAnswers = [const IapFailure(IapFailureCode.network)];
+      r.service.setSignedIn(true);
+      await r.service.start();
+      r.store.emit([purchased()]);
+      await _settle();
+      expect(r.store.completed, isEmpty);
+      expect(r.service.pendingSubmissions, 1);
+      expect(r.logs, isEmpty);
+    });
+
+    test(
+      'D4: account_mismatch is re-sent when another account signs in',
+      () async {
+        final r = _Rig(platform: TargetPlatform.iOS);
+        r.repo.submitAnswers = [
+          const IapFailure(IapFailureCode.accountMismatch, statusCode: 403),
+          IapTransactionResult.fromJson(grantedJson()),
+        ];
+        r.service.setSignedIn(true);
+        await r.service.start();
+        r.store.emit([purchased()]);
+        await _settle();
+        r.service.setSignedIn(false);
+        r.service.setSignedIn(true);
+        await _settle();
+        expect(r.repo.submitted, hasLength(2));
+        expect(r.store.completed, hasLength(1));
+      },
+    );
 
     test(
       'a transient failure is re-sent on restore and then completed',

@@ -53,22 +53,27 @@ class IapPurchaseState {
 /// * Nothing here touches StoreKit unless `StorePolicy.iapEnabled()`; the
 ///   store is created lazily by [start], [buy], [loadProducts] or
 ///   [restore].
-/// * A transaction is finished only after the server answered 200
-///   (`granted` or `already_processed`). Any failure leaves it unfinished,
-///   so StoreKit delivers it again on the next launch and it is re-sent.
+/// * A transaction is finished after the server answered 200 (`granted`
+///   or `already_processed`) or one of the five permanent refusals of
+///   owner decision D4 ([IapFailure.finishesTransaction]); a finish on a
+///   refusal is logged without PII or JWS. Any other failure leaves it
+///   unfinished: it stays held, is re-sent on [restore] or the next
+///   sign-in, and StoreKit delivers it again on the next launch.
 /// * Transactions that arrive while nobody is signed in are held and sent
-///   when [setSignedIn] turns true; transient failures are held too and
-///   re-sent on [restore] or the next sign-in.
+///   when [setSignedIn] turns true.
 class IapService {
   IapService({
     required this._repository,
     IapStore Function()? storeFactory,
     this._platform,
-  }) : _storeFactory = storeFactory ?? StoreKitIapStore.new;
+    void Function(String message)? log,
+  }) : _storeFactory = storeFactory ?? StoreKitIapStore.new,
+       _log = log ?? debugPrint;
 
   final IapRepository _repository;
   final IapStore Function() _storeFactory;
   final TargetPlatform? _platform;
+  final void Function(String message) _log;
 
   IapStore? _store;
   StreamSubscription<List<IapStoreTransaction>>? _sub;
@@ -239,9 +244,25 @@ class IapService {
         ),
       );
     } on IapFailure catch (f) {
-      // Not finished: StoreKit re-delivers it on the next launch. Only a
-      // transient failure is retried in this session.
-      if (!f.isTransient) _held.remove(id);
+      if (f.finishesTransaction) {
+        // D4: a permanent refusal; re-sending can never succeed.
+        _held.remove(id);
+        if (t.needsCompletion) {
+          try {
+            await _store?.complete(t);
+          } on Exception {
+            // Re-delivered next launch and refused again; finished then.
+          }
+        }
+        // No PII, no JWS, no transaction or account id.
+        _log(
+          '[IapService] finished a refused transaction: '
+          '${f.serverCode ?? f.code.name} (HTTP ${f.statusCode ?? '-'}) '
+          'product ${t.productId}',
+        );
+      }
+      // Otherwise it stays held and unfinished: re-sent on restore or the
+      // next sign-in, and StoreKit re-delivers it at the next launch.
       _emit(
         IapPurchaseState(
           IapPhase.failed,
